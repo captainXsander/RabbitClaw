@@ -62,7 +62,7 @@ public class Claw {
     }
 
     public void update(World world, List<Toy> toys) {
-        float speed = 5f;
+        float speed = 0.1f;
         checkCapture(world, toys);
         // Влево-вправо
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
@@ -78,14 +78,14 @@ public class Claw {
 
         // Опустить клешню
         if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && !toyCaptured) {
-            clawLeft.setLinearVelocity(0, -15);
-            clawRight.setLinearVelocity(0, -15);
+            clawLeft.setLinearVelocity(0, -25);
+            clawRight.setLinearVelocity(0, -25);
         }
 
         // Поднять клешню
         if (toyCaptured && Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
-            clawLeft.setLinearVelocity(0, 15);
-            clawRight.setLinearVelocity(0, 15);
+            clawLeft.setLinearVelocity(0, 25);
+            clawRight.setLinearVelocity(0, 25);
         }
     }
 
