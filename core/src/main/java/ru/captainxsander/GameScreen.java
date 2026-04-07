@@ -26,7 +26,9 @@ public class GameScreen implements Screen {
     private Floor floor;
     private WinZone winZone;
     private Claw claw;
+
     private final List<Toy> toys = new ArrayList<>();
+    private final List<Toy> trayToys = new ArrayList<>();
 
     @Override
     public void show() {
@@ -53,9 +55,9 @@ public class GameScreen implements Screen {
     }
 
     private void createToys() {
-        toys.add(new Toy(world, 5.2f, 1.15f, "pig.png"));
-        toys.add(new Toy(world, 6.2f, 1.15f, "cow.png"));
-        toys.add(new Toy(world, 7.4f, 1.15f, "heart.png"));
+        toys.add(new Toy(world, 5.1f, 1.12f, "pig.png"));
+        toys.add(new Toy(world, 6.05f, 1.12f, "cow.png"));
+        toys.add(new Toy(world, 7.2f, 1.12f, "heart.png"));
     }
 
     @Override
@@ -65,11 +67,13 @@ public class GameScreen implements Screen {
     }
 
     private void update(float delta) {
-        claw.update(delta, toys, winZone);
-
+        claw.update(delta, toys, trayToys, winZone);
         world.step(1 / 60f, 6, 2);
 
         for (Toy toy : toys) {
+            toy.update(delta);
+        }
+        for (Toy toy : trayToys) {
             toy.update(delta);
         }
     }
@@ -86,6 +90,10 @@ public class GameScreen implements Screen {
         winZone.render(batch);
 
         for (Toy toy : toys) {
+            toy.render(batch);
+        }
+
+        for (Toy toy : trayToys) {
             toy.render(batch);
         }
 
@@ -106,6 +114,9 @@ public class GameScreen implements Screen {
     @Override
     public void dispose() {
         for (Toy toy : toys) {
+            toy.dispose();
+        }
+        for (Toy toy : trayToys) {
             toy.dispose();
         }
         claw.dispose();

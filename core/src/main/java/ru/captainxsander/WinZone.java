@@ -9,19 +9,31 @@ import com.badlogic.gdx.physics.box2d.*;
 public class WinZone {
 
     private Body body;
-    private Texture texture;
+
+    private Texture bottomTexture;
+    private Texture wallTexture;
+    private Texture backWallTexture;
+
+    private final float x = 13.15f;
+    private final float y = 0.45f;
+
+    // Было меньше — делаем заметно больше и выше
+    private final float width = 2.8f;
+    private final float height = 1.95f;
 
     public void create(World world) {
-        texture = createFrameTexture(220, 110, Color.LIME);
+        bottomTexture = createRectTexture(280, 20, Color.LIME);
+        wallTexture = createRectTexture(20, 220, Color.LIME);
+        backWallTexture = createRectTexture(280, 20, Color.LIME);
 
         BodyDef def = new BodyDef();
         def.type = BodyDef.BodyType.StaticBody;
-        def.position.set(13.3f, 1.05f);
+        def.position.set(x, y + height * 0.5f);
 
         body = world.createBody(def);
 
         PolygonShape shape = new PolygonShape();
-        shape.setAsBox(1.1f, 0.55f);
+        shape.setAsBox(width * 0.5f, height * 0.5f);
 
         FixtureDef fix = new FixtureDef();
         fix.shape = shape;
@@ -32,29 +44,43 @@ public class WinZone {
     }
 
     public void render(SpriteBatch batch) {
-        batch.draw(texture, 12.2f, 0.5f, 2.2f, 1.1f);
+        // дно
+        batch.draw(bottomTexture, x - width * 0.5f, y, width, 0.08f);
+
+        // левая стенка
+        batch.draw(wallTexture, x - width * 0.5f, y, 0.08f, height);
+
+        // правая стенка
+        batch.draw(wallTexture, x + width * 0.5f - 0.08f, y, 0.08f, height);
+
+        // задняя верхняя кромка вместо диагональной палки
+        batch.draw(backWallTexture, x - width * 0.5f, y + height - 0.08f, width, 0.08f);
+    }
+
+    public float getDropX() {
+        return x;
+    }
+
+    public float getDropY() {
+        return y + 0.28f;
     }
 
     public Body getBody() {
         return body;
     }
 
-    private Texture createFrameTexture(int width, int height, Color color) {
+    private Texture createRectTexture(int width, int height, Color color) {
         Pixmap pixmap = new Pixmap(width, height, Pixmap.Format.RGBA8888);
         pixmap.setColor(color);
-
-        int t = 4;
-        pixmap.fillRectangle(0, 0, width, t);
-        pixmap.fillRectangle(0, height - t, width, t);
-        pixmap.fillRectangle(0, 0, t, height);
-        pixmap.fillRectangle(width - t, 0, t, height);
-
+        pixmap.fill();
         Texture texture = new Texture(pixmap);
         pixmap.dispose();
         return texture;
     }
 
     public void dispose() {
-        texture.dispose();
+        bottomTexture.dispose();
+        wallTexture.dispose();
+        backWallTexture.dispose();
     }
 }

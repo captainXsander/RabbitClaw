@@ -13,9 +13,10 @@ public class Toy {
 
     private boolean captured = false;
     private boolean won = false;
+    private boolean inTray = false;
 
-    private final float width = 0.9f;
-    private final float height = 0.9f;
+    private final float width = 0.90f;
+    private final float height = 0.90f;
 
     public Toy(World world, float x, float y, String texturePath) {
         texture = new Texture(Gdx.files.internal(texturePath));
@@ -43,17 +44,18 @@ public class Toy {
     }
 
     public void update(float delta) {
-        if (captured) {
+        if (captured || inTray) {
             body.setLinearVelocity(0, 0);
             body.setAngularVelocity(0);
-        } else {
-            Vector2 v = body.getLinearVelocity();
-            if (Math.abs(v.x) < 0.03f) {
-                body.setLinearVelocity(0, v.y);
-            }
-            if (Math.abs(body.getAngularVelocity()) < 0.03f) {
-                body.setAngularVelocity(0);
-            }
+            return;
+        }
+
+        Vector2 v = body.getLinearVelocity();
+        if (Math.abs(v.x) < 0.03f) {
+            body.setLinearVelocity(0, v.y);
+        }
+        if (Math.abs(body.getAngularVelocity()) < 0.03f) {
+            body.setAngularVelocity(0);
         }
     }
 
@@ -64,10 +66,33 @@ public class Toy {
         body.setAngularVelocity(0);
     }
 
-    public void release() {
+    public void releaseIntoTray(float trayX, float trayY, int trayIndex) {
         captured = false;
-        body.setLinearVelocity(0, -0.3f);
+        won = true;
+        inTray = true;
+
+        float offsetX;
+        float offsetY;
+
+        if (trayIndex == 0) {
+            offsetX = -0.35f;
+            offsetY = 0.18f;
+        } else if (trayIndex == 1) {
+            offsetX = 0.15f;
+            offsetY = 0.18f;
+        } else if (trayIndex == 2) {
+            offsetX = -0.10f;
+            offsetY = 0.55f;
+        } else {
+            offsetX = 0.28f * (trayIndex % 3);
+            offsetY = 0.18f + 0.22f * (trayIndex / 3);
+        }
+
+        body.setTransform(trayX + offsetX, trayY + offsetY, 0f);
+        body.setLinearVelocity(0, 0);
         body.setAngularVelocity(0);
+        body.setGravityScale(0f);
+        body.setType(BodyDef.BodyType.StaticBody);
     }
 
     public void render(SpriteBatch batch) {
@@ -90,8 +115,8 @@ public class Toy {
         return won;
     }
 
-    public void setWon(boolean won) {
-        this.won = won;
+    public boolean isCaptured() {
+        return captured;
     }
 
     public void setCaptured(boolean captured) {

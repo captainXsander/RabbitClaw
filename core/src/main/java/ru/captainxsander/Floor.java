@@ -12,7 +12,7 @@ public class Floor {
     private Texture texture;
 
     public void create(World world) {
-        texture = createRectTexture(1600, 40, new Color(0.2f, 0.7f, 0.25f, 1f));
+        texture = createRectTexture(1600, 42, new Color(0.20f, 0.72f, 0.24f, 1f));
 
         BodyDef def = new BodyDef();
         def.type = BodyDef.BodyType.StaticBody;
