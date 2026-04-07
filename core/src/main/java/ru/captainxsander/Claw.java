@@ -11,6 +11,10 @@ import java.util.List;
 
 public class Claw {
 
+    // -------------------------
+    // V1 -> V2:
+    // State machine клешни
+    // -------------------------
     private enum State {
         IDLE,
         MOVE_DOWN,
@@ -21,14 +25,26 @@ public class Claw {
         RETURN_HOME
     }
 
+    // Домашняя позиция
     private static final float HOME_X = 8.0f;
     private static final float HOME_Y = 7.7f;
 
-    private static final float TRAY_DROP_X = 13.2f;
+    // -------------------------
+    // V2.3c:
+    // Лоток сдвинут максимально вправо,
+    // но так, чтобы физика ещё оставалась в кадре.
+    // -------------------------
+    private static final float TRAY_DROP_X = 14.05f;
+
     private static final float DOWN_LIMIT_Y = 2.2f;
 
-    private static final float MOVE_SPEED_X = 4.8f;
-    private static final float MOVE_SPEED_Y = 5.8f;
+    // -------------------------
+    // V2.3c:
+    // Чуть медленнее движение по Y и X,
+    // чтобы было лучше видно анимацию и падение.
+    // -------------------------
+    private static final float MOVE_SPEED_X = 4.2f;
+    private static final float MOVE_SPEED_Y = 4.8f;
 
     private static final float HEAD_W = 0.95f;
     private static final float HEAD_H = 0.28f;
@@ -53,10 +69,12 @@ public class Claw {
 
     private Toy capturedToy;
 
+    // Визуальная раскачка
     private float swing = 0f;
     private float swingVelocity = 0f;
 
     private boolean slipCheckedThisCycle = false;
+    private boolean earlyReleaseCheckedThisCycle = false;
 
     public Claw() {
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
@@ -77,7 +95,8 @@ public class Claw {
                 state = State.MOVE_DOWN;
                 stateTimer = 0f;
                 slipCheckedThisCycle = false;
-                swingVelocity += 1.7f;
+                earlyReleaseCheckedThisCycle = false;
+                swingVelocity += 1.35f;
             }
         }
 
@@ -85,7 +104,7 @@ public class Claw {
             case MOVE_DOWN -> updateMoveDown(delta);
             case CLOSE -> updateClose(delta, toys);
             case MOVE_UP -> updateMoveUp(delta);
-            case MOVE_TO_TRAY -> updateMoveToTray(delta);
+            case MOVE_TO_TRAY -> updateMoveToTray(delta, trayToys, winZone);
             case OPEN -> updateOpen(delta, trayToys, winZone);
             case RETURN_HOME -> updateReturnHome(delta);
             case IDLE -> {
@@ -111,40 +130,43 @@ public class Claw {
 
         float dx = x - oldX;
         if (Math.abs(dx) > 0.0001f) {
-            swingVelocity += dx * 34f;
+            swingVelocity += dx * 28f;
         }
     }
 
     private void updateMoveDown(float delta) {
         y -= MOVE_SPEED_Y * delta;
+
         if (y <= DOWN_LIMIT_Y) {
             y = DOWN_LIMIT_Y;
             state = State.CLOSE;
             stateTimer = 0f;
-            swingVelocity -= 0.9f;
+            swingVelocity -= 0.75f;
         }
     }
 
     private void updateClose(float delta, List<Toy> toys) {
         stateTimer += delta;
 
-        float progress = clamp(stateTimer / 0.18f, 0f, 1f);
+        float progress = clamp(stateTimer / 0.22f, 0f, 1f);
         fingerGap = lerp(FINGER_GAP_OPEN, FINGER_GAP_CLOSED, progress);
 
         if (capturedToy == null) {
             for (Toy toy : toys) {
-                if (toy.isWon() || toy.isCaptured() || toy.isInTray() || toy.isReleasedToPhysicsTray()) continue;
+                if (toy.isWon() || toy.isCaptured() || toy.isInTray() || toy.isReleasedToPhysicsTray()) {
+                    continue;
+                }
 
                 if (isToyCatchable(toy) && passesCatchChance(toy)) {
                     capturedToy = toy;
                     capturedToy.setCaptured(true);
-                    swingVelocity += 0.8f;
+                    swingVelocity += 0.65f;
                     break;
                 }
             }
         }
 
-        if (stateTimer >= 0.18f) {
+        if (stateTimer >= 0.22f) {
             state = State.MOVE_UP;
             stateTimer = 0f;
         }
@@ -171,6 +193,7 @@ public class Claw {
     private void updateMoveUp(float delta) {
         y += MOVE_SPEED_Y * delta;
 
+        // Соскальзывание во время подъема
         if (capturedToy != null && !slipCheckedThisCycle && y > 4.2f) {
             slipCheckedThisCycle = true;
 
@@ -178,21 +201,48 @@ public class Claw {
             if (Math.random() < slipChance) {
                 Toy toy = capturedToy;
                 capturedToy = null;
-                toy.releaseFailedGrab((float)(Math.random() * 1.2 - 0.6), -0.4f);
-                swingVelocity -= 0.9f;
+
+                toy.releaseFailedGrab((float)(Math.random() * 0.9 - 0.45), -0.25f);
+                swingVelocity -= 0.8f;
             }
         }
 
         if (y >= HOME_Y) {
             y = HOME_Y;
             state = State.MOVE_TO_TRAY;
-            swingVelocity += 0.5f;
+            swingVelocity += 0.35f;
         }
     }
 
-    private void updateMoveToTray(float delta) {
+    private void updateMoveToTray(float delta, List<Toy> trayToys, WinZone winZone) {
         float oldX = x;
         float dx = TRAY_DROP_X - x;
+
+        // -------------------------
+        // V2.3c:
+        // Более заметный ранний сброс:
+        // проверяем раньше и чаще.
+        // Это даёт полёт до лотка и удары в кромку.
+        // -------------------------
+        if (capturedToy != null && !earlyReleaseCheckedThisCycle && x > 10.3f) {
+            earlyReleaseCheckedThisCycle = true;
+
+            double earlyReleaseChance = 0.28 + capturedToy.getCatchDifficulty() * 0.30;
+            if (Math.random() < earlyReleaseChance) {
+                Toy toy = capturedToy;
+                capturedToy = null;
+
+                boolean missTray = Math.random() < 0.58;
+                toy.releaseToPhysicalTray(winZone, missTray, true);
+
+                if (!trayToys.contains(toy)) {
+                    trayToys.add(toy);
+                }
+
+                fingerGap = FINGER_GAP_OPEN;
+                swingVelocity -= 1.0f;
+            }
+        }
 
         if (Math.abs(dx) < 0.04f) {
             x = TRAY_DROP_X;
@@ -204,33 +254,31 @@ public class Claw {
         x += Math.signum(dx) * MOVE_SPEED_X * delta;
 
         float moved = x - oldX;
-        swingVelocity += moved * 32f;
+        swingVelocity += moved * 24f;
     }
 
     private void updateOpen(float delta, List<Toy> trayToys, WinZone winZone) {
         stateTimer += delta;
 
-        float progress = clamp(stateTimer / 0.18f, 0f, 1f);
+        float progress = clamp(stateTimer / 0.22f, 0f, 1f);
         fingerGap = lerp(FINGER_GAP_CLOSED, FINGER_GAP_OPEN, progress);
 
         if (capturedToy != null) {
             Toy toy = capturedToy;
 
-            boolean missTray = Math.random() < (0.10 + toy.getCatchDifficulty() * 0.30);
+            boolean missTray = Math.random() < (0.24 + toy.getCatchDifficulty() * 0.32);
 
-            toy.releaseToPhysicalTray(winZone, missTray);
+            toy.releaseToPhysicalTray(winZone, missTray, false);
 
-            // В список "выигранных" кладём заранее только если не явный промах.
-            // Но реально выигранной игрушка станет только когда устоится в лотке.
             if (!trayToys.contains(toy)) {
                 trayToys.add(toy);
             }
 
             capturedToy = null;
-            swingVelocity -= 1.0f;
+            swingVelocity -= 0.85f;
         }
 
-        if (stateTimer >= 0.18f) {
+        if (stateTimer >= 0.22f) {
             state = State.RETURN_HOME;
             stateTimer = 0f;
         }
@@ -243,8 +291,8 @@ public class Claw {
         if (Math.abs(dx) < 0.05f) {
             x = HOME_X;
             fingerGap = FINGER_GAP_OPEN;
-            swing *= 0.55f;
-            swingVelocity *= 0.35f;
+            swing *= 0.60f;
+            swingVelocity *= 0.38f;
             state = State.IDLE;
             return;
         }
@@ -252,20 +300,20 @@ public class Claw {
         x += Math.signum(dx) * MOVE_SPEED_X * delta;
 
         float moved = x - oldX;
-        swingVelocity += moved * 24f;
+        swingVelocity += moved * 18f;
     }
 
     private void updateSwing(float delta) {
-        swingVelocity += (-swing * 18f) * delta;
-        swingVelocity *= 0.94f;
+        swingVelocity += (-swing * 14f) * delta;
+        swingVelocity *= 0.95f;
         swing += swingVelocity * delta;
 
-        swing = clamp(swing, -0.55f, 0.55f);
+        swing = clamp(swing, -0.48f, 0.48f);
     }
 
     public void render(SpriteBatch batch) {
         float cableLen = Math.max(0.2f, 9f - y);
-        float swingDeg = (float) Math.toDegrees(swing);
+        float swingDeg = (float)Math.toDegrees(swing);
 
         batch.draw(
             cableTexture,
@@ -296,8 +344,8 @@ public class Claw {
         float rightX = x + fingerGap / 2f - FINGER_W / 2f;
 
         float openAmount = (fingerGap - FINGER_GAP_CLOSED) / (FINGER_GAP_OPEN - FINGER_GAP_CLOSED);
-        float leftAngle = -22f + openAmount * 28f + swingDeg * 0.45f;
-        float rightAngle = 22f - openAmount * 28f + swingDeg * 0.45f;
+        float leftAngle = -20f + openAmount * 24f + swingDeg * 0.42f;
+        float rightAngle = 20f - openAmount * 24f + swingDeg * 0.42f;
 
         batch.draw(
             fingerTexture,

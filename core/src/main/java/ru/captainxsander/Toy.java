@@ -19,6 +19,7 @@ public class Toy {
     private final float width = 0.90f;
     private final float height = 0.90f;
 
+    // Характер игрушки
     private final float catchDifficulty;
     private final float trayScatterX;
     private final float trayRestitution;
@@ -53,8 +54,14 @@ public class Toy {
         fix.restitution = 0.04f;
 
         body.createFixture(fix);
-        body.setLinearDamping(3.2f);
-        body.setAngularDamping(5.0f);
+
+        // -------------------------
+        // V2.3c:
+        // Меньше damping = игрушка движется дольше,
+        // красивее отскакивает и не "умирает" сразу.
+        // -------------------------
+        body.setLinearDamping(0.65f);
+        body.setAngularDamping(1.1f);
 
         shape.dispose();
     }
@@ -82,22 +89,30 @@ public class Toy {
             Vector2 v = body.getLinearVelocity();
             float speed = v.len();
 
-            if (inside && speed < 0.35f) {
+            // -------------------------
+            // V2.3c:
+            // Ещё более строго:
+            // игрушка должна реально успокоиться внутри,
+            // иначе не считаем её выигранной.
+            // -------------------------
+            if (inside && speed < 0.08f && Math.abs(body.getAngularVelocity()) < 0.10f) {
                 settleTimer += delta;
-                if (settleTimer > 0.25f) {
+                if (settleTimer > 0.70f) {
                     lockInTray();
                 }
             } else {
                 settleTimer = 0f;
             }
-        } else {
-            Vector2 v = body.getLinearVelocity();
-            if (Math.abs(v.x) < 0.03f) {
-                body.setLinearVelocity(0, v.y);
-            }
-            if (Math.abs(body.getAngularVelocity()) < 0.03f) {
-                body.setAngularVelocity(0);
-            }
+
+            return;
+        }
+
+        Vector2 v = body.getLinearVelocity();
+        if (Math.abs(v.x) < 0.02f) {
+            body.setLinearVelocity(0, v.y);
+        }
+        if (Math.abs(body.getAngularVelocity()) < 0.02f) {
+            body.setAngularVelocity(0);
         }
     }
 
@@ -131,7 +146,12 @@ public class Toy {
         body.setAngularVelocity(impulseX * 0.7f);
     }
 
-    public void releaseToPhysicalTray(WinZone winZone, boolean missTray) {
+    // -------------------------
+    // V2.3c:
+    // earlyRelease = разжатие раньше времени по пути к лотку
+    // Тогда игрушка летит плавнее и дольше.
+    // -------------------------
+    public void releaseToPhysicalTray(WinZone winZone, boolean missTray, boolean earlyRelease) {
         captured = false;
         releasedToPhysicsTray = true;
         inTray = false;
@@ -141,28 +161,35 @@ public class Toy {
         body.setType(BodyDef.BodyType.DynamicBody);
         body.setGravityScale(1f);
 
-        // меняем restitution у игрушки на время падения в лоток
         for (Fixture fixture : body.getFixtureList()) {
             fixture.setRestitution(trayRestitution);
-            fixture.setFriction(0.85f);
+            fixture.setFriction(0.55f);
         }
 
-        float impulseX;
-        float impulseY;
+        float vx;
+        float vy;
 
         if (missTray) {
-            // намеренный промах правее лотка
-            impulseX = 2.4f + (float)Math.random() * 0.8f;
-            impulseY = -0.8f - (float)Math.random() * 0.4f;
+            // Явный промах
+            vx = 2.8f + (float)Math.random() * 1.0f;
+            vy = -1.15f - (float)Math.random() * 0.65f;
         } else {
-            // в сторону центра лотка, но с разбросом
             float dx = winZone.getCenterX() - body.getPosition().x;
-            impulseX = dx * 1.6f + ((float)Math.random() - 0.5f) * trayScatterX * 4f;
-            impulseY = -1.3f - (float)Math.random() * 0.7f;
+
+            float sideNoise = ((float)Math.random() - 0.5f) * 1.65f;
+            vx = dx * 1.15f + sideNoise + ((float)Math.random() - 0.5f) * trayScatterX * 4.5f;
+            vy = -1.20f - (float)Math.random() * 0.70f;
+
+            if (earlyRelease) {
+                // Ранний сброс делаем более "дуговым":
+                // меньше вниз, больше времени на полёт и столкновение
+                vx += 0.45f + ((float)Math.random() - 0.5f) * 0.70f;
+                vy -= 0.10f;
+            }
         }
 
-        body.setLinearVelocity(impulseX, impulseY);
-        body.setAngularVelocity(((float)Math.random() - 0.5f) * 5f);
+        body.setLinearVelocity(vx, vy);
+        body.setAngularVelocity(((float)Math.random() - 0.5f) * 7.5f);
     }
 
     public void render(SpriteBatch batch) {

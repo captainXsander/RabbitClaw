@@ -16,14 +16,19 @@ public class WinZone {
     private Texture bottomTexture;
     private Texture wallTexture;
 
-    private final float x = 13.15f;
+    // -------------------------
+    // V2.3c:
+    // Лоток максимально вправо,
+    // но не уходит за экран.
+    // -------------------------
+    private final float x = 14.15f;
     private final float y = 0.45f;
 
-    private final float width = 2.9f;
+    private final float width = 2.45f;
     private final float height = 2.25f;
 
     public void create(World world) {
-        bottomTexture = createRectTexture(320, 20, Color.LIME);
+        bottomTexture = createRectTexture(300, 20, Color.LIME);
         wallTexture = createRectTexture(20, 260, Color.LIME);
 
         createSensor(world);
@@ -38,7 +43,7 @@ public class WinZone {
         sensorBody = world.createBody(def);
 
         PolygonShape shape = new PolygonShape();
-        shape.setAsBox(width * 0.5f - 0.10f, height * 0.5f - 0.10f);
+        shape.setAsBox(width * 0.5f - 0.08f, height * 0.5f - 0.08f);
 
         FixtureDef fix = new FixtureDef();
         fix.shape = shape;
@@ -61,8 +66,8 @@ public class WinZone {
 
         FixtureDef floorFix = new FixtureDef();
         floorFix.shape = floorShape;
-        floorFix.friction = 0.9f;
-        floorFix.restitution = 0.18f;
+        floorFix.friction = 0.32f;
+        floorFix.restitution = 0.30f;
         floorBody.createFixture(floorFix);
         floorShape.dispose();
 
@@ -78,8 +83,8 @@ public class WinZone {
 
         FixtureDef leftFix = new FixtureDef();
         leftFix.shape = leftShape;
-        leftFix.friction = 0.7f;
-        leftFix.restitution = 0.22f;
+        leftFix.friction = 0.20f;
+        leftFix.restitution = 0.80f;
         leftWallBody.createFixture(leftFix);
         leftShape.dispose();
 
@@ -95,29 +100,26 @@ public class WinZone {
 
         FixtureDef rightFix = new FixtureDef();
         rightFix.shape = rightShape;
-        rightFix.friction = 0.7f;
-        rightFix.restitution = 0.22f;
+        rightFix.friction = 0.20f;
+        rightFix.restitution = 0.80f;
         rightWallBody.createFixture(rightFix);
         rightShape.dispose();
     }
 
     public void render(SpriteBatch batch) {
-        // дно
         batch.draw(bottomTexture, x - width * 0.5f, y, width, 0.08f);
-
-        // левая стенка
         batch.draw(wallTexture, x - width * 0.5f, y, 0.08f, height);
-
-        // правая стенка
         batch.draw(wallTexture, x + width * 0.5f - 0.08f, y, 0.08f, height);
     }
 
     public float getDropX() {
-        return x;
+        // Чуть левее центра лотка, чтобы цеплять кромку
+        return x - 0.48f;
     }
 
     public float getDropY() {
-        return y + height + 0.15f;
+        // Выше, чтобы был длиннее видимый путь
+        return y + height + 0.65f;
     }
 
     public float getCenterX() {
@@ -128,20 +130,21 @@ public class WinZone {
         return y + height * 0.5f;
     }
 
+    // Узкое "горло" зачёта
     public float getInnerLeft() {
-        return x - width * 0.5f + 0.10f;
+        return x - 0.42f;
     }
 
     public float getInnerRight() {
-        return x + width * 0.5f - 0.10f;
+        return x + 0.18f;
     }
 
     public float getInnerBottom() {
-        return y + 0.08f;
+        return y + 0.12f;
     }
 
     public float getInnerTop() {
-        return y + height - 0.08f;
+        return y + 1.30f;
     }
 
     public Body getSensorBody() {
