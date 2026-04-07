@@ -16,16 +16,12 @@ public class WinZone {
     private Texture bottomTexture;
     private Texture wallTexture;
 
-    // -------------------------
-    // V2.3c:
-    // Лоток максимально вправо,
-    // но не уходит за экран.
-    // -------------------------
-    private final float x = 14.15f;
-    private final float y = 0.45f;
+    // Максимально вправо, но не за экраном
+    private final float x = GameTuning.TRAY_X;
+    private final float y = GameTuning.TRAY_Y;
 
-    private final float width = 2.45f;
-    private final float height = 2.25f;
+    private final float width = GameTuning.TRAY_W;
+    private final float height = GameTuning.TRAY_H;
 
     public void create(World world) {
         bottomTexture = createRectTexture(300, 20, Color.LIME);
@@ -66,8 +62,8 @@ public class WinZone {
 
         FixtureDef floorFix = new FixtureDef();
         floorFix.shape = floorShape;
-        floorFix.friction = 0.32f;
-        floorFix.restitution = 0.30f;
+        floorFix.friction = GameTuning.TRAY_FLOOR_FRICTION;
+        floorFix.restitution = GameTuning.TRAY_FLOOR_RESTITUTION;
         floorBody.createFixture(floorFix);
         floorShape.dispose();
 
@@ -83,8 +79,8 @@ public class WinZone {
 
         FixtureDef leftFix = new FixtureDef();
         leftFix.shape = leftShape;
-        leftFix.friction = 0.20f;
-        leftFix.restitution = 0.80f;
+        leftFix.friction = GameTuning.TRAY_WALL_FRICTION;
+        leftFix.restitution = GameTuning.TRAY_WALL_RESTITUTION;
         leftWallBody.createFixture(leftFix);
         leftShape.dispose();
 
@@ -100,8 +96,8 @@ public class WinZone {
 
         FixtureDef rightFix = new FixtureDef();
         rightFix.shape = rightShape;
-        rightFix.friction = 0.20f;
-        rightFix.restitution = 0.80f;
+        rightFix.friction = GameTuning.TRAY_WALL_FRICTION;
+        rightFix.restitution = GameTuning.TRAY_WALL_RESTITUTION;
         rightWallBody.createFixture(rightFix);
         rightShape.dispose();
     }
@@ -112,40 +108,22 @@ public class WinZone {
         batch.draw(wallTexture, x + width * 0.5f - 0.08f, y, 0.08f, height);
     }
 
-    public float getDropX() {
-        // Чуть левее центра лотка, чтобы цеплять кромку
-        return x - 0.48f;
-    }
+    public float getDropX() { return GameTuning.TRAY_DROP_X; }
+    public float getDropY() { return GameTuning.TRAY_DROP_Y; }
 
-    public float getDropY() {
-        // Выше, чтобы был длиннее видимый путь
-        return y + height + 0.65f;
-    }
+    public float getCenterX() { return x; }
+    public float getCenterY() { return y + height * 0.5f; }
 
-    public float getCenterX() {
-        return x;
-    }
+    public float getInnerLeft() { return GameTuning.TRAY_INNER_LEFT; }
+    public float getInnerRight() { return GameTuning.TRAY_INNER_RIGHT; }
+    public float getInnerBottom() { return GameTuning.TRAY_INNER_BOTTOM; }
+    public float getInnerTop() { return GameTuning.TRAY_INNER_TOP; }
 
-    public float getCenterY() {
-        return y + height * 0.5f;
-    }
-
-    // Узкое "горло" зачёта
-    public float getInnerLeft() {
-        return x - 0.42f;
-    }
-
-    public float getInnerRight() {
-        return x + 0.18f;
-    }
-
-    public float getInnerBottom() {
-        return y + 0.12f;
-    }
-
-    public float getInnerTop() {
-        return y + 1.30f;
-    }
+    // Геттеры для overlay
+    public float getX() { return x; }
+    public float getY() { return y; }
+    public float getWidth() { return width; }
+    public float getHeight() { return height; }
 
     public Body getSensorBody() {
         return sensorBody;

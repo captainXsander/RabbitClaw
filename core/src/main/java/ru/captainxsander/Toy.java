@@ -16,8 +16,8 @@ public class Toy {
     private boolean inTray = false;
     private boolean releasedToPhysicsTray = false;
 
-    private final float width = 0.90f;
-    private final float height = 0.90f;
+    private final float width = GameTuning.TOY_DRAW_W;
+    private final float height = GameTuning.TOY_DRAW_H;
 
     // Характер игрушки
     private final float catchDifficulty;
@@ -45,23 +45,19 @@ public class Toy {
         body = world.createBody(def);
 
         CircleShape shape = new CircleShape();
-        shape.setRadius(0.38f);
+        shape.setRadius(GameTuning.TOY_RADIUS);
 
         FixtureDef fix = new FixtureDef();
         fix.shape = shape;
-        fix.density = 0.7f;
-        fix.friction = 1.0f;
-        fix.restitution = 0.04f;
+        fix.density = GameTuning.TOY_DENSITY;
+        fix.friction = GameTuning.TOY_FRICTION;
+        fix.restitution = GameTuning.TOY_RESTITUTION;
 
         body.createFixture(fix);
 
-        // -------------------------
-        // V2.3c:
-        // Меньше damping = игрушка движется дольше,
-        // красивее отскакивает и не "умирает" сразу.
-        // -------------------------
-        body.setLinearDamping(0.65f);
-        body.setAngularDamping(1.1f);
+        // Меньше damping, чтобы дольше было видно столкновения
+        body.setLinearDamping(GameTuning.TOY_LINEAR_DAMPING);
+        body.setAngularDamping(GameTuning.TOY_ANGULAR_DAMPING);
 
         shape.dispose();
     }
@@ -89,19 +85,34 @@ public class Toy {
             Vector2 v = body.getLinearVelocity();
             float speed = v.len();
 
-            // -------------------------
-            // V2.3c:
-            // Ещё более строго:
-            // игрушка должна реально успокоиться внутри,
-            // иначе не считаем её выигранной.
-            // -------------------------
-            if (inside && speed < 0.08f && Math.abs(body.getAngularVelocity()) < 0.10f) {
+            // Если успокоилась внутри — выиграна
+            if (inside
+                && speed < GameTuning.TOY_SETTLE_SPEED
+                && Math.abs(body.getAngularVelocity()) < GameTuning.TOY_SETTLE_ANGULAR_SPEED) {
+
                 settleTimer += delta;
-                if (settleTimer > 0.70f) {
+                if (settleTimer > GameTuning.TOY_SETTLE_TIME) {
                     lockInTray();
                 }
             } else {
                 settleTimer = 0f;
+            }
+
+            // Если снова дошла до пола и не в лотке —
+            // возвращаем в обычное состояние.
+            boolean backOnFloor =
+                body.getPosition().y < GameTuning.TOY_BACK_ON_FLOOR_Y &&
+                    Math.abs(body.getLinearVelocity().y) < GameTuning.TOY_BACK_ON_FLOOR_MAX_VY &&
+                    !inside;
+
+            if (backOnFloor) {
+                releasedToPhysicsTray = false;
+                body.setGravityScale(1f);
+
+                for (Fixture fixture : body.getFixtureList()) {
+                    fixture.setRestitution(GameTuning.TOY_RESTITUTION);
+                    fixture.setFriction(GameTuning.TOY_FRICTION);
+                }
             }
 
             return;
@@ -146,11 +157,7 @@ public class Toy {
         body.setAngularVelocity(impulseX * 0.7f);
     }
 
-    // -------------------------
-    // V2.3c:
-    // earlyRelease = разжатие раньше времени по пути к лотку
-    // Тогда игрушка летит плавнее и дольше.
-    // -------------------------
+    // earlyRelease = ранний сброс по пути к лотку
     public void releaseToPhysicalTray(WinZone winZone, boolean missTray, boolean earlyRelease) {
         captured = false;
         releasedToPhysicsTray = true;
@@ -159,7 +166,9 @@ public class Toy {
         settleTimer = 0f;
 
         body.setType(BodyDef.BodyType.DynamicBody);
-        body.setGravityScale(1f);
+
+        // Пониженная локальная "гравитация" для красивой дуги
+        body.setGravityScale(GameTuning.TOY_TRAY_GRAVITY_SCALE);
 
         for (Fixture fixture : body.getFixtureList()) {
             fixture.setRestitution(trayRestitution);
@@ -170,26 +179,23 @@ public class Toy {
         float vy;
 
         if (missTray) {
-            // Явный промах
             vx = 2.8f + (float)Math.random() * 1.0f;
-            vy = -1.15f - (float)Math.random() * 0.65f;
+            vy = -0.75f - (float)Math.random() * 0.45f;
         } else {
             float dx = winZone.getCenterX() - body.getPosition().x;
 
             float sideNoise = ((float)Math.random() - 0.5f) * 1.65f;
-            vx = dx * 1.15f + sideNoise + ((float)Math.random() - 0.5f) * trayScatterX * 4.5f;
-            vy = -1.20f - (float)Math.random() * 0.70f;
+            vx = dx * 1.05f + sideNoise + ((float)Math.random() - 0.5f) * trayScatterX * 4.0f;
+            vy = -0.78f - (float)Math.random() * 0.42f;
 
             if (earlyRelease) {
-                // Ранний сброс делаем более "дуговым":
-                // меньше вниз, больше времени на полёт и столкновение
-                vx += 0.45f + ((float)Math.random() - 0.5f) * 0.70f;
-                vy -= 0.10f;
+                vx += 0.38f + ((float)Math.random() - 0.5f) * 0.55f;
+                vy -= 0.05f;
             }
         }
 
         body.setLinearVelocity(vx, vy);
-        body.setAngularVelocity(((float)Math.random() - 0.5f) * 7.5f);
+        body.setAngularVelocity(((float)Math.random() - 0.5f) * 5.5f);
     }
 
     public void render(SpriteBatch batch) {
@@ -199,37 +205,15 @@ public class Toy {
             width, height);
     }
 
-    public float getX() {
-        return body.getPosition().x;
-    }
+    public float getX() { return body.getPosition().x; }
+    public float getY() { return body.getPosition().y; }
+    public Body getBody() { return body; }
 
-    public float getY() {
-        return body.getPosition().y;
-    }
-
-    public Body getBody() {
-        return body;
-    }
-
-    public boolean isWon() {
-        return won;
-    }
-
-    public boolean isCaptured() {
-        return captured;
-    }
-
-    public boolean isInTray() {
-        return inTray;
-    }
-
-    public boolean isReleasedToPhysicsTray() {
-        return releasedToPhysicsTray;
-    }
-
-    public float getCatchDifficulty() {
-        return catchDifficulty;
-    }
+    public boolean isWon() { return won; }
+    public boolean isCaptured() { return captured; }
+    public boolean isInTray() { return inTray; }
+    public boolean isReleasedToPhysicsTray() { return releasedToPhysicsTray; }
+    public float getCatchDifficulty() { return catchDifficulty; }
 
     public void setCaptured(boolean captured) {
         this.captured = captured;
