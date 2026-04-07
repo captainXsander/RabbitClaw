@@ -27,8 +27,8 @@ public class Claw {
     private static final float TRAY_DROP_X = 13.2f;
     private static final float DOWN_LIMIT_Y = 2.2f;
 
-    private static final float MOVE_SPEED_X = 4.2f;
-    private static final float MOVE_SPEED_Y = 5.2f;
+    private static final float MOVE_SPEED_X = 4.8f;
+    private static final float MOVE_SPEED_Y = 5.8f;
 
     private static final float HEAD_W = 0.95f;
     private static final float HEAD_H = 0.28f;
@@ -53,14 +53,14 @@ public class Claw {
 
     private Toy capturedToy;
 
-    // Усиленное визуальное раскачивание
+    // качание
     private float swing = 0f;
     private float swingVelocity = 0f;
 
     public Claw() {
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
         fingerTexture = createRectTexture(18, 90, Color.WHITE);
-        cableTexture = createRectTexture(6, 220, Color.LIGHT_GRAY);
+        cableTexture = createRectTexture(6, 240, Color.LIGHT_GRAY);
     }
 
     public void create() {
@@ -75,9 +75,7 @@ public class Claw {
             if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
                 state = State.MOVE_DOWN;
                 stateTimer = 0f;
-
-                // старт вниз тоже раскачивает
-                swingVelocity += 0.9f;
+                swingVelocity += 1.7f;
             }
         }
 
@@ -111,7 +109,7 @@ public class Claw {
 
         float dx = x - oldX;
         if (Math.abs(dx) > 0.0001f) {
-            swingVelocity += dx * 20f;
+            swingVelocity += dx * 34f;
         }
     }
 
@@ -121,13 +119,14 @@ public class Claw {
             y = DOWN_LIMIT_Y;
             state = State.CLOSE;
             stateTimer = 0f;
+            swingVelocity -= 0.9f;
         }
     }
 
     private void updateClose(float delta, List<Toy> toys) {
         stateTimer += delta;
 
-        float progress = clamp(stateTimer / 0.22f, 0f, 1f);
+        float progress = clamp(stateTimer / 0.18f, 0f, 1f);
         fingerGap = lerp(FINGER_GAP_OPEN, FINGER_GAP_CLOSED, progress);
 
         if (capturedToy == null) {
@@ -137,15 +136,15 @@ public class Claw {
                 if (isToyCatchable(toy)) {
                     capturedToy = toy;
                     capturedToy.setCaptured(true);
+                    swingVelocity += 0.8f;
                     break;
                 }
             }
         }
 
-        if (stateTimer >= 0.22f) {
+        if (stateTimer >= 0.18f) {
             state = State.MOVE_UP;
             stateTimer = 0f;
-            swingVelocity -= 0.7f;
         }
     }
 
@@ -167,6 +166,7 @@ public class Claw {
         if (y >= HOME_Y) {
             y = HOME_Y;
             state = State.MOVE_TO_TRAY;
+            swingVelocity += 0.5f;
         }
     }
 
@@ -184,13 +184,13 @@ public class Claw {
         x += Math.signum(dx) * MOVE_SPEED_X * delta;
 
         float moved = x - oldX;
-        swingVelocity += moved * 20f;
+        swingVelocity += moved * 32f;
     }
 
     private void updateOpen(float delta, List<Toy> trayToys, WinZone winZone) {
         stateTimer += delta;
 
-        float progress = clamp(stateTimer / 0.24f, 0f, 1f);
+        float progress = clamp(stateTimer / 0.18f, 0f, 1f);
         fingerGap = lerp(FINGER_GAP_CLOSED, FINGER_GAP_OPEN, progress);
 
         if (capturedToy != null) {
@@ -198,11 +198,10 @@ public class Claw {
             toy.releaseIntoTray(winZone.getDropX(), winZone.getDropY(), trayToys.size());
             trayToys.add(toy);
             capturedToy = null;
-
-            swingVelocity -= 0.5f;
+            swingVelocity -= 1.0f;
         }
 
-        if (stateTimer >= 0.24f) {
+        if (stateTimer >= 0.18f) {
             state = State.RETURN_HOME;
             stateTimer = 0f;
         }
@@ -212,9 +211,11 @@ public class Claw {
         float oldX = x;
         float dx = HOME_X - x;
 
-        if (Math.abs(dx) < 0.04f) {
+        if (Math.abs(dx) < 0.05f) {
             x = HOME_X;
             fingerGap = FINGER_GAP_OPEN;
+            swing *= 0.55f;
+            swingVelocity *= 0.35f;
             state = State.IDLE;
             return;
         }
@@ -222,16 +223,16 @@ public class Claw {
         x += Math.signum(dx) * MOVE_SPEED_X * delta;
 
         float moved = x - oldX;
-        swingVelocity += moved * 18f;
+        swingVelocity += moved * 24f;
     }
 
     private void updateSwing(float delta) {
-        // Сильнее амплитуда, медленнее затухание
-        swingVelocity += (-swing * 9f) * delta;
-        swingVelocity *= 0.987f;
+        // более упругая и быстрая система
+        swingVelocity += (-swing * 18f) * delta;
+        swingVelocity *= 0.94f;
         swing += swingVelocity * delta;
 
-        swing = clamp(swing, -0.42f, 0.42f);
+        swing = clamp(swing, -0.55f, 0.55f);
     }
 
     public void render(SpriteBatch batch) {
@@ -267,8 +268,8 @@ public class Claw {
         float rightX = x + fingerGap / 2f - FINGER_W / 2f;
 
         float openAmount = (fingerGap - FINGER_GAP_CLOSED) / (FINGER_GAP_OPEN - FINGER_GAP_CLOSED);
-        float leftAngle = -20f + openAmount * 24f + swingDeg * 0.55f;
-        float rightAngle = 20f - openAmount * 24f + swingDeg * 0.55f;
+        float leftAngle = -22f + openAmount * 28f + swingDeg * 0.45f;
+        float rightAngle = 22f - openAmount * 28f + swingDeg * 0.45f;
 
         batch.draw(
             fingerTexture,

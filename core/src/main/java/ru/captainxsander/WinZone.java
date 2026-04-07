@@ -12,19 +12,16 @@ public class WinZone {
 
     private Texture bottomTexture;
     private Texture wallTexture;
-    private Texture backWallTexture;
 
     private final float x = 13.15f;
     private final float y = 0.45f;
 
-    // Было меньше — делаем заметно больше и выше
-    private final float width = 2.8f;
-    private final float height = 1.95f;
+    private final float width = 2.9f;
+    private final float height = 2.25f;
 
     public void create(World world) {
-        bottomTexture = createRectTexture(280, 20, Color.LIME);
-        wallTexture = createRectTexture(20, 220, Color.LIME);
-        backWallTexture = createRectTexture(280, 20, Color.LIME);
+        bottomTexture = createRectTexture(320, 20, Color.LIME);
+        wallTexture = createRectTexture(20, 260, Color.LIME);
 
         BodyDef def = new BodyDef();
         def.type = BodyDef.BodyType.StaticBody;
@@ -52,9 +49,6 @@ public class WinZone {
 
         // правая стенка
         batch.draw(wallTexture, x + width * 0.5f - 0.08f, y, 0.08f, height);
-
-        // задняя верхняя кромка вместо диагональной палки
-        batch.draw(backWallTexture, x - width * 0.5f, y + height - 0.08f, width, 0.08f);
     }
 
     public float getDropX() {
@@ -62,7 +56,7 @@ public class WinZone {
     }
 
     public float getDropY() {
-        return y + 0.28f;
+        return y + 0.22f;
     }
 
     public Body getBody() {
@@ -81,6 +75,5 @@ public class WinZone {
     public void dispose() {
         bottomTexture.dispose();
         wallTexture.dispose();
-        backWallTexture.dispose();
     }
 }

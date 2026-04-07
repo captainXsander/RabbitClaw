@@ -18,6 +18,10 @@ public class Toy {
     private final float width = 0.90f;
     private final float height = 0.90f;
 
+    private float bounceTime = 0f;
+    private float baseTrayX = 0f;
+    private float baseTrayY = 0f;
+
     public Toy(World world, float x, float y, String texturePath) {
         texture = new Texture(Gdx.files.internal(texturePath));
 
@@ -44,7 +48,24 @@ public class Toy {
     }
 
     public void update(float delta) {
-        if (captured || inTray) {
+        if (captured) {
+            body.setLinearVelocity(0, 0);
+            body.setAngularVelocity(0);
+            return;
+        }
+
+        if (inTray) {
+            if (bounceTime > 0f) {
+                bounceTime -= delta;
+
+                float t = Math.max(0f, bounceTime);
+                float offset = (float)Math.sin((0.22f - t) * 28f) * 0.10f * (t / 0.22f);
+
+                body.setTransform(baseTrayX, baseTrayY + offset, 0f);
+            } else {
+                body.setTransform(baseTrayX, baseTrayY, 0f);
+            }
+
             body.setLinearVelocity(0, 0);
             body.setAngularVelocity(0);
             return;
@@ -75,20 +96,27 @@ public class Toy {
         float offsetY;
 
         if (trayIndex == 0) {
-            offsetX = -0.35f;
+            offsetX = -0.45f;
             offsetY = 0.18f;
         } else if (trayIndex == 1) {
-            offsetX = 0.15f;
+            offsetX = 0.05f;
             offsetY = 0.18f;
         } else if (trayIndex == 2) {
-            offsetX = -0.10f;
-            offsetY = 0.55f;
+            offsetX = 0.52f;
+            offsetY = 0.18f;
+        } else if (trayIndex == 3) {
+            offsetX = -0.20f;
+            offsetY = 0.62f;
         } else {
             offsetX = 0.28f * (trayIndex % 3);
-            offsetY = 0.18f + 0.22f * (trayIndex / 3);
+            offsetY = 0.18f + 0.24f * (trayIndex / 3);
         }
 
-        body.setTransform(trayX + offsetX, trayY + offsetY, 0f);
+        baseTrayX = trayX + offsetX;
+        baseTrayY = trayY + offsetY;
+        bounceTime = 0.22f;
+
+        body.setTransform(baseTrayX, baseTrayY, 0f);
         body.setLinearVelocity(0, 0);
         body.setAngularVelocity(0);
         body.setGravityScale(0f);
