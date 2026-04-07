@@ -8,7 +8,10 @@ import com.badlogic.gdx.physics.box2d.*;
 
 public class WinZone {
 
-    private Body body;
+    private Body sensorBody;
+    private Body floorBody;
+    private Body leftWallBody;
+    private Body rightWallBody;
 
     private Texture bottomTexture;
     private Texture wallTexture;
@@ -23,21 +26,79 @@ public class WinZone {
         bottomTexture = createRectTexture(320, 20, Color.LIME);
         wallTexture = createRectTexture(20, 260, Color.LIME);
 
+        createSensor(world);
+        createPhysicalWalls(world);
+    }
+
+    private void createSensor(World world) {
         BodyDef def = new BodyDef();
         def.type = BodyDef.BodyType.StaticBody;
         def.position.set(x, y + height * 0.5f);
 
-        body = world.createBody(def);
+        sensorBody = world.createBody(def);
 
         PolygonShape shape = new PolygonShape();
-        shape.setAsBox(width * 0.5f, height * 0.5f);
+        shape.setAsBox(width * 0.5f - 0.10f, height * 0.5f - 0.10f);
 
         FixtureDef fix = new FixtureDef();
         fix.shape = shape;
         fix.isSensor = true;
-        body.createFixture(fix);
+        sensorBody.createFixture(fix);
 
         shape.dispose();
+    }
+
+    private void createPhysicalWalls(World world) {
+        // Дно
+        BodyDef floorDef = new BodyDef();
+        floorDef.type = BodyDef.BodyType.StaticBody;
+        floorDef.position.set(x, y + 0.04f);
+
+        floorBody = world.createBody(floorDef);
+
+        PolygonShape floorShape = new PolygonShape();
+        floorShape.setAsBox(width * 0.5f, 0.04f);
+
+        FixtureDef floorFix = new FixtureDef();
+        floorFix.shape = floorShape;
+        floorFix.friction = 0.9f;
+        floorFix.restitution = 0.18f;
+        floorBody.createFixture(floorFix);
+        floorShape.dispose();
+
+        // Левая стенка
+        BodyDef leftDef = new BodyDef();
+        leftDef.type = BodyDef.BodyType.StaticBody;
+        leftDef.position.set(x - width * 0.5f + 0.04f, y + height * 0.5f);
+
+        leftWallBody = world.createBody(leftDef);
+
+        PolygonShape leftShape = new PolygonShape();
+        leftShape.setAsBox(0.04f, height * 0.5f);
+
+        FixtureDef leftFix = new FixtureDef();
+        leftFix.shape = leftShape;
+        leftFix.friction = 0.7f;
+        leftFix.restitution = 0.22f;
+        leftWallBody.createFixture(leftFix);
+        leftShape.dispose();
+
+        // Правая стенка
+        BodyDef rightDef = new BodyDef();
+        rightDef.type = BodyDef.BodyType.StaticBody;
+        rightDef.position.set(x + width * 0.5f - 0.04f, y + height * 0.5f);
+
+        rightWallBody = world.createBody(rightDef);
+
+        PolygonShape rightShape = new PolygonShape();
+        rightShape.setAsBox(0.04f, height * 0.5f);
+
+        FixtureDef rightFix = new FixtureDef();
+        rightFix.shape = rightShape;
+        rightFix.friction = 0.7f;
+        rightFix.restitution = 0.22f;
+        rightWallBody.createFixture(rightFix);
+        rightShape.dispose();
     }
 
     public void render(SpriteBatch batch) {
@@ -56,11 +117,35 @@ public class WinZone {
     }
 
     public float getDropY() {
-        return y + 0.22f;
+        return y + height + 0.15f;
     }
 
-    public Body getBody() {
-        return body;
+    public float getCenterX() {
+        return x;
+    }
+
+    public float getCenterY() {
+        return y + height * 0.5f;
+    }
+
+    public float getInnerLeft() {
+        return x - width * 0.5f + 0.10f;
+    }
+
+    public float getInnerRight() {
+        return x + width * 0.5f - 0.10f;
+    }
+
+    public float getInnerBottom() {
+        return y + 0.08f;
+    }
+
+    public float getInnerTop() {
+        return y + height - 0.08f;
+    }
+
+    public Body getSensorBody() {
+        return sensorBody;
     }
 
     private Texture createRectTexture(int width, int height, Color color) {

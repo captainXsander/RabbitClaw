@@ -53,11 +53,9 @@ public class Claw {
 
     private Toy capturedToy;
 
-    // качание
     private float swing = 0f;
     private float swingVelocity = 0f;
 
-    // шанс уронить по пути
     private boolean slipCheckedThisCycle = false;
 
     public Claw() {
@@ -135,7 +133,7 @@ public class Claw {
 
         if (capturedToy == null) {
             for (Toy toy : toys) {
-                if (toy.isWon() || toy.isCaptured() || toy.isInTray()) continue;
+                if (toy.isWon() || toy.isCaptured() || toy.isInTray() || toy.isReleasedToPhysicsTray()) continue;
 
                 if (isToyCatchable(toy) && passesCatchChance(toy)) {
                     capturedToy = toy;
@@ -153,7 +151,6 @@ public class Claw {
     }
 
     private boolean passesCatchChance(Toy toy) {
-        // меньше difficulty = легче поймать
         float chance = 1f - toy.getCatchDifficulty();
         return Math.random() < chance;
     }
@@ -174,7 +171,6 @@ public class Claw {
     private void updateMoveUp(float delta) {
         y += MOVE_SPEED_Y * delta;
 
-        // шанс соскальзывания во время подъема
         if (capturedToy != null && !slipCheckedThisCycle && y > 4.2f) {
             slipCheckedThisCycle = true;
 
@@ -220,12 +216,13 @@ public class Claw {
         if (capturedToy != null) {
             Toy toy = capturedToy;
 
-            // шанс промаха мимо лотка
-            boolean missTray = Math.random() < (0.08 + toy.getCatchDifficulty() * 0.18);
+            boolean missTray = Math.random() < (0.10 + toy.getCatchDifficulty() * 0.30);
 
-            toy.startDropToTray(winZone.getDropX(), winZone.getDropY(), trayToys.size(), missTray);
+            toy.releaseToPhysicalTray(winZone, missTray);
 
-            if (!missTray) {
+            // В список "выигранных" кладём заранее только если не явный промах.
+            // Но реально выигранной игрушка станет только когда устоится в лотке.
+            if (!trayToys.contains(toy)) {
                 trayToys.add(toy);
             }
 

@@ -55,9 +55,9 @@ public class GameScreen implements Screen {
     }
 
     private void createToys() {
-        toys.add(new Toy(world, 5.1f, 1.12f, "pig.png", 0.18f, 0.08f, 0.10f));   // легче поймать
-        toys.add(new Toy(world, 6.05f, 1.12f, "cow.png", 0.32f, 0.12f, 0.16f));  // средняя
-        toys.add(new Toy(world, 7.2f, 1.12f, "heart.png", 0.42f, 0.16f, 0.22f)); // сложнее
+        toys.add(new Toy(world, 5.1f, 1.12f, "pig.png", 0.18f, 0.10f, 0.18f));
+        toys.add(new Toy(world, 6.05f, 1.12f, "cow.png", 0.32f, 0.16f, 0.24f));
+        toys.add(new Toy(world, 7.2f, 1.12f, "heart.png", 0.42f, 0.22f, 0.30f));
     }
 
     @Override
@@ -68,13 +68,14 @@ public class GameScreen implements Screen {
 
     private void update(float delta) {
         claw.update(delta, toys, trayToys, winZone);
+
         world.step(1 / 60f, 6, 2);
 
         for (Toy toy : toys) {
-            toy.update(delta);
+            toy.update(delta, winZone);
         }
         for (Toy toy : trayToys) {
-            toy.update(delta);
+            toy.update(delta, winZone);
         }
     }
 
