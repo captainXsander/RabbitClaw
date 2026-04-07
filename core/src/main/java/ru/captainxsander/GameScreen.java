@@ -55,9 +55,9 @@ public class GameScreen implements Screen {
     }
 
     private void createToys() {
-        toys.add(new Toy(world, 5.1f, 1.12f, "pig.png"));
-        toys.add(new Toy(world, 6.05f, 1.12f, "cow.png"));
-        toys.add(new Toy(world, 7.2f, 1.12f, "heart.png"));
+        toys.add(new Toy(world, 5.1f, 1.12f, "pig.png", 0.18f, 0.08f, 0.10f));   // легче поймать
+        toys.add(new Toy(world, 6.05f, 1.12f, "cow.png", 0.32f, 0.12f, 0.16f));  // средняя
+        toys.add(new Toy(world, 7.2f, 1.12f, "heart.png", 0.42f, 0.16f, 0.22f)); // сложнее
     }
 
     @Override

@@ -57,6 +57,9 @@ public class Claw {
     private float swing = 0f;
     private float swingVelocity = 0f;
 
+    // шанс уронить по пути
+    private boolean slipCheckedThisCycle = false;
+
     public Claw() {
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
         fingerTexture = createRectTexture(18, 90, Color.WHITE);
@@ -75,6 +78,7 @@ public class Claw {
             if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
                 state = State.MOVE_DOWN;
                 stateTimer = 0f;
+                slipCheckedThisCycle = false;
                 swingVelocity += 1.7f;
             }
         }
@@ -131,9 +135,9 @@ public class Claw {
 
         if (capturedToy == null) {
             for (Toy toy : toys) {
-                if (toy.isWon() || toy.isCaptured()) continue;
+                if (toy.isWon() || toy.isCaptured() || toy.isInTray()) continue;
 
-                if (isToyCatchable(toy)) {
+                if (isToyCatchable(toy) && passesCatchChance(toy)) {
                     capturedToy = toy;
                     capturedToy.setCaptured(true);
                     swingVelocity += 0.8f;
@@ -146,6 +150,12 @@ public class Claw {
             state = State.MOVE_UP;
             stateTimer = 0f;
         }
+    }
+
+    private boolean passesCatchChance(Toy toy) {
+        // меньше difficulty = легче поймать
+        float chance = 1f - toy.getCatchDifficulty();
+        return Math.random() < chance;
     }
 
     private boolean isToyCatchable(Toy toy) {
@@ -163,6 +173,20 @@ public class Claw {
 
     private void updateMoveUp(float delta) {
         y += MOVE_SPEED_Y * delta;
+
+        // шанс соскальзывания во время подъема
+        if (capturedToy != null && !slipCheckedThisCycle && y > 4.2f) {
+            slipCheckedThisCycle = true;
+
+            double slipChance = 0.22 + capturedToy.getCatchDifficulty() * 0.45;
+            if (Math.random() < slipChance) {
+                Toy toy = capturedToy;
+                capturedToy = null;
+                toy.releaseFailedGrab((float)(Math.random() * 1.2 - 0.6), -0.4f);
+                swingVelocity -= 0.9f;
+            }
+        }
+
         if (y >= HOME_Y) {
             y = HOME_Y;
             state = State.MOVE_TO_TRAY;
@@ -195,8 +219,16 @@ public class Claw {
 
         if (capturedToy != null) {
             Toy toy = capturedToy;
-            toy.releaseIntoTray(winZone.getDropX(), winZone.getDropY(), trayToys.size());
-            trayToys.add(toy);
+
+            // шанс промаха мимо лотка
+            boolean missTray = Math.random() < (0.08 + toy.getCatchDifficulty() * 0.18);
+
+            toy.startDropToTray(winZone.getDropX(), winZone.getDropY(), trayToys.size(), missTray);
+
+            if (!missTray) {
+                trayToys.add(toy);
+            }
+
             capturedToy = null;
             swingVelocity -= 1.0f;
         }
@@ -227,7 +259,6 @@ public class Claw {
     }
 
     private void updateSwing(float delta) {
-        // более упругая и быстрая система
         swingVelocity += (-swing * 18f) * delta;
         swingVelocity *= 0.94f;
         swing += swingVelocity * delta;
