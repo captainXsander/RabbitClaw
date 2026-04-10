@@ -45,11 +45,12 @@ public class Claw {
 
     private Toy capturedToy;
 
-    // Визуальная раскачка только для троса/головы клешни
     private float swing = 0f;
     private float swingVelocity = 0f;
 
-    // Мягкая инерция пальцев, но без самопроизвольной физики
+    // 🔥 КЛЮЧ: скорость клешни по X
+    private float velocityX = 0f;
+
     private float fingerAngleLeft = -20f;
     private float fingerAngleRight = 20f;
     private float fingerAngleVelLeft = 0f;
@@ -64,8 +65,7 @@ public class Claw {
         cableTexture = createRectTexture(6, 240, Color.LIGHT_GRAY);
     }
 
-    public void create() {
-    }
+    public void create() {}
 
     public void update(float delta, List<Toy> toys, List<Toy> trayToys, WinZone winZone) {
         updateSwing(delta);
@@ -109,9 +109,13 @@ public class Claw {
         if (Math.abs(dx) > 0.0001f) {
             swingVelocity += dx * GameTuning.SWING_INPUT_MULTIPLIER;
         }
+
+        velocityX = 0f; // 🔥 в idle нет инерции
     }
 
     private void updateMoveDown(float delta) {
+        velocityX = 0f; // 🔥 вертикальное движение
+
         y -= MOVE_SPEED_Y * delta;
         if (y <= DOWN_LIMIT_Y) {
             y = DOWN_LIMIT_Y;
@@ -122,6 +126,8 @@ public class Claw {
     }
 
     private void updateClose(float delta, List<Toy> toys, List<Toy> trayToys) {
+        velocityX = 0f;
+
         stateTimer += delta;
         float progress = clamp(stateTimer / GameTuning.CLAW_CLOSE_TIME, 0f, 1f);
         fingerGap = lerp(FINGER_GAP_OPEN, FINGER_GAP_CLOSED, progress);
@@ -144,33 +150,9 @@ public class Claw {
         }
     }
 
-    private Toy findCatchableToy(List<Toy> source) {
-        for (Toy toy : source) {
-            if (toy.isWon() || toy.isCaptured() || toy.isInTray()) continue;
-            if (isToyCatchable(toy) && passesCatchChance(toy)) return toy;
-        }
-        return null;
-    }
-
-    private boolean passesCatchChance(Toy toy) {
-        float chance = 1f - toy.getCatchDifficulty();
-        return Math.random() < chance;
-    }
-
-    private boolean isToyCatchable(Toy toy) {
-        float toyX = toy.getX();
-        float toyY = toy.getY();
-
-        float leftEdge = x - fingerGap * 0.5f;
-        float rightEdge = x + fingerGap * 0.5f;
-
-        boolean insideX = toyX > leftEdge && toyX < rightEdge;
-        boolean closeY = Math.abs(toyY - (y - 0.9f)) < 0.65f;
-
-        return insideX && closeY;
-    }
-
     private void updateMoveUp(float delta) {
+        velocityX = 0f; // 🔥 нет горизонтальной скорости
+
         y += MOVE_SPEED_Y * delta;
 
         if (capturedToy != null && !slipCheckedThisCycle && y > GameTuning.SLIP_CHECK_Y) {
@@ -199,6 +181,26 @@ public class Claw {
         float oldX = x;
         float dx = TRAY_DROP_X - x;
 
+        if (Math.abs(dx) < 0.04f) {
+
+            float oldX2 = x;
+            x = TRAY_DROP_X;
+
+            // 🔥 вычисляем РЕАЛЬНУЮ финальную скорость
+            velocityX = (x - oldX2) / delta;
+
+            state = State.OPEN;
+            stateTimer = 0f;
+            return;
+        }
+
+        x += Math.signum(dx) * MOVE_SPEED_X * delta;
+
+        float moved = x - oldX;
+        velocityX = moved / delta; // 🔥 реальная скорость
+
+        swingVelocity += moved * 12f;
+
         if (capturedToy != null && !earlyReleaseCheckedThisCycle && x > GameTuning.EARLY_RELEASE_CHECK_X) {
             earlyReleaseCheckedThisCycle = true;
 
@@ -209,11 +211,8 @@ public class Claw {
                 Toy toy = capturedToy;
                 capturedToy = null;
 
-                // =========================
-                // 🔥 НОВАЯ ЛОГИКА
-                // =========================
                 float toyX = toy.getX();
-                float trayLeft = winZone.getInnerLeft(); // 👈 лучше чем внешний край
+                float trayLeft = winZone.getInnerLeft();
 
                 boolean canMiss = toyX < trayLeft;
 
@@ -222,7 +221,7 @@ public class Claw {
                         + toy.getCatchDifficulty() * GameTuning.TRAY_MISS_DIFFICULTY_MULT
                 );
 
-                toy.releaseToPhysicalTray(winZone, missTray, true);
+                toy.releaseToPhysicalTray(winZone, missTray, true, velocityX);
 
                 if (!trayToys.contains(toy)) trayToys.add(toy);
 
@@ -230,18 +229,6 @@ public class Claw {
                 swingVelocity -= 0.28f;
             }
         }
-
-        if (Math.abs(dx) < 0.04f) {
-            x = TRAY_DROP_X;
-            state = State.OPEN;
-            stateTimer = 0f;
-            return;
-        }
-
-        x += Math.signum(dx) * MOVE_SPEED_X * delta;
-
-        float moved = x - oldX;
-        swingVelocity += moved * 12f;
     }
 
     private void updateOpen(float delta, List<Toy> trayToys, WinZone winZone) {
@@ -252,9 +239,6 @@ public class Claw {
         if (capturedToy != null) {
             Toy toy = capturedToy;
 
-            // =========================
-            // 🔥 НОВАЯ ЛОГИКА
-            // =========================
             float toyX = toy.getX();
             float trayLeft = winZone.getInnerLeft();
 
@@ -265,7 +249,7 @@ public class Claw {
                     + toy.getCatchDifficulty() * GameTuning.TRAY_MISS_DIFFICULTY_MULT
             );
 
-            toy.releaseToPhysicalTray(winZone, missTray, false);
+            toy.releaseToPhysicalTray(winZone, missTray, false, velocityX);
 
             if (!trayToys.contains(toy)) trayToys.add(toy);
 
@@ -280,6 +264,8 @@ public class Claw {
     }
 
     private void updateReturnHome(float delta) {
+        velocityX = 0f;
+
         float oldX = x;
         float dx = HOME_X - x;
 
@@ -311,6 +297,32 @@ public class Claw {
         }
 
         swing = clamp(swing, -GameTuning.SWING_MAX, GameTuning.SWING_MAX);
+    }
+
+    private Toy findCatchableToy(List<Toy> source) {
+        for (Toy toy : source) {
+            if (toy.isWon() || toy.isCaptured() || toy.isInTray()) continue;
+            if (isToyCatchable(toy) && passesCatchChance(toy)) return toy;
+        }
+        return null;
+    }
+
+    private boolean passesCatchChance(Toy toy) {
+        float chance = 1f - toy.getCatchDifficulty();
+        return Math.random() < chance;
+    }
+
+    private boolean isToyCatchable(Toy toy) {
+        float toyX = toy.getX();
+        float toyY = toy.getY();
+
+        float leftEdge = x - fingerGap * 0.5f;
+        float rightEdge = x + fingerGap * 0.5f;
+
+        boolean insideX = toyX > leftEdge && toyX < rightEdge;
+        boolean closeY = Math.abs(toyY - (y - 0.9f)) < 0.65f;
+
+        return insideX && closeY;
     }
 
     public void render(SpriteBatch batch) {

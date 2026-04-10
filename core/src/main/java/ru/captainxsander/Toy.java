@@ -3,6 +3,7 @@ package ru.captainxsander;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 
 public class Toy {
@@ -84,10 +85,8 @@ public class Toy {
             if (slidePhase > 0) {
                 slidePhase -= delta;
 
-                body.setLinearVelocity(
-                    slideDir * 0.6f,
-                    -0.02f
-                );
+                // 🔥 вообще НЕ трогаем velocity
+                // только визуально “ждём соскальзывание”
 
                 return;
             }
@@ -185,7 +184,8 @@ public class Toy {
         body.setAngularVelocity(impulseX * 0.25f);
     }
 
-    public void releaseToPhysicalTray(WinZone winZone, boolean missTray, boolean earlyRelease) {
+    public void releaseToPhysicalTray(WinZone winZone, boolean missTray,
+                                      boolean earlyRelease, float clawVelocityX) {
 
         captured = false;
         releasedToPhysicsTray = true;
@@ -195,12 +195,14 @@ public class Toy {
 
         justReleased = true;
 
-        releaseDelay = 0.08f + (float)Math.random() * 0.12f;
-        slidePhase = 0.12f + (float)Math.random() * 0.1f;
+        releaseDelay = 0.08f + (float) Math.random() * 0.12f;
+        slidePhase = 0.12f + (float) Math.random() * 0.1f;
         slideDir = Math.random() < 0.5 ? -1f : 1f;
 
         body.setType(BodyDef.BodyType.DynamicBody);
-        body.setGravityScale(0.12f);
+
+        // 🔥 КЛЮЧ: почти нет гравитации сначала
+        body.setGravityScale(0.6f);
 
         for (Fixture fixture : body.getFixtureList()) {
             fixture.setRestitution(trayRestitution);
@@ -208,41 +210,47 @@ public class Toy {
         }
 
         float vx;
-        float vy = -0.05f;
-
-        float toyX = body.getPosition().x;
-        float trayLeft = winZone.getInnerLeft();
+        float vy;
 
         // =========================
-        // 🔥 НОВАЯ ЛОГИКА
+        // 🔥 РЕАЛИСТИЧНАЯ ФИЗИКА
         // =========================
-        if (missTray) {
 
-            // далеко от лотка → просто падает
-            if (toyX < trayLeft - 0.5f) {
-                vx = (float)(Math.random() * 0.4f - 0.2f);
-            }
-            // возле края → ударяется в стенку
-            else {
-                vx = 0.8f + (float)Math.random() * 0.4f;
-            }
+        // 1. базовая скорость (ослабленная)
+        vx = clawVelocityX * 0.6f;
 
-        } else {
+        // 2. небольшой шум
+        vx += (Math.random() - 0.5f) * 0.3f;
 
-            // гарантированное попадание
-            float dx = winZone.getCenterX() - toyX;
-            vx = dx * 0.35f;
+        // 3. early release чуть усиливает разброс
+        if (earlyRelease) {
+            vx += (Math.random() - 0.5f) * 0.3f;
+        }
+
+        // 4. "вес"
+        vx += slideDir * 0.25f;
+
+        vx *= 0.9f + (1f - catchDifficulty) * 0.2f;
+
+        vx = Math.max(-2.0f, Math.min(2.0f, vx));
+
+        vy = -0.6f - (float)Math.random() * 0.2f;
+
+        // 7. мягкий "магнит" к лотку
+        if (!missTray) {
+            float dx = winZone.getCenterX() - body.getPosition().x;
+            vx += dx * 0.10f;
         }
 
         body.setLinearVelocity(vx, vy);
 
         body.setAngularVelocity(
-            ((float)Math.random() - 0.5f) * 0.6f
+            ((float) Math.random() - 0.5f) * 1.2f
         );
     }
 
     public void render(SpriteBatch batch) {
-        float rotationDeg = (float)Math.toDegrees(body.getAngle());
+        float rotationDeg = (float) Math.toDegrees(body.getAngle());
 
         batch.draw(
             texture,
@@ -258,15 +266,37 @@ public class Toy {
         );
     }
 
-    public float getX() { return body.getPosition().x; }
-    public float getY() { return body.getPosition().y; }
-    public Body getBody() { return body; }
+    public float getX() {
+        return body.getPosition().x;
+    }
 
-    public boolean isWon() { return won; }
-    public boolean isCaptured() { return captured; }
-    public boolean isInTray() { return inTray; }
-    public boolean isReleasedToPhysicsTray() { return releasedToPhysicsTray; }
-    public float getCatchDifficulty() { return catchDifficulty; }
+    public float getY() {
+        return body.getPosition().y;
+    }
+
+    public Body getBody() {
+        return body;
+    }
+
+    public boolean isWon() {
+        return won;
+    }
+
+    public boolean isCaptured() {
+        return captured;
+    }
+
+    public boolean isInTray() {
+        return inTray;
+    }
+
+    public boolean isReleasedToPhysicsTray() {
+        return releasedToPhysicsTray;
+    }
+
+    public float getCatchDifficulty() {
+        return catchDifficulty;
+    }
 
     public void setCaptured(boolean captured) {
         this.captured = captured;
