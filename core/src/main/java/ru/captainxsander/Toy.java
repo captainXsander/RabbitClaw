@@ -195,16 +195,11 @@ public class Toy {
 
         justReleased = true;
 
-        // 🔥 случайная задержка — как в реальном автомате
         releaseDelay = 0.08f + (float)Math.random() * 0.12f;
-
-        // 🔥 фаза соскальзывания
         slidePhase = 0.12f + (float)Math.random() * 0.1f;
         slideDir = Math.random() < 0.5 ? -1f : 1f;
 
         body.setType(BodyDef.BodyType.DynamicBody);
-
-        // сначала почти нет гравитации
         body.setGravityScale(0.12f);
 
         for (Fixture fixture : body.getFixtureList()) {
@@ -213,18 +208,32 @@ public class Toy {
         }
 
         float vx;
-        float vy;
+        float vy = -0.05f;
 
+        float toyX = body.getPosition().x;
+        float trayLeft = winZone.getInnerLeft();
+
+        // =========================
+        // 🔥 НОВАЯ ЛОГИКА
+        // =========================
         if (missTray) {
-            vx = 0.6f + (float)Math.random() * 0.5f;
-            vy = -0.05f;
+
+            // далеко от лотка → просто падает
+            if (toyX < trayLeft - 0.5f) {
+                vx = (float)(Math.random() * 0.4f - 0.2f);
+            }
+            // возле края → ударяется в стенку
+            else {
+                vx = 0.8f + (float)Math.random() * 0.4f;
+            }
+
         } else {
-            float dx = winZone.getCenterX() - body.getPosition().x;
-            vx = dx * 0.25f;
-            vy = -0.05f;
+
+            // гарантированное попадание
+            float dx = winZone.getCenterX() - toyX;
+            vx = dx * 0.35f;
         }
 
-        // почти стоит на месте
         body.setLinearVelocity(vx, vy);
 
         body.setAngularVelocity(

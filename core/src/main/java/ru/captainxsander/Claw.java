@@ -209,7 +209,19 @@ public class Claw {
                 Toy toy = capturedToy;
                 capturedToy = null;
 
-                boolean missTray = Math.random() < 0.58;
+                // =========================
+                // 🔥 НОВАЯ ЛОГИКА
+                // =========================
+                float toyX = toy.getX();
+                float trayLeft = winZone.getInnerLeft(); // 👈 лучше чем внешний край
+
+                boolean canMiss = toyX < trayLeft;
+
+                boolean missTray = canMiss && Math.random() < (
+                    GameTuning.BASE_TRAY_MISS_CHANCE
+                        + toy.getCatchDifficulty() * GameTuning.TRAY_MISS_DIFFICULTY_MULT
+                );
+
                 toy.releaseToPhysicalTray(winZone, missTray, true);
 
                 if (!trayToys.contains(toy)) trayToys.add(toy);
@@ -240,7 +252,15 @@ public class Claw {
         if (capturedToy != null) {
             Toy toy = capturedToy;
 
-            boolean missTray = Math.random() < (
+            // =========================
+            // 🔥 НОВАЯ ЛОГИКА
+            // =========================
+            float toyX = toy.getX();
+            float trayLeft = winZone.getInnerLeft();
+
+            boolean canMiss = toyX < trayLeft;
+
+            boolean missTray = canMiss && Math.random() < (
                 GameTuning.BASE_TRAY_MISS_CHANCE
                     + toy.getCatchDifficulty() * GameTuning.TRAY_MISS_DIFFICULTY_MULT
             );
