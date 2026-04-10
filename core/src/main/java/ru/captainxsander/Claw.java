@@ -45,10 +45,19 @@ public class Claw {
 
     private Toy capturedToy;
 
+    // =========================
+// 🔥 ТРОС (маятник)
+// =========================
     private float swing = 0f;
     private float swingVelocity = 0f;
 
-    // 🔥 КЛЮЧ: скорость клешни по X
+    // =========================
+// 🔥 ГОЛОВА (запаздывает за тросом)
+// =========================
+    private float headSwing = 0f;
+    private float headSwingVelocity = 0f;
+
+    // 🔥 скорость клешни по X (передаётся игрушке)
     private float velocityX = 0f;
 
     private float fingerAngleLeft = -20f;
@@ -66,6 +75,7 @@ public class Claw {
     }
 
     public void update(float delta, List<Toy> toys, List<Toy> trayToys, WinZone winZone) {
+
         updateSwing(delta);
 
         if (state == State.IDLE) {
@@ -76,6 +86,8 @@ public class Claw {
                 stateTimer = 0f;
                 slipCheckedThisCycle = false;
                 earlyReleaseCheckedThisCycle = false;
+
+                // лёгкий "толчок" маятнику
                 swingVelocity += 0.85f;
             }
         }
@@ -87,11 +99,12 @@ public class Claw {
             case MOVE_TO_TRAY -> updateMoveToTray(delta, trayToys, winZone);
             case OPEN -> updateOpen(delta, trayToys, winZone);
             case RETURN_HOME -> updateReturnHome(delta);
-            case IDLE -> { }
+            case IDLE -> {}
         }
 
+        // "приклеиваем" игрушку к клешне
         if (capturedToy != null) {
-            capturedToy.attachTo(x, y - 1.10f, swing);
+            capturedToy.attachTo(x, y - 1.10f, headSwing);
         }
     }
 
@@ -104,15 +117,18 @@ public class Claw {
         x = clamp(x, 2.0f, 12.0f);
 
         float dx = x - oldX;
-        if (Math.abs(dx) > 0.0001f) {
-            swingVelocity += dx * GameTuning.SWING_INPUT_MULTIPLIER;
-        }
 
-        velocityX = 0f; // 🔥 в idle нет инерции
+        // 🔥 учитываем длину троса
+        float cableLen = Math.max(0.2f, 9f - y);
+        float lengthFactor = cableLen / 6f;
+
+        swingVelocity += dx * GameTuning.SWING_INPUT_MULTIPLIER * lengthFactor;
+
+        velocityX = 0f;
     }
 
     private void updateMoveDown(float delta) {
-        velocityX = 0f; // 🔥 вертикальное движение
+        velocityX = 0f;
 
         y -= MOVE_SPEED_Y * delta;
         if (y <= DOWN_LIMIT_Y) {
@@ -149,7 +165,7 @@ public class Claw {
     }
 
     private void updateMoveUp(float delta) {
-        velocityX = 0f; // 🔥 нет горизонтальной скорости
+        velocityX = 0f;
 
         y += MOVE_SPEED_Y * delta;
 
@@ -180,11 +196,9 @@ public class Claw {
         float dx = TRAY_DROP_X - x;
 
         if (Math.abs(dx) < 0.04f) {
-
             float oldX2 = x;
             x = TRAY_DROP_X;
 
-            // 🔥 вычисляем РЕАЛЬНУЮ финальную скорость
             velocityX = (x - oldX2) / delta;
 
             state = State.OPEN;
@@ -195,7 +209,7 @@ public class Claw {
         x += Math.signum(dx) * MOVE_SPEED_X * delta;
 
         float moved = x - oldX;
-        velocityX = moved / delta; // 🔥 реальная скорость
+        velocityX = moved / delta;
 
         swingVelocity += moved * 12f;
 
@@ -283,11 +297,29 @@ public class Claw {
         swingVelocity += moved * 8f;
     }
 
+    /**
+     * 🔥 ФИЗИКА МАЯТНИКА + ЗАПАЗДЫВАНИЕ ГОЛОВЫ
+     */
     private void updateSwing(float delta) {
+
+        // трос
         swingVelocity += (-swing * GameTuning.SWING_SPRING) * delta;
         swingVelocity *= GameTuning.SWING_DAMPING;
+
+        // ограничение скорости (чтобы не "взрывался")
+        swingVelocity = clamp(swingVelocity, -6f, 6f);
+
         swing += swingVelocity * delta;
 
+        // 🔥 голова догоняет трос
+        float diff = swing - headSwing;
+
+        headSwingVelocity += diff * 25f * delta;
+        headSwingVelocity *= 0.85f;
+
+        headSwing += headSwingVelocity * delta;
+
+        // остановка
         if (Math.abs(swing) < GameTuning.SWING_STOP_EPS
             && Math.abs(swingVelocity) < GameTuning.SWING_STOP_EPS) {
             swing = 0f;
@@ -325,27 +357,31 @@ public class Claw {
 
     public void render(SpriteBatch batch) {
         float cableLen = Math.max(0.2f, 9f - y);
-        float swingDeg = (float)Math.toDegrees(swing);
 
+        float cableDeg = (float)Math.toDegrees(swing);
+        float headDeg = (float)Math.toDegrees(headSwing);
+
+        // 🔥 трос
         batch.draw(
             cableTexture,
             x - 0.03f, y,
             0.03f, 0f,
             0.06f, cableLen,
             1f, 1f,
-            swingDeg,
+            cableDeg,
             0, 0,
             cableTexture.getWidth(), cableTexture.getHeight(),
             false, false
         );
 
+        // 🔥 голова (с запаздыванием)
         batch.draw(
             headTexture,
             x - HEAD_W / 2f, y - HEAD_H / 2f,
             HEAD_W / 2f, HEAD_H / 2f,
             HEAD_W, HEAD_H,
             1f, 1f,
-            swingDeg,
+            headDeg,
             0, 0,
             headTexture.getWidth(), headTexture.getHeight(),
             false, false
@@ -356,8 +392,9 @@ public class Claw {
         float rightX = x + fingerGap / 2f - FINGER_W / 2f;
 
         float openAmount = (fingerGap - FINGER_GAP_CLOSED) / (FINGER_GAP_OPEN - FINGER_GAP_CLOSED);
-        float targetLeft = -20f + openAmount * 24f + swingDeg * 0.20f;
-        float targetRight = 20f - openAmount * 24f + swingDeg * 0.20f;
+
+        float targetLeft = -20f + openAmount * 24f + headDeg * 0.20f;
+        float targetRight = 20f - openAmount * 24f + headDeg * 0.20f;
 
         fingerAngleVelLeft += (targetLeft - fingerAngleLeft) * 0.22f;
         fingerAngleVelRight += (targetRight - fingerAngleRight) * 0.22f;
@@ -421,4 +458,5 @@ public class Claw {
         fingerTexture.dispose();
         cableTexture.dispose();
     }
+
 }
