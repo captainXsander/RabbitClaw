@@ -3,7 +3,6 @@ package ru.captainxsander;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 
 public class Toy {
@@ -26,7 +25,6 @@ public class Toy {
     private final float height = GameTuning.TOY_DRAW_H;
 
     private final float catchDifficulty;
-    private final float trayScatterX;
     private final float trayRestitution;
 
     private float settleTimer = 0f;
@@ -40,7 +38,6 @@ public class Toy {
         texture = new Texture(Gdx.files.internal(texturePath));
 
         this.catchDifficulty = catchDifficulty;
-        this.trayScatterX = trayScatterX;
         this.trayRestitution = trayRestitution;
 
         BodyDef def = new BodyDef();
