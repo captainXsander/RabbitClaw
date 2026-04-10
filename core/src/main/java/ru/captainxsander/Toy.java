@@ -10,21 +10,37 @@ public class Toy {
     private final Body body;
     private final Texture texture;
 
+    private float releaseDelay = 0f;
+    private boolean justReleased = false;
+
+    private float slidePhase = 0f;
+    private float slideDir = 0f;
+
     private boolean captured = false;
     private boolean won = false;
     private boolean inTray = false;
     private boolean releasedToPhysicsTray = false;
 
+    private final float width = GameTuning.TOY_DRAW_W;
+    private final float height = GameTuning.TOY_DRAW_H;
+
+    private final float catchDifficulty;
+    private final float trayScatterX;
+    private final float trayRestitution;
+
     private float settleTimer = 0f;
 
-    // 🔥 новое
-    private float releaseDelay = 0f;
-    private float slideTimer = 0f;
-    private float slideDir = 0f;
-    private boolean justReleased = false;
-
     public Toy(World world, float x, float y, String texturePath) {
+        this(world, x, y, texturePath, 0.25f, 0.15f, 0.20f);
+    }
+
+    public Toy(World world, float x, float y, String texturePath,
+               float catchDifficulty, float trayScatterX, float trayRestitution) {
         texture = new Texture(Gdx.files.internal(texturePath));
+
+        this.catchDifficulty = catchDifficulty;
+        this.trayScatterX = trayScatterX;
+        this.trayRestitution = trayRestitution;
 
         BodyDef def = new BodyDef();
         def.type = BodyDef.BodyType.DynamicBody;
@@ -50,29 +66,36 @@ public class Toy {
     }
 
     public void update(float delta, WinZone winZone) {
-
-        // 🔥 плавный сброс
+        // 🔥 фаза "залипания" + соскальзывания
         if (justReleased) {
 
-            if (releaseDelay > 0) {
-                releaseDelay -= delta;
-                body.setLinearVelocity(body.getLinearVelocity().x * 0.9f, 0);
-                return;
-            }
+            releaseDelay -= delta;
 
-            if (slideTimer > 0) {
-                slideTimer -= delta;
+            if (releaseDelay > 0) {
+                // висит
                 body.setLinearVelocity(
-                    slideDir * GameTuning.SLIDE_SPEED,
-                    GameTuning.SLIDE_FALL_SPEED
+                    body.getLinearVelocity().x * 0.9f,
+                    0
                 );
                 return;
             }
 
+            // 🔥 соскальзывание с пальцев
+            if (slidePhase > 0) {
+                slidePhase -= delta;
+
+                body.setLinearVelocity(
+                    slideDir * 0.6f,
+                    -0.02f
+                );
+
+                return;
+            }
+
+            // 🔥 включаем нормальную физику
             justReleased = false;
             body.setGravityScale(GameTuning.TOY_TRAY_GRAVITY_SCALE);
         }
-
         if (captured) {
             body.setLinearVelocity(0, 0);
             body.setAngularVelocity(0);
@@ -86,9 +109,18 @@ public class Toy {
         }
 
         if (releasedToPhysicsTray) {
+            boolean inside =
+                body.getPosition().x > winZone.getInnerLeft() &&
+                    body.getPosition().x < winZone.getInnerRight() &&
+                    body.getPosition().y > winZone.getInnerBottom() &&
+                    body.getPosition().y < winZone.getInnerTop();
+
             float speed = body.getLinearVelocity().len();
 
-            if (speed < GameTuning.TOY_SETTLE_SPEED) {
+            if (inside
+                && speed < GameTuning.TOY_SETTLE_SPEED
+                && Math.abs(body.getAngularVelocity()) < GameTuning.TOY_SETTLE_ANGULAR_SPEED) {
+
                 settleTimer += delta;
                 if (settleTimer > GameTuning.TOY_SETTLE_TIME) {
                     lockInTray();
@@ -96,66 +128,136 @@ public class Toy {
             } else {
                 settleTimer = 0f;
             }
+
+            boolean backOnFloor =
+                body.getPosition().y < GameTuning.TOY_BACK_ON_FLOOR_Y &&
+                    Math.abs(body.getLinearVelocity().y) < GameTuning.TOY_BACK_ON_FLOOR_MAX_VY &&
+                    !inside;
+
+            if (backOnFloor) {
+                releasedToPhysicsTray = false;
+                body.setGravityScale(1f);
+
+                for (Fixture fixture : body.getFixtureList()) {
+                    fixture.setRestitution(GameTuning.TOY_RESTITUTION);
+                    fixture.setFriction(GameTuning.TOY_FRICTION);
+                }
+            }
+
+            return;
+        }
+
+        if (Math.abs(body.getLinearVelocity().x) < 0.02f) {
+            body.setLinearVelocity(0, body.getLinearVelocity().y);
+        }
+        if (Math.abs(body.getAngularVelocity()) < 0.02f) {
+            body.setAngularVelocity(0);
         }
     }
 
     private void lockInTray() {
+        releasedToPhysicsTray = false;
         inTray = true;
         won = true;
+
         body.setLinearVelocity(0, 0);
         body.setAngularVelocity(0);
         body.setGravityScale(0f);
         body.setType(BodyDef.BodyType.StaticBody);
     }
 
-    // ВАЖНО: сигнатура не менялась
     public void attachTo(float x, float y, float swing) {
         captured = true;
+        releasedToPhysicsTray = false;
+
         body.setType(BodyDef.BodyType.KinematicBody);
-        body.setTransform(x, y, 0);
+        body.setGravityScale(0f);
+        body.setTransform(x, y, swing * 0.12f);
+        body.setLinearVelocity(0, 0);
+        body.setAngularVelocity(0);
+    }
+
+    public void releaseFailedGrab(float impulseX, float impulseY) {
+        captured = false;
+        body.setType(BodyDef.BodyType.DynamicBody);
+        body.setGravityScale(1f);
+        body.setLinearVelocity(impulseX, impulseY);
+        body.setAngularVelocity(impulseX * 0.25f);
     }
 
     public void releaseToPhysicalTray(WinZone winZone, boolean missTray, boolean earlyRelease) {
 
         captured = false;
         releasedToPhysicsTray = true;
+        inTray = false;
+        won = false;
         settleTimer = 0f;
 
         justReleased = true;
 
-        releaseDelay = GameTuning.RELEASE_DELAY_MIN +
-            (float)Math.random() *
-                (GameTuning.RELEASE_DELAY_MAX - GameTuning.RELEASE_DELAY_MIN);
+        // 🔥 случайная задержка — как в реальном автомате
+        releaseDelay = 0.08f + (float)Math.random() * 0.12f;
 
-        slideTimer = GameTuning.SLIDE_TIME_MIN +
-            (float)Math.random() *
-                (GameTuning.SLIDE_TIME_MAX - GameTuning.SLIDE_TIME_MIN);
-
-        slideDir = Math.random() < 0.5f ? -1f : 1f;
+        // 🔥 фаза соскальзывания
+        slidePhase = 0.12f + (float)Math.random() * 0.1f;
+        slideDir = Math.random() < 0.5 ? -1f : 1f;
 
         body.setType(BodyDef.BodyType.DynamicBody);
-        body.setGravityScale(GameTuning.RELEASE_GRAVITY_SCALE);
 
-        float vx;
-        float vy = GameTuning.RELEASE_INITIAL_VY;
+        // сначала почти нет гравитации
+        body.setGravityScale(0.12f);
 
-        if (missTray) {
-            vx = GameTuning.RELEASE_RANDOM_X;
-        } else {
-            float dx = winZone.getCenterX() - body.getPosition().x;
-            vx = dx * GameTuning.RELEASE_TO_CENTER_FORCE;
+        for (Fixture fixture : body.getFixtureList()) {
+            fixture.setRestitution(trayRestitution);
+            fixture.setFriction(0.6f);
         }
 
+        float vx;
+        float vy;
+
+        if (missTray) {
+            vx = 0.6f + (float)Math.random() * 0.5f;
+            vy = -0.05f;
+        } else {
+            float dx = winZone.getCenterX() - body.getPosition().x;
+            vx = dx * 0.25f;
+            vy = -0.05f;
+        }
+
+        // почти стоит на месте
         body.setLinearVelocity(vx, vy);
+
+        body.setAngularVelocity(
+            ((float)Math.random() - 0.5f) * 0.6f
+        );
+    }
+
+    public void render(SpriteBatch batch) {
+        float rotationDeg = (float)Math.toDegrees(body.getAngle());
+
+        batch.draw(
+            texture,
+            body.getPosition().x - width / 2f,
+            body.getPosition().y - height / 2f,
+            width / 2f, height / 2f,
+            width, height,
+            1f, 1f,
+            rotationDeg,
+            0, 0,
+            texture.getWidth(), texture.getHeight(),
+            false, false
+        );
     }
 
     public float getX() { return body.getPosition().x; }
     public float getY() { return body.getPosition().y; }
     public Body getBody() { return body; }
 
-    public boolean isCaptured() { return captured; }
     public boolean isWon() { return won; }
+    public boolean isCaptured() { return captured; }
     public boolean isInTray() { return inTray; }
+    public boolean isReleasedToPhysicsTray() { return releasedToPhysicsTray; }
+    public float getCatchDifficulty() { return catchDifficulty; }
 
     public void setCaptured(boolean captured) {
         this.captured = captured;
