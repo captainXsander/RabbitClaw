@@ -8,7 +8,6 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 public class DebugOverlay {
 
-    // F1 - показать / скрыть overlay
     private boolean enabled = true;
     private boolean togglePressedLastFrame = false;
 
@@ -28,7 +27,6 @@ public class DebugOverlay {
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
 
-        // Внешний короб лотка
         shapeRenderer.setColor(Color.YELLOW);
         shapeRenderer.rect(
             winZone.getX() - winZone.getWidth() / 2f,
@@ -37,7 +35,6 @@ public class DebugOverlay {
             winZone.getHeight()
         );
 
-        // Узкая зона засчитывания
         shapeRenderer.setColor(Color.RED);
         shapeRenderer.rect(
             winZone.getInnerLeft(),
@@ -46,21 +43,26 @@ public class DebugOverlay {
             winZone.getInnerTop() - winZone.getInnerBottom()
         );
 
-        // Точка обычного сброса
         shapeRenderer.setColor(Color.CYAN);
         shapeRenderer.circle(winZone.getDropX(), winZone.getDropY(), 0.08f, 16);
 
-        // Домашняя высота клешни
         shapeRenderer.setColor(Color.GREEN);
         shapeRenderer.line(0f, claw.getHomeY(), 16f, claw.getHomeY());
 
-        // Нижний предел опускания
         shapeRenderer.setColor(Color.ORANGE);
         shapeRenderer.line(0f, claw.getDownLimitY(), 16f, claw.getDownLimitY());
 
-        // Текущая позиция клешни
         shapeRenderer.setColor(Color.WHITE);
         shapeRenderer.circle(claw.getX(), claw.getY(), 0.06f, 12);
+
+        float halfGap = claw.getFingerGap() * 0.5f;
+        float top = claw.getY();
+        float bottom = claw.getY() - 1.05f;
+
+        shapeRenderer.setColor(Color.PURPLE);
+        shapeRenderer.line(claw.getX() - halfGap, top, claw.getX() - halfGap, bottom);
+        shapeRenderer.line(claw.getX() + halfGap, top, claw.getX() + halfGap, bottom);
+        shapeRenderer.line(claw.getX() - halfGap, bottom, claw.getX() + halfGap, bottom);
 
         shapeRenderer.end();
     }
