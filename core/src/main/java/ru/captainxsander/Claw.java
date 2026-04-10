@@ -65,8 +65,6 @@ public class Claw {
         cableTexture = createRectTexture(6, 240, Color.LIGHT_GRAY);
     }
 
-    public void create() {}
-
     public void update(float delta, List<Toy> toys, List<Toy> trayToys, WinZone winZone) {
         updateSwing(delta);
 

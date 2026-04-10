@@ -5,17 +5,50 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.box2d.*;
 
+/**
+ * Игрушка — это физический объект (Box2D), который:
+ * * лежит в куче
+ * * может быть захвачен клешнёй
+ * * может сорваться
+ * * может быть сброшен в лоток
+ * <p>
+ * 🔥 ВАЖНО:
+ * Основной принцип — мы задаём импульс ОДИН раз,
+ * дальше вся траектория рассчитывается физикой (Box2D)
+ */
 public class Toy {
 
     private final Body body;
     private final Texture texture;
 
+    // =========================
+    // Состояния после отпускания
+    // =========================
+
+    /**
+     * Задержка перед падением (игрушка "висит" в клешне)
+     */
     private float releaseDelay = 0f;
+
+    /**
+     * Флаг: только что отпущена
+     */
     private boolean justReleased = false;
 
+    /**
+     * Время "соскальзывания" с пальцев
+     * (чисто визуальная задержка — НЕ влияет на velocity)
+     */
     private float slidePhase = 0f;
+
+    /**
+     * Направление соскальзывания (-1 или 1)
+     */
     private float slideDir = 0f;
 
+    // =========================
+    // Состояния игрушки
+    // =========================
     private boolean captured = false;
     private boolean won = false;
     private boolean inTray = false;
@@ -24,9 +57,23 @@ public class Toy {
     private final float width = GameTuning.TOY_DRAW_W;
     private final float height = GameTuning.TOY_DRAW_H;
 
+    /**
+     * Сложность захвата (0..1)
+     * влияет на:
+     * * шанс поймать
+     * * шанс сорваться
+     * * поведение в полёте
+     */
     private final float catchDifficulty;
+
+    /**
+     * Насколько "пружинит" в лотке
+     */
     private final float trayRestitution;
 
+    /**
+     * Таймер "успокоения" в лотке
+     */
     private float settleTimer = 0f;
 
     public Toy(World world, float x, float y, String texturePath) {
@@ -35,10 +82,15 @@ public class Toy {
 
     public Toy(World world, float x, float y, String texturePath,
                float catchDifficulty, float trayScatterX, float trayRestitution) {
+
         texture = new Texture(Gdx.files.internal(texturePath));
 
         this.catchDifficulty = catchDifficulty;
         this.trayRestitution = trayRestitution;
+
+        // =========================
+        // Создание физического тела
+        // =========================
 
         BodyDef def = new BodyDef();
         def.type = BodyDef.BodyType.DynamicBody;
@@ -57,20 +109,28 @@ public class Toy {
 
         body.createFixture(fix);
 
+        // демпфирование (чтобы не катались бесконечно)
         body.setLinearDamping(GameTuning.TOY_LINEAR_DAMPING);
         body.setAngularDamping(GameTuning.TOY_ANGULAR_DAMPING);
 
         shape.dispose();
+
     }
 
+    /**
+     * Обновление логики игрушки
+     */
     public void update(float delta, WinZone winZone) {
-        // 🔥 фаза "залипания" + соскальзывания
+
+        // =========================
+        // ФАЗА: только что отпустили
+        // =========================
         if (justReleased) {
 
             releaseDelay -= delta;
 
+            // 🔥 "висит" в клешне
             if (releaseDelay > 0) {
-                // висит
                 body.setLinearVelocity(
                     body.getLinearVelocity().x * 0.9f,
                     0
@@ -78,12 +138,13 @@ public class Toy {
                 return;
             }
 
-            // 🔥 соскальзывание с пальцев
+            // 🔥 фаза "соскальзывания"
             if (slidePhase > 0) {
                 slidePhase -= delta;
 
-                // 🔥 вообще НЕ трогаем velocity
-                // только визуально “ждём соскальзывание”
+                // ⚠️ ВАЖНО:
+                // НЕ трогаем velocity!
+                // иначе ломаем физику
 
                 return;
             }
@@ -91,20 +152,32 @@ public class Toy {
             // 🔥 включаем нормальную физику
             justReleased = false;
             body.setGravityScale(GameTuning.TOY_TRAY_GRAVITY_SCALE);
+
         }
+
+        // =========================
+        // Если в клешне
+        // =========================
         if (captured) {
             body.setLinearVelocity(0, 0);
             body.setAngularVelocity(0);
             return;
         }
 
+        // =========================
+        // Если уже выиграна
+        // =========================
         if (inTray) {
             body.setLinearVelocity(0, 0);
             body.setAngularVelocity(0);
             return;
         }
 
+        // =========================
+        // ФИЗИКА В ЛОТКЕ
+        // =========================
         if (releasedToPhysicsTray) {
+
             boolean inside =
                 body.getPosition().x > winZone.getInnerLeft() &&
                     body.getPosition().x < winZone.getInnerRight() &&
@@ -113,11 +186,13 @@ public class Toy {
 
             float speed = body.getLinearVelocity().len();
 
+            // 🔥 проверка: "успокоилась ли игрушка"
             if (inside
                 && speed < GameTuning.TOY_SETTLE_SPEED
                 && Math.abs(body.getAngularVelocity()) < GameTuning.TOY_SETTLE_ANGULAR_SPEED) {
 
                 settleTimer += delta;
+
                 if (settleTimer > GameTuning.TOY_SETTLE_TIME) {
                     lockInTray();
                 }
@@ -125,6 +200,7 @@ public class Toy {
                 settleTimer = 0f;
             }
 
+            // 🔥 если вылетела обратно
             boolean backOnFloor =
                 body.getPosition().y < GameTuning.TOY_BACK_ON_FLOOR_Y &&
                     Math.abs(body.getLinearVelocity().y) < GameTuning.TOY_BACK_ON_FLOOR_MAX_VY &&
@@ -151,6 +227,9 @@ public class Toy {
         }
     }
 
+    /**
+     * Зафиксировать игрушку как выигранную
+     */
     private void lockInTray() {
         releasedToPhysicsTray = false;
         inTray = true;
@@ -162,27 +241,44 @@ public class Toy {
         body.setType(BodyDef.BodyType.StaticBody);
     }
 
+    /**
+     * Прикрепление к клешне
+     */
     public void attachTo(float x, float y, float swing) {
         captured = true;
         releasedToPhysicsTray = false;
 
         body.setType(BodyDef.BodyType.KinematicBody);
         body.setGravityScale(0f);
+
+        // 🔥 игрушка просто "телепортируется" за клешнёй
         body.setTransform(x, y, swing * 0.12f);
+
         body.setLinearVelocity(0, 0);
         body.setAngularVelocity(0);
     }
 
+    /**
+     * Срыв с клешни
+     */
     public void releaseFailedGrab(float impulseX, float impulseY) {
         captured = false;
+
         body.setType(BodyDef.BodyType.DynamicBody);
         body.setGravityScale(1f);
+
         body.setLinearVelocity(impulseX, impulseY);
         body.setAngularVelocity(impulseX * 0.25f);
     }
 
-    public void releaseToPhysicalTray(WinZone winZone, boolean missTray,
-                                      boolean earlyRelease, float clawVelocityX) {
+    /**
+     * 🔥 ГЛАВНЫЙ МЕТОД
+     * Сброс игрушки в сторону лотка
+     */
+    public void releaseToPhysicalTray(WinZone winZone,
+                                      boolean missTray,
+                                      boolean earlyRelease,
+                                      float clawVelocityX) {
 
         captured = false;
         releasedToPhysicsTray = true;
@@ -192,13 +288,14 @@ public class Toy {
 
         justReleased = true;
 
+        // задержки для визуального эффекта
         releaseDelay = 0.08f + (float) Math.random() * 0.12f;
         slidePhase = 0.12f + (float) Math.random() * 0.1f;
         slideDir = Math.random() < 0.5 ? -1f : 1f;
 
         body.setType(BodyDef.BodyType.DynamicBody);
 
-        // 🔥 КЛЮЧ: почти нет гравитации сначала
+        // 🔥 слабая гравитация в начале
         body.setGravityScale(0.6f);
 
         for (Fixture fixture : body.getFixtureList()) {
@@ -210,68 +307,54 @@ public class Toy {
         float vy;
 
         // =========================
-        // 🔥 РЕАЛИСТИЧНАЯ ФИЗИКА
+        // 🎯 ИМПУЛЬС (САМОЕ ВАЖНОЕ)
         // =========================
 
-        // 1. базовая скорость (ослабленная)
-        vx = clawVelocityX * 0.6f;
+        // скорость от клешни
+        vx = clawVelocityX * GameTuning.RELEASE_VX_FROM_CLAW_MULT;
 
-        // 2. небольшой шум
-        vx += (Math.random() - 0.5f) * 0.3f;
+        // случайный шум
+        vx += (Math.random() - 0.5f) * GameTuning.RELEASE_RANDOM_X;
 
-        // 3. early release чуть усиливает разброс
         if (earlyRelease) {
-            vx += (Math.random() - 0.5f) * 0.3f;
+            vx += (Math.random() - 0.5f) * GameTuning.RELEASE_RANDOM_X_EARLY;
         }
 
-        // 4. "вес"
-        vx += slideDir * 0.25f;
+        // эффект "соскальзывания"
+        vx += slideDir * GameTuning.RELEASE_SLIDE_IMPULSE;
 
+        // влияние "веса"
         vx *= 0.9f + (1f - catchDifficulty) * 0.2f;
 
-        vx = Math.max(-2.0f, Math.min(2.0f, vx));
+        // ограничение скорости
+        vx = Math.max(-GameTuning.RELEASE_MAX_VX,
+            Math.min(GameTuning.RELEASE_MAX_VX, vx));
 
-        vy = -0.6f - (float)Math.random() * 0.2f;
+        // падение вниз
+        vy = GameTuning.RELEASE_BASE_VY
+            - (float) Math.random() * GameTuning.RELEASE_RANDOM_VY;
+
+        // =========================
+        // 🎯 ЗОНЫ ПОПАДАНИЯ
+        // =========================
 
         float trayCenter = winZone.getCenterX();
-        float toyX = body.getPosition().x;
+        float dx = trayCenter - body.getPosition().x;
+        float distance = Math.abs(dx);
 
-        float dxToTray = trayCenter - toyX;
-        float distance = Math.abs(dxToTray);
+        if (distance < GameTuning.TRAY_PERFECT_ZONE) {
+            vx += dx * GameTuning.TRAY_PERFECT_ASSIST_X;
+            vy += GameTuning.TRAY_PERFECT_ASSIST_Y;
+        } else if (distance < GameTuning.TRAY_ASSIST_ZONE) {
+            float t = 1f - (distance - GameTuning.TRAY_PERFECT_ZONE)
+                / (GameTuning.TRAY_ASSIST_ZONE - GameTuning.TRAY_PERFECT_ZONE);
 
-        // =========================
-        // 🎯 ЗОНЫ ПОВЕДЕНИЯ
-        // =========================
-
-        // размеры зон (можешь потом крутить)
-        float perfectZone = 0.6f;
-        float assistZone = 2.2f;
-
-        if (distance < perfectZone) {
-            // 🟩 ИДЕАЛЬНАЯ ЗОНА (почти гарант попадание)
-
-            // мягко центрируем
-            vx += dxToTray * 0.35f;
-
-            // чуть подбрасываем → красивая дуга
-            vy += 0.35f;
+            vx += dx * GameTuning.TRAY_ASSIST_X * t;
+            vy += GameTuning.TRAY_ASSIST_Y * t;
 
         }
-        else if (distance < assistZone) {
-            // 🟨 ЗОНА ШАНСА
 
-            float t = 1f - (distance - perfectZone) / (assistZone - perfectZone);
-
-            // ослабленная помощь
-            vx += dxToTray * 0.25f * t;
-
-            // небольшой подброс
-            vy += 0.25f * t;
-        }
-        else {
-            // 🟥 ДАЛЕКО — ничего не делаем (честная физика)
-        }
-
+        // 🔥 задаём скорость ОДИН РАЗ
         body.setLinearVelocity(vx, vy);
 
         body.setAngularVelocity(
@@ -294,6 +377,7 @@ public class Toy {
             texture.getWidth(), texture.getHeight(),
             false, false
         );
+
     }
 
     public float getX() {
