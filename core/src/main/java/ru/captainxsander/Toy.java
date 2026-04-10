@@ -236,10 +236,43 @@ public class Toy {
 
         vy = -0.6f - (float)Math.random() * 0.2f;
 
-        // 7. мягкий "магнит" к лотку
-        if (!missTray) {
-            float dx = winZone.getCenterX() - body.getPosition().x;
-            vx += dx * 0.10f;
+        float trayCenter = winZone.getCenterX();
+        float toyX = body.getPosition().x;
+
+        float dxToTray = trayCenter - toyX;
+        float distance = Math.abs(dxToTray);
+
+        // =========================
+        // 🎯 ЗОНЫ ПОВЕДЕНИЯ
+        // =========================
+
+        // размеры зон (можешь потом крутить)
+        float perfectZone = 0.6f;
+        float assistZone = 2.2f;
+
+        if (distance < perfectZone) {
+            // 🟩 ИДЕАЛЬНАЯ ЗОНА (почти гарант попадание)
+
+            // мягко центрируем
+            vx += dxToTray * 0.35f;
+
+            // чуть подбрасываем → красивая дуга
+            vy += 0.35f;
+
+        }
+        else if (distance < assistZone) {
+            // 🟨 ЗОНА ШАНСА
+
+            float t = 1f - (distance - perfectZone) / (assistZone - perfectZone);
+
+            // ослабленная помощь
+            vx += dxToTray * 0.25f * t;
+
+            // небольшой подброс
+            vy += 0.25f * t;
+        }
+        else {
+            // 🟥 ДАЛЕКО — ничего не делаем (честная физика)
         }
 
         body.setLinearVelocity(vx, vy);
