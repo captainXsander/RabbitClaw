@@ -81,10 +81,9 @@ public class GameScreen implements Screen {
             String texture = textures[(int)(Math.random() * textures.length)];
 
             float difficulty = 0.2f + (float)Math.random() * 0.5f;
-            float scatter = 0.1f + (float)Math.random() * 0.2f;
             float restitution = 0.1f + (float)Math.random() * 0.3f;
 
-            toys.add(new Toy(world, x, y, texture, difficulty, scatter, restitution));
+            toys.add(new Toy(world, x, y, texture, difficulty, restitution));
         }
     }
 

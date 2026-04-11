@@ -125,10 +125,6 @@ public class WinZone {
     public float getWidth() { return width; }
     public float getHeight() { return height; }
 
-    public Body getSensorBody() {
-        return sensorBody;
-    }
-
     private Texture createRectTexture(int width, int height, Color color) {
         Pixmap pixmap = new Pixmap(width, height, Pixmap.Format.RGBA8888);
         pixmap.setColor(color);
