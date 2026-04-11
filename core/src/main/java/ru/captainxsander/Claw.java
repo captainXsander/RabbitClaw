@@ -47,8 +47,8 @@ public class Claw {
     private Toy capturedToy;
 
     // =========================
-// 🔥 ТРОС (маятник)
-// =========================
+    // 🔥 ТРОС (маятник)
+    // =========================
     private float swing = 0f;
     private float swingVelocity = 0f;
     private float lastInputVelocity = 0f;
@@ -69,6 +69,7 @@ public class Claw {
 
     private boolean slipCheckedThisCycle = false;
     private boolean earlyReleaseCheckedThisCycle = false;
+    private boolean triedToCatch = false;
 
     public Claw() {
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
@@ -163,6 +164,7 @@ public class Claw {
             state = State.CLOSE;
             stateTimer = 0f;
             swingVelocity -= 0.45f;
+            triedToCatch = false;
         }
     }
 
@@ -173,7 +175,9 @@ public class Claw {
         float progress = clamp(stateTimer / GameTuning.CLAW_CLOSE_TIME, 0f, 1f);
         fingerGap = lerp(FINGER_GAP_OPEN, FINGER_GAP_CLOSED, progress);
 
-        if (capturedToy == null) {
+        if (!triedToCatch && stateTimer < 0.08f) {
+            triedToCatch = true;
+
             capturedToy = findCatchableToy(toys);
             if (capturedToy == null) {
                 capturedToy = findCatchableToy(trayToys);
@@ -379,8 +383,13 @@ public class Claw {
         float leftEdge = realX - fingerGap * 0.5f;
         float rightEdge = realX + fingerGap * 0.5f;
 
-        boolean insideX = toyX > leftEdge && toyX < rightEdge;
-        boolean closeY = Math.abs(toyY - (y - 0.9f)) < 0.65f;
+        float margin = 0.08f; // 🔥 настройка точности попадания клешней
+
+        boolean insideX =
+            toyX > leftEdge + margin &&
+                toyX < rightEdge - margin;
+        // здесь можно подкрутить хватание клешней
+        boolean closeY = Math.abs(toyY - (y - 0.9f)) < 0.35f;
 
         return insideX && closeY;
     }
