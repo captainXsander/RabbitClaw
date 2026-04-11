@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 
 import java.util.List;
@@ -75,6 +74,8 @@ public class Claw {
     private boolean slipCheckedThisCycle = false;
     private boolean earlyReleaseCheckedThisCycle = false;
     private boolean triedToCatch = false;
+    private float dropIgnoreTimer = 0f;
+    private boolean hasMovedDown = false;
 
     public Claw() {
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
@@ -94,7 +95,7 @@ public class Claw {
 
         // Небольшой "толкатель" в зоне головы/пальцев.
         // Пока делаем только один прямоугольник, без физических пальцев.
-        shape.setAsBox(0.42f, 0.18f);
+        shape.setAsBox(0.30f, 0.12f);
 
         FixtureDef fix = new FixtureDef();
         fix.shape = shape;
@@ -107,20 +108,31 @@ public class Claw {
     }
 
     public void update(float delta, List<Toy> toys, List<Toy> trayToys, WinZone winZone) {
-        physicsBody.setTransform(getRealX(), y - 0.9f, 0f);
-        physicsBody.setLinearVelocity(0f, 0f);
-        physicsBody.setAngularVelocity(0f);
+        // 👉 ВСЕГДА синхронизируем физическое тело с логикой
+        if (physicsBody != null) {
+            physicsBody.setTransform(getRealX(), y - 0.7f, 0f);
+            physicsBody.setLinearVelocity(0f, 0f);
+            physicsBody.setAngularVelocity(0f);
+        }
         if (state == State.IDLE) {
             handleIdleInput(delta);
 
             if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+                dropIgnoreTimer = 0f;
+                hasMovedDown = false;
+                capturedToy = null;
+
                 state = State.MOVE_DOWN;
                 stateTimer = 0f;
 
                 slipCheckedThisCycle = false;
                 earlyReleaseCheckedThisCycle = false;
 
-                // 🔥 ОБНУЛЕНИЕ (ключ!)
+                if (physicsBody != null) {
+                    physicsBody.setLinearVelocity(0f, 0f);
+                    physicsBody.setTransform(getRealX(), y - 0.7f, 0f);
+                }
+
                 boolean noInput =
                     !Gdx.input.isKeyPressed(Input.Keys.LEFT) &&
                         !Gdx.input.isKeyPressed(Input.Keys.RIGHT);
@@ -196,9 +208,12 @@ public class Claw {
 
     private void updateMoveDown(float delta) {
         y -= MOVE_SPEED_Y * delta;
+        dropIgnoreTimer += delta;
+        if (y < HOME_Y - 0.3f) {
+            hasMovedDown = true;
+        }
 
-        // 🔥 проверка столкновения через контакт (а не скорость!)
-        if (isTouchingAnyToy()) {
+        if (hasMovedDown && isTouchingAnyToy()) {
             state = State.CLOSE;
             stateTimer = 0f;
             triedToCatch = false;
@@ -214,7 +229,6 @@ public class Claw {
     }
 
     private void updateClose(float delta, List<Toy> toys, List<Toy> trayToys) {
-        physicsBody.setLinearVelocity(0f, 0f);
         velocityX = 0f;
         stateTimer += delta;
         float progress = clamp(stateTimer / GameTuning.CLAW_CLOSE_TIME, 0f, 1f);
