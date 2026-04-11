@@ -240,14 +240,6 @@ public class Claw {
                 capturedToy = findTouchingToy(trayToys);
             }
 
-            // fallback на старую логику — только если контакта вообще нет
-            if (capturedToy == null) {
-                capturedToy = findCatchableToy(toys);
-                if (capturedToy == null) {
-                    capturedToy = findCatchableToy(trayToys);
-                }
-            }
-
             if (capturedToy != null) {
                 capturedToy.setCaptured(true);
 
@@ -332,9 +324,6 @@ public class Claw {
                 Toy toy = capturedToy;
                 capturedToy = null;
 
-                float toyX = toy.getX();
-                float trayLeft = winZone.getInnerLeft();
-
                 toy.releaseToPhysicalTray(winZone, true, velocityX);
 
                 if (!trayToys.contains(toy)) trayToys.add(toy);
@@ -351,11 +340,6 @@ public class Claw {
 
         if (capturedToy != null) {
             Toy toy = capturedToy;
-
-            float toyX = toy.getX();
-            float trayLeft = winZone.getInnerLeft();
-
-            boolean canMiss = toyX < trayLeft;
 
             toy.releaseToPhysicalTray(winZone, false, velocityX);
 
@@ -430,31 +414,6 @@ public class Claw {
         swing = clamp(swing, -GameTuning.SWING_MAX, GameTuning.SWING_MAX);
     }
 
-    private Toy findCatchableToy(List<Toy> source) {
-
-        Toy best = null;
-        float bestY = -999f;
-
-        for (Toy toy : source) {
-
-            if (toy.isWon() || toy.isCaptured() || toy.isInTray()) continue;
-
-            if (!isToyCatchable(toy)) continue;
-
-            // 🔥 выбираем самую верхнюю
-            if (toy.getY() > bestY) {
-                bestY = toy.getY();
-                best = toy;
-            }
-        }
-
-        if (best != null && passesCatchChance(best)) {
-            return best;
-        }
-
-        return null;
-    }
-
     private Toy findTouchingToy(List<Toy> source) {
         if (physicsBody == null || world == null) return null;
 
@@ -517,26 +476,6 @@ public class Claw {
     private boolean passesCatchChance(Toy toy) {
         float chance = 1f - toy.getCatchDifficulty();
         return Math.random() < chance;
-    }
-
-    private boolean isToyCatchable(Toy toy) {
-        float toyX = toy.getX();
-        float toyY = toy.getY();
-
-        float realX = getRealX();
-
-        float leftEdge = realX - fingerGap * 0.5f;
-        float rightEdge = realX + fingerGap * 0.5f;
-
-        float margin = 0.08f; // 🔥 настройка точности попадания клешней
-
-        boolean insideX =
-            toyX > leftEdge + margin &&
-                toyX < rightEdge - margin;
-        // здесь можно подкрутить хватание клешней
-        boolean closeY = Math.abs(toyY - (y - 0.9f)) < 0.35f;
-
-        return insideX && closeY;
     }
 
     public void render(SpriteBatch batch) {
