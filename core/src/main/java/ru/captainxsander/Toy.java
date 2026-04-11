@@ -216,11 +216,27 @@ public class Toy {
             return;
         }
 
-        if (Math.abs(body.getLinearVelocity().x) < 0.02f) {
+        if (Math.abs(body.getLinearVelocity().x) < 0.008f) {
             body.setLinearVelocity(0, body.getLinearVelocity().y);
         }
-        if (Math.abs(body.getAngularVelocity()) < 0.02f) {
+        if (Math.abs(body.getAngularVelocity()) < 0.008f) {
             body.setAngularVelocity(0);
+        }
+        // 🔥 микро-жизнь кучи (очень слабая)
+        if (!captured && !inTray && !releasedToPhysicsTray) {
+
+            if (Math.random() < 0.002f) { // редко!
+                float impulseX = (float)(Math.random() * 0.02f - 0.01f);
+                float impulseY = (float)(Math.random() * 0.02f);
+
+                body.applyLinearImpulse(
+                    impulseX,
+                    impulseY,
+                    body.getWorldCenter().x,
+                    body.getWorldCenter().y,
+                    true
+                );
+            }
         }
     }
 
