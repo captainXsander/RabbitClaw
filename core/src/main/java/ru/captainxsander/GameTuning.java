@@ -45,6 +45,18 @@ public final class GameTuning {
     // Точность захвата клешни
     public static final float CLAW_GRAB_X_MARGIN = 0.08f;
 
+    // Сила продавливаемости клешни, на сколько может продавить
+    public static final float CLAW_MAX_PRESS_DEPTH = 0.35f;
+
+    // Выбираем игрушку ближе к центру клешни, чем сложнее, чем хуже ловиться
+    public static final float CLAW_SCORE_WEIGHT_X = 0.6f;
+    public static final float CLAW_SCORE_WEIGHT_Y = 1.2f;
+    // чем сложнее, тем хуже ловиться
+    public static final float CLAW_SCORE_WEIGHT_DIFFICULTY = 0.3f;
+
+    // Небольшой рывок клешней вниз давление при первом контакте
+    public static final float CLAW_INITIAL_PRESS_IMPULSE = 0.02f;
+
     // =========================
     // Раскачка троса
     // =========================
@@ -70,6 +82,7 @@ public final class GameTuning {
     public static final float SWING_INPUT_BASE = 8.0f;
     public static final float SWING_ACCEL_MULT = 0.08f;
     public static final float SWING_DIRECTION_CHANGE_MULT = 0.12f;
+
 
     // =========================
     // Срыв / ранний сброс
