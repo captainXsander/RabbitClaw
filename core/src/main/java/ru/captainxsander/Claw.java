@@ -225,6 +225,7 @@ public class Claw {
 
             if (pressDepth == 0f) {
                 y -= CLAW_INITIAL_PRESS_IMPULSE;
+                addHitSwingImpulse();
             }
             // если есть опора — ограничиваем продавливание
             if (blocked) {
@@ -323,7 +324,7 @@ public class Claw {
             fakeGrabThisCycle = false;
 
             toy.releaseFailedGrab(
-                (float)(Math.random() * 0.2 - 0.1),
+                (float) (Math.random() * 0.2 - 0.1),
                 -0.05f
             );
 
@@ -475,6 +476,23 @@ public class Claw {
         }
 
         swing = clamp(swing, -GameTuning.SWING_MAX, GameTuning.SWING_MAX);
+    }
+
+    private void addHitSwingImpulse() {
+        float impulse = SWING_HIT_IMPULSE_BASE + Math.abs(velocityX) * SWING_HIT_IMPULSE_FROM_X;
+        impulse = clamp(impulse, 0f, SWING_HIT_IMPULSE_MAX);
+
+        float dir;
+
+        if (Math.abs(velocityX) > 0.01f) {
+            dir = Math.signum(velocityX);
+        } else if (Math.abs(swingVelocity) > 0.01f) {
+            dir = Math.signum(swingVelocity);
+        } else {
+            dir = Math.random() < 0.5f ? -1f : 1f;
+        }
+
+        swingVelocity += dir * impulse;
     }
 
     private Toy findTouchingToy(List<Toy> source) {

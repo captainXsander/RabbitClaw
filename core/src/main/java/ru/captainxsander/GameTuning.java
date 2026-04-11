@@ -103,6 +103,10 @@ public final class GameTuning {
     public static final double BASE_EARLY_RELEASE_CHANCE = 0.46;
     public static final double EARLY_RELEASE_DIFFICULTY_MULT = 0.28;
 
+    // Импульс при столкновении с игрушкой для раскачки
+    public static final float SWING_HIT_IMPULSE_BASE = 0.14f;
+    public static final float SWING_HIT_IMPULSE_FROM_X = 0.08f;
+    public static final float SWING_HIT_IMPULSE_MAX = 0.29f;
 
     // =========================
     // Лоток
