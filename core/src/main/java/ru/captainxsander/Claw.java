@@ -79,6 +79,7 @@ public class Claw {
     private boolean triedToCatch = false;
     private boolean hasMovedDown = false;
     private float pressDepth = 0f;
+    private boolean fakeGrabThisCycle = false;
 
     public Claw() {
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
@@ -124,6 +125,7 @@ public class Claw {
                 hasMovedDown = false;
                 capturedToy = null;
                 pressDepth = 0f;
+                fakeGrabThisCycle = false;
 
                 state = State.MOVE_DOWN;
                 stateTimer = 0f;
@@ -223,6 +225,7 @@ public class Claw {
 
             if (pressDepth == 0f) {
                 y -= CLAW_INITIAL_PRESS_IMPULSE;
+                addHitSwingImpulse();
             }
             // если есть опора — ограничиваем продавливание
             if (blocked) {
@@ -281,6 +284,13 @@ public class Claw {
             if (capturedToy != null) {
                 capturedToy.setCaptured(true);
 
+                // 🔥 определяем ложный захват
+                float fakeChance =
+                    BASE_FAKE_GRAB_CHANCE +
+                        capturedToy.getCatchDifficulty() * FAKE_GRAB_DIFFICULTY_MULT;
+
+                fakeGrabThisCycle = Math.random() < fakeChance;
+
                 // Выравниваем игрушку по центру клешни в момент захвата,
                 // чтобы её не "утащило" влево/вправо из-за старой позиции.
                 capturedToy.getBody().setTransform(
@@ -305,6 +315,22 @@ public class Claw {
     private void updateMoveUp(float delta) {
         y += MOVE_SPEED_Y * delta;
         velocityX = 0f;
+
+        // 🔥 ЛОЖНЫЙ ЗАХВАТ (выпадает почти сразу)
+        if (capturedToy != null && fakeGrabThisCycle && y > FAKE_GRAB_RELEASE_Y) {
+
+            Toy toy = capturedToy;
+            capturedToy = null;
+            fakeGrabThisCycle = false;
+
+            toy.releaseFailedGrab(
+                (float) (Math.random() * 0.2 - 0.1),
+                -0.05f
+            );
+
+            swingVelocity -= 0.15f;
+            return;
+        }
 
         if (capturedToy != null && !slipCheckedThisCycle && y > GameTuning.SLIP_CHECK_Y) {
             slipCheckedThisCycle = true;
@@ -450,6 +476,23 @@ public class Claw {
         }
 
         swing = clamp(swing, -GameTuning.SWING_MAX, GameTuning.SWING_MAX);
+    }
+
+    private void addHitSwingImpulse() {
+        float impulse = SWING_HIT_IMPULSE_BASE + Math.abs(velocityX) * SWING_HIT_IMPULSE_FROM_X;
+        impulse = clamp(impulse, 0f, SWING_HIT_IMPULSE_MAX);
+
+        float dir;
+
+        if (Math.abs(velocityX) > 0.01f) {
+            dir = Math.signum(velocityX);
+        } else if (Math.abs(swingVelocity) > 0.01f) {
+            dir = Math.signum(swingVelocity);
+        } else {
+            dir = Math.random() < 0.5f ? -1f : 1f;
+        }
+
+        swingVelocity += dir * impulse;
     }
 
     private Toy findTouchingToy(List<Toy> source) {
