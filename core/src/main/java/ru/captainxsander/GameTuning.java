@@ -1,9 +1,12 @@
 package ru.captainxsander;
 
 /**
+
  * Все важные настройки автомата в одном месте.
  *
- * Меняй в первую очередь ЭТОТ файл, а не логику классов.
+ * 🔥 ВАЖНО:
+ * Меняй значения здесь, а не в логике классов.
+ * Это позволяет балансить игру без переписывания кода.
  */
 public final class GameTuning {
 
@@ -44,19 +47,19 @@ public final class GameTuning {
     public static final float SWING_INPUT_MULTIPLIER = 30f;
 
     // Чем больше SPRING, тем быстрее тянет к вертикали
-    public static final float SWING_SPRING = 34f;
+    public static final float SWING_SPRING = 10f;
 
     // Чем меньше DAMPING, тем быстрее затухают колебания
-    public static final float SWING_DAMPING = 0.80f;
+    public static final float SWING_DAMPING = 0.998f;
 
     // Ограничение максимального отклонения
-    public static final float SWING_MAX = 0.32f;
+    public static final float SWING_MAX = 0.65f;
 
     // Почти ноль -> сразу останавливаем
     public static final float SWING_STOP_EPS = 0.0015f;
 
     // =========================
-    // Ранний сброс / соскальзывание
+    // Срыв / ранний сброс
     // =========================
     public static final float SLIP_CHECK_Y = 4.2f;
     public static final float EARLY_RELEASE_CHECK_X = 10.2f;
@@ -96,7 +99,7 @@ public final class GameTuning {
     public static final float TRAY_WALL_RESTITUTION = 0.62f;
 
     // =========================
-    // Игрушки
+    // Игрушки (базовая физика)
     // =========================
     public static final float TOY_RADIUS = 0.38f;
     public static final float TOY_DRAW_W = 0.90f;
@@ -109,7 +112,49 @@ public final class GameTuning {
     public static final float TOY_LINEAR_DAMPING = 0.90f;
     public static final float TOY_ANGULAR_DAMPING = 1.4f;
 
-    // Полёт к лотку
+    // =========================
+    // Полёт игрушки (🔥 ключевая часть)
+    // =========================
+
+    // Насколько сильно скорость клешни влияет на игрушку
+    public static final float RELEASE_VX_FROM_CLAW_MULT = 0.6f;
+
+    // Случайный разброс по X
+    public static final float RELEASE_RANDOM_X = 0.3f;
+
+    // Доп. разброс при раннем сбросе
+    public static final float RELEASE_RANDOM_X_EARLY = 0.3f;
+
+    // Импульс "соскальзывания"
+    public static final float RELEASE_SLIDE_IMPULSE = 0.25f;
+
+    // Ограничение горизонтальной скорости
+    public static final float RELEASE_MAX_VX = 2.0f;
+
+    // Вертикальное падение
+    public static final float RELEASE_BASE_VY = -0.6f;
+    public static final float RELEASE_RANDOM_VY = 0.2f;
+
+    // =========================
+    // Зоны попадания в лоток
+    // =========================
+
+    // Почти гарант попадания
+    public static final float TRAY_PERFECT_ZONE = 0.6f;
+
+    // Зона, где ещё есть шанс
+    public static final float TRAY_ASSIST_ZONE = 2.2f;
+
+    // Насколько "помогаем" попасть
+    public static final float TRAY_PERFECT_ASSIST_X = 0.35f;
+    public static final float TRAY_PERFECT_ASSIST_Y = 0.35f;
+
+    public static final float TRAY_ASSIST_X = 0.25f;
+    public static final float TRAY_ASSIST_Y = 0.25f;
+
+    // =========================
+    // Поведение в лотке
+    // =========================
     public static final float TOY_TRAY_GRAVITY_SCALE = 0.26f;
 
     // Когда считаем, что игрушка осела в лотке

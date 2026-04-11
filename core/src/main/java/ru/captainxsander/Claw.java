@@ -11,7 +11,6 @@ import java.util.List;
 
 public class Claw {
 
-    // V2: state machine
     private enum State {
         IDLE, MOVE_DOWN, CLOSE, MOVE_UP, MOVE_TO_TRAY, OPEN, RETURN_HOME
     }
@@ -40,19 +39,37 @@ public class Claw {
     private float x = HOME_X;
     private float y = HOME_Y;
     private float fingerGap = FINGER_GAP_OPEN;
+    private float swingOffsetX = 0f;
 
     private State state = State.IDLE;
     private float stateTimer = 0f;
 
-    // V1 -> V2: логический захват
     private Toy capturedToy;
 
-    // V2: визуальная раскачка
+    // =========================
+    // 🔥 ТРОС (маятник)
+    // =========================
     private float swing = 0f;
     private float swingVelocity = 0f;
+    private float lastInputVelocity = 0f;
+
+    // =========================
+// 🔥 ГОЛОВА (запаздывает за тросом)
+// =========================
+    private float headSwing = 0f;
+    private float headSwingVelocity = 0f;
+
+    // 🔥 скорость клешни по X (передаётся игрушке)
+    private float velocityX = 0f;
+
+    private float fingerAngleLeft = -20f;
+    private float fingerAngleRight = 20f;
+    private float fingerAngleVelLeft = 0f;
+    private float fingerAngleVelRight = 0f;
 
     private boolean slipCheckedThisCycle = false;
     private boolean earlyReleaseCheckedThisCycle = false;
+    private boolean triedToCatch = false;
 
     public Claw() {
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
@@ -60,11 +77,7 @@ public class Claw {
         cableTexture = createRectTexture(6, 240, Color.LIGHT_GRAY);
     }
 
-    public void create() {
-    }
-
     public void update(float delta, List<Toy> toys, List<Toy> trayToys, WinZone winZone) {
-        updateSwing(delta);
 
         if (state == State.IDLE) {
             handleIdleInput(delta);
@@ -72,9 +85,19 @@ public class Claw {
             if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
                 state = State.MOVE_DOWN;
                 stateTimer = 0f;
+
                 slipCheckedThisCycle = false;
                 earlyReleaseCheckedThisCycle = false;
-                swingVelocity += 1.15f;
+
+                // 🔥 ОБНУЛЕНИЕ (ключ!)
+                boolean noInput =
+                    !Gdx.input.isKeyPressed(Input.Keys.LEFT) &&
+                        !Gdx.input.isKeyPressed(Input.Keys.RIGHT);
+
+                if (noInput && Math.abs(swing) < 0.05f && Math.abs(swingVelocity) < 0.05f) {
+                    swing = 0f;
+                    swingVelocity = 0f;
+                }
             }
         }
 
@@ -85,12 +108,14 @@ public class Claw {
             case MOVE_TO_TRAY -> updateMoveToTray(delta, trayToys, winZone);
             case OPEN -> updateOpen(delta, trayToys, winZone);
             case RETURN_HOME -> updateReturnHome(delta);
-            case IDLE -> { }
+            case IDLE -> {}
         }
 
+        // "приклеиваем" игрушку к клешне
         if (capturedToy != null) {
-            capturedToy.attachTo(x, y - 1.10f);
+            capturedToy.attachTo(getRealX(), y - 1.10f, headSwing);
         }
+        updateSwing(delta);
     }
 
     private void handleIdleInput(float delta) {
@@ -102,28 +127,65 @@ public class Claw {
         x = clamp(x, 2.0f, 12.0f);
 
         float dx = x - oldX;
-        if (Math.abs(dx) > 0.0001f) {
-            // Заметная раскачка при движении
-            swingVelocity += dx * GameTuning.SWING_INPUT_MULTIPLIER;
+        float inputVelocity = dx / delta;
+
+// длина троса
+        float cableLen = Math.max(0.2f, 9f - y);
+        float lengthFactor = cableLen / 6f;
+
+// =========================
+// 🔥 0. СЛАБЫЙ БАЗОВЫЙ ИМПУЛЬС (очень важен!)
+// =========================
+        swingVelocity += dx * 8.0f * lengthFactor;
+
+// =========================
+// 🔥 1. РЫВОК
+// =========================
+        float accel = (inputVelocity - lastInputVelocity);
+
+        if (Math.abs(accel) > 2.0f) { // ↓ БЫЛО 6 → стало 2
+            swingVelocity += accel * 0.08f * lengthFactor;
         }
+
+        // =========================
+        // 🔥 2. СМЕНА НАПРАВЛЕНИЯ
+        // =========================
+        if (Math.signum(inputVelocity) != Math.signum(lastInputVelocity)
+            && Math.abs(inputVelocity) > 0.2f) { // ↓ БЫЛО 1.0 → стало 0.2
+
+            float phaseBoost = (float) Math.cos(swing);
+
+            swingVelocity += inputVelocity * 0.12f * lengthFactor * phaseBoost;
+        }
+
+        lastInputVelocity = inputVelocity;
+
+        velocityX = 0f;
     }
 
     private void updateMoveDown(float delta) {
+        velocityX = 0f;
+
         y -= MOVE_SPEED_Y * delta;
         if (y <= DOWN_LIMIT_Y) {
             y = DOWN_LIMIT_Y;
             state = State.CLOSE;
             stateTimer = 0f;
-            swingVelocity -= 0.75f;
+            swingVelocity *= 0.7f;
+            triedToCatch = false;
         }
     }
 
     private void updateClose(float delta, List<Toy> toys, List<Toy> trayToys) {
+        velocityX = 0f;
+
         stateTimer += delta;
         float progress = clamp(stateTimer / GameTuning.CLAW_CLOSE_TIME, 0f, 1f);
         fingerGap = lerp(FINGER_GAP_OPEN, FINGER_GAP_CLOSED, progress);
 
-        if (capturedToy == null) {
+        if (!triedToCatch && stateTimer < 0.08f) {
+            triedToCatch = true;
+
             capturedToy = findCatchableToy(toys);
             if (capturedToy == null) {
                 capturedToy = findCatchableToy(trayToys);
@@ -131,7 +193,19 @@ public class Claw {
 
             if (capturedToy != null) {
                 capturedToy.setCaptured(true);
-                swingVelocity += 0.45f;
+
+                // Выравниваем игрушку по центру клешни в момент захвата,
+                // чтобы её не "утащило" влево/вправо из-за старой позиции.
+                capturedToy.getBody().setTransform(
+                    getRealX(),
+                    capturedToy.getY(),
+                    capturedToy.getBody().getAngle()
+                );
+
+                // 🔥 фикс перелёта
+                if (Math.abs(swing) < 0.15f) {
+                    swingVelocity *= 0.2f;
+                }
             }
         }
 
@@ -141,9 +215,179 @@ public class Claw {
         }
     }
 
+    private void updateMoveUp(float delta) {
+        velocityX = 0f;
+
+        y += MOVE_SPEED_Y * delta;
+
+        if (capturedToy != null && !slipCheckedThisCycle && y > GameTuning.SLIP_CHECK_Y) {
+            slipCheckedThisCycle = true;
+
+            double slipChance = GameTuning.BASE_SLIP_CHANCE
+                + capturedToy.getCatchDifficulty() * GameTuning.SLIP_DIFFICULTY_MULT;
+
+            if (Math.random() < slipChance) {
+                Toy toy = capturedToy;
+                capturedToy = null;
+
+                toy.releaseFailedGrab((float) (Math.random() * 0.32 - 0.16), -0.08f);
+                swingVelocity -= 0.30f;
+            }
+        }
+
+        if (y >= HOME_Y) {
+            y = HOME_Y;
+            state = State.MOVE_TO_TRAY;
+            swingVelocity += 0.18f;
+        }
+    }
+
+    private void updateMoveToTray(float delta, List<Toy> trayToys, WinZone winZone) {
+        float oldX = getRealX();
+        float dx = TRAY_DROP_X - getRealX();
+
+        if (Math.abs(dx) < 0.04f) {
+            float oldX2 = x + swingOffsetX;
+
+            x = TRAY_DROP_X;
+
+            float newX2 = x + swingOffsetX;
+            velocityX = (newX2 - oldX2) / delta;
+
+            state = State.OPEN;
+            stateTimer = 0f;
+            return;
+        }
+
+        x += Math.signum(dx) * MOVE_SPEED_X * delta;
+
+        float newX = x + swingOffsetX;
+
+        float moved = newX - oldX;
+        velocityX = moved / delta;
+
+        if (capturedToy != null && !earlyReleaseCheckedThisCycle && x > GameTuning.EARLY_RELEASE_CHECK_X) {
+            earlyReleaseCheckedThisCycle = true;
+
+            double earlyReleaseChance = GameTuning.BASE_EARLY_RELEASE_CHANCE
+                + capturedToy.getCatchDifficulty() * GameTuning.EARLY_RELEASE_DIFFICULTY_MULT;
+
+            if (Math.random() < earlyReleaseChance) {
+                Toy toy = capturedToy;
+                capturedToy = null;
+
+                float toyX = toy.getX();
+                float trayLeft = winZone.getInnerLeft();
+
+                boolean canMiss = toyX < trayLeft;
+
+                boolean missTray = canMiss && Math.random() < (
+                    GameTuning.BASE_TRAY_MISS_CHANCE
+                        + toy.getCatchDifficulty() * GameTuning.TRAY_MISS_DIFFICULTY_MULT
+                );
+
+                toy.releaseToPhysicalTray(winZone, missTray, true, velocityX);
+
+                if (!trayToys.contains(toy)) trayToys.add(toy);
+
+                fingerGap = FINGER_GAP_OPEN;
+            }
+        }
+    }
+
+    private void updateOpen(float delta, List<Toy> trayToys, WinZone winZone) {
+        stateTimer += delta;
+        float progress = clamp(stateTimer / GameTuning.CLAW_OPEN_TIME, 0f, 1f);
+        fingerGap = lerp(FINGER_GAP_CLOSED, FINGER_GAP_OPEN, progress);
+
+        if (capturedToy != null) {
+            Toy toy = capturedToy;
+
+            float toyX = toy.getX();
+            float trayLeft = winZone.getInnerLeft();
+
+            boolean canMiss = toyX < trayLeft;
+
+            boolean missTray = canMiss && Math.random() < (
+                GameTuning.BASE_TRAY_MISS_CHANCE
+                    + toy.getCatchDifficulty() * GameTuning.TRAY_MISS_DIFFICULTY_MULT
+            );
+
+            toy.releaseToPhysicalTray(winZone, missTray, false, velocityX);
+
+            if (!trayToys.contains(toy)) trayToys.add(toy);
+
+            capturedToy = null;
+            swingVelocity -= 0.24f;
+        }
+
+        if (stateTimer >= GameTuning.CLAW_OPEN_TIME) {
+            state = State.RETURN_HOME;
+            stateTimer = 0f;
+        }
+    }
+
+    private void updateReturnHome(float delta) {
+        velocityX = 0f;
+
+        float oldX = x;
+        float dx = HOME_X - x;
+
+        if (Math.abs(dx) < 0.05f) {
+            x = HOME_X;
+            fingerGap = FINGER_GAP_OPEN;
+
+            swing *= 0.10f;
+            swingVelocity *= 0.05f;
+            state = State.IDLE;
+            return;
+        }
+
+        x += Math.signum(dx) * MOVE_SPEED_X * delta;
+    }
+
+    /**
+     * 🔥 ФИЗИКА МАЯТНИКА + ЗАПАЗДЫВАНИЕ ГОЛОВЫ
+     */
+    private void updateSwing(float delta) {
+
+        float cableLen = Math.max(0.2f, 9f - y);
+
+        // 🔥 физика маятника
+        swingVelocity += (-swing * GameTuning.SWING_SPRING) * delta;
+        swingVelocity *= GameTuning.SWING_DAMPING;
+
+        swingVelocity = clamp(swingVelocity, -6f, 6f);
+
+        swing += swingVelocity * delta;
+
+        // 🔥 Амплитуда раскачки
+        float sin = (float) Math.sin(swing);
+        float boostedSin = sin * (1f + 2.0f * Math.abs(swing));
+
+        swingOffsetX =
+            boostedSin * cableLen * 5f
+                + swingVelocity * 0.12f * cableLen;
+
+        // 🔥 голова догоняет
+        float diff = swing - headSwing;
+
+        headSwingVelocity += diff * 25f * delta;
+        headSwingVelocity *= 0.85f;
+
+        headSwing += headSwingVelocity * delta;
+
+        if (Math.abs(swing) < GameTuning.SWING_STOP_EPS
+            && Math.abs(swingVelocity) < GameTuning.SWING_STOP_EPS) {
+            swing = 0f;
+            swingVelocity = 0f;
+        }
+
+        swing = clamp(swing, -GameTuning.SWING_MAX, GameTuning.SWING_MAX);
+    }
+
     private Toy findCatchableToy(List<Toy> source) {
         for (Toy toy : source) {
-            // Можно снова поднимать игрушки, упавшие мимо лотка
             if (toy.isWon() || toy.isCaptured() || toy.isInTray()) continue;
             if (isToyCatchable(toy) && passesCatchChance(toy)) return toy;
         }
@@ -159,176 +403,74 @@ public class Claw {
         float toyX = toy.getX();
         float toyY = toy.getY();
 
-        float leftEdge = x - fingerGap * 0.5f;
-        float rightEdge = x + fingerGap * 0.5f;
+        float realX = getRealX();
 
-        boolean insideX = toyX > leftEdge && toyX < rightEdge;
-        boolean closeY = Math.abs(toyY - (y - 0.9f)) < 0.65f;
+        float leftEdge = realX - fingerGap * 0.5f;
+        float rightEdge = realX + fingerGap * 0.5f;
+
+        float margin = 0.08f; // 🔥 настройка точности попадания клешней
+
+        boolean insideX =
+            toyX > leftEdge + margin &&
+                toyX < rightEdge - margin;
+        // здесь можно подкрутить хватание клешней
+        boolean closeY = Math.abs(toyY - (y - 0.9f)) < 0.35f;
 
         return insideX && closeY;
     }
 
-    private void updateMoveUp(float delta) {
-        y += MOVE_SPEED_Y * delta;
-
-        if (capturedToy != null && !slipCheckedThisCycle && y > GameTuning.SLIP_CHECK_Y) {
-            slipCheckedThisCycle = true;
-
-            double slipChance = GameTuning.BASE_SLIP_CHANCE
-                + capturedToy.getCatchDifficulty() * GameTuning.SLIP_DIFFICULTY_MULT;
-
-            if (Math.random() < slipChance) {
-                Toy toy = capturedToy;
-                capturedToy = null;
-
-                toy.releaseFailedGrab((float)(Math.random() * 0.7 - 0.35), -0.10f);
-                swingVelocity -= 0.55f;
-            }
-        }
-
-        if (y >= HOME_Y) {
-            y = HOME_Y;
-            state = State.MOVE_TO_TRAY;
-            swingVelocity += 0.30f;
-        }
-    }
-
-    private void updateMoveToTray(float delta, List<Toy> trayToys, WinZone winZone) {
-        float oldX = x;
-        float dx = TRAY_DROP_X - x;
-
-        // Ранний сброс по дороге
-        if (capturedToy != null && !earlyReleaseCheckedThisCycle && x > GameTuning.EARLY_RELEASE_CHECK_X) {
-            earlyReleaseCheckedThisCycle = true;
-
-            double earlyReleaseChance = GameTuning.BASE_EARLY_RELEASE_CHANCE
-                + capturedToy.getCatchDifficulty() * GameTuning.EARLY_RELEASE_DIFFICULTY_MULT;
-
-            if (Math.random() < earlyReleaseChance) {
-                Toy toy = capturedToy;
-                capturedToy = null;
-
-                boolean missTray = Math.random() < 0.58;
-                toy.releaseToPhysicalTray(winZone, missTray, true);
-
-                if (!trayToys.contains(toy)) trayToys.add(toy);
-
-                fingerGap = FINGER_GAP_OPEN;
-                swingVelocity -= 0.75f;
-            }
-        }
-
-        if (Math.abs(dx) < 0.04f) {
-            x = TRAY_DROP_X;
-            state = State.OPEN;
-            stateTimer = 0f;
-            return;
-        }
-
-        x += Math.signum(dx) * MOVE_SPEED_X * delta;
-
-        float moved = x - oldX;
-        swingVelocity += moved * 22f;
-    }
-
-    private void updateOpen(float delta, List<Toy> trayToys, WinZone winZone) {
-        stateTimer += delta;
-        float progress = clamp(stateTimer / GameTuning.CLAW_OPEN_TIME, 0f, 1f);
-        fingerGap = lerp(FINGER_GAP_CLOSED, FINGER_GAP_OPEN, progress);
-
-        if (capturedToy != null) {
-            Toy toy = capturedToy;
-
-            boolean missTray = Math.random() < (
-                GameTuning.BASE_TRAY_MISS_CHANCE
-                    + toy.getCatchDifficulty() * GameTuning.TRAY_MISS_DIFFICULTY_MULT
-            );
-
-            toy.releaseToPhysicalTray(winZone, missTray, false);
-
-            if (!trayToys.contains(toy)) trayToys.add(toy);
-
-            capturedToy = null;
-            swingVelocity -= 0.60f;
-        }
-
-        if (stateTimer >= GameTuning.CLAW_OPEN_TIME) {
-            state = State.RETURN_HOME;
-            stateTimer = 0f;
-        }
-    }
-
-    private void updateReturnHome(float delta) {
-        float oldX = x;
-        float dx = HOME_X - x;
-
-        if (Math.abs(dx) < 0.05f) {
-            x = HOME_X;
-            fingerGap = FINGER_GAP_OPEN;
-
-            // Быстро гасим остаточные колебания
-            swing *= 0.10f;
-            swingVelocity *= 0.04f;
-            state = State.IDLE;
-            return;
-        }
-
-        x += Math.signum(dx) * MOVE_SPEED_X * delta;
-
-        float moved = x - oldX;
-        swingVelocity += moved * 10f;
-    }
-
-    private void updateSwing(float delta) {
-        // Заметно качается, но быстро возвращается в вертикаль
-        swingVelocity += (-swing * GameTuning.SWING_SPRING) * delta;
-        swingVelocity *= GameTuning.SWING_DAMPING;
-        swing += swingVelocity * delta;
-
-        if (Math.abs(swing) < GameTuning.SWING_STOP_EPS
-            && Math.abs(swingVelocity) < GameTuning.SWING_STOP_EPS) {
-            swing = 0f;
-            swingVelocity = 0f;
-        }
-
-        swing = clamp(swing, -GameTuning.SWING_MAX, GameTuning.SWING_MAX);
-    }
-
     public void render(SpriteBatch batch) {
         float cableLen = Math.max(0.2f, 9f - y);
-        float swingDeg = (float)Math.toDegrees(swing);
 
+        float cableDeg = (float) Math.toDegrees(swing);
+        float headDeg = (float) Math.toDegrees(headSwing);
+
+        // 🔥 КЛЮЧ: реальная позиция с учётом раскачки
+        float drawX = x + swingOffsetX;
+
+        // 🔥 трос
         batch.draw(
             cableTexture,
-            x - 0.03f, y,
+            drawX - 0.03f, y,
             0.03f, 0f,
             0.06f, cableLen,
             1f, 1f,
-            swingDeg,
+            cableDeg,
             0, 0,
             cableTexture.getWidth(), cableTexture.getHeight(),
             false, false
         );
 
+        // 🔥 голова (с запаздыванием)
         batch.draw(
             headTexture,
-            x - HEAD_W / 2f, y - HEAD_H / 2f,
+            drawX - HEAD_W / 2f, y - HEAD_H / 2f,
             HEAD_W / 2f, HEAD_H / 2f,
             HEAD_W, HEAD_H,
             1f, 1f,
-            swingDeg,
+            headDeg,
             0, 0,
             headTexture.getWidth(), headTexture.getHeight(),
             false, false
         );
 
         float fingerTopY = y - 0.05f;
-        float leftX = x - fingerGap / 2f - FINGER_W / 2f;
-        float rightX = x + fingerGap / 2f - FINGER_W / 2f;
+        float leftX = drawX - fingerGap / 2f - FINGER_W / 2f;
+        float rightX = drawX + fingerGap / 2f - FINGER_W / 2f;
 
         float openAmount = (fingerGap - FINGER_GAP_CLOSED) / (FINGER_GAP_OPEN - FINGER_GAP_CLOSED);
-        float leftAngle = -20f + openAmount * 24f + swingDeg * 0.42f;
-        float rightAngle = 20f - openAmount * 24f + swingDeg * 0.42f;
+
+        float targetLeft = -20f + openAmount * 24f + headDeg * 0.20f;
+        float targetRight = 20f - openAmount * 24f + headDeg * 0.20f;
+
+        fingerAngleVelLeft += (targetLeft - fingerAngleLeft) * 0.22f;
+        fingerAngleVelRight += (targetRight - fingerAngleRight) * 0.22f;
+
+        fingerAngleVelLeft *= 0.78f;
+        fingerAngleVelRight *= 0.78f;
+
+        fingerAngleLeft += fingerAngleVelLeft;
+        fingerAngleRight += fingerAngleVelRight;
 
         batch.draw(
             fingerTexture,
@@ -336,7 +478,7 @@ public class Claw {
             FINGER_W / 2f, FINGER_H,
             FINGER_W, FINGER_H,
             1f, 1f,
-            leftAngle,
+            fingerAngleLeft,
             0, 0,
             fingerTexture.getWidth(), fingerTexture.getHeight(),
             false, false
@@ -348,18 +490,32 @@ public class Claw {
             FINGER_W / 2f, FINGER_H,
             FINGER_W, FINGER_H,
             1f, 1f,
-            rightAngle,
+            fingerAngleRight,
             0, 0,
             fingerTexture.getWidth(), fingerTexture.getHeight(),
             false, false
         );
     }
 
-    // Геттеры для overlay
-    public float getX() { return x; }
-    public float getY() { return y; }
-    public float getHomeY() { return HOME_Y; }
-    public float getDownLimitY() { return DOWN_LIMIT_Y; }
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
+
+    public float getHomeY() {
+        return HOME_Y;
+    }
+
+    public float getDownLimitY() {
+        return DOWN_LIMIT_Y;
+    }
+
+    public float getFingerGap() {
+        return fingerGap;
+    }
 
     private static Texture createRectTexture(int width, int height, Color color) {
         Pixmap pixmap = new Pixmap(width, height, Pixmap.Format.RGBA8888);
@@ -383,4 +539,9 @@ public class Claw {
         fingerTexture.dispose();
         cableTexture.dispose();
     }
+
+    public float getRealX() {
+        return x + swingOffsetX;
+    }
+
 }
