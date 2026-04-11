@@ -221,10 +221,21 @@ public class Claw {
 
         if (touching) {
 
+            if (pressDepth == 0f) {
+                y -= CLAW_INITIAL_PRESS_IMPULSE;
+            }
             // если есть опора — ограничиваем продавливание
             if (blocked) {
 
-                pressDepth += MOVE_SPEED_Y * delta;
+                float pressureFactor = 1f;
+
+                // 🔥 чем глубже — тем сложнее давить
+                pressureFactor = 1f - (pressDepth / CLAW_MAX_PRESS_DEPTH);
+
+                // немного минимального давления
+                pressureFactor = Math.max(0.2f, pressureFactor);
+
+                pressDepth += MOVE_SPEED_Y * delta * pressureFactor;
 
                 if (pressDepth >= CLAW_MAX_PRESS_DEPTH) {
                     state = State.CLOSE;

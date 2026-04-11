@@ -54,6 +54,9 @@ public final class GameTuning {
     // чем сложнее, тем хуже ловиться
     public static final float CLAW_SCORE_WEIGHT_DIFFICULTY = 0.3f;
 
+    // Небольшой рывок клешней вниз давление при первом контакте
+    public static final float CLAW_INITIAL_PRESS_IMPULSE = 0.02f;
+
     // =========================
     // Раскачка троса
     // =========================
