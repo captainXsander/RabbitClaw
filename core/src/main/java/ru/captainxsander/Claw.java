@@ -79,6 +79,7 @@ public class Claw {
     private boolean triedToCatch = false;
     private boolean hasMovedDown = false;
     private float pressDepth = 0f;
+    private boolean fakeGrabThisCycle = false;
 
     public Claw() {
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
@@ -124,6 +125,7 @@ public class Claw {
                 hasMovedDown = false;
                 capturedToy = null;
                 pressDepth = 0f;
+                fakeGrabThisCycle = false;
 
                 state = State.MOVE_DOWN;
                 stateTimer = 0f;
@@ -281,6 +283,13 @@ public class Claw {
             if (capturedToy != null) {
                 capturedToy.setCaptured(true);
 
+                // 🔥 определяем ложный захват
+                float fakeChance =
+                    BASE_FAKE_GRAB_CHANCE +
+                        capturedToy.getCatchDifficulty() * FAKE_GRAB_DIFFICULTY_MULT;
+
+                fakeGrabThisCycle = Math.random() < fakeChance;
+
                 // Выравниваем игрушку по центру клешни в момент захвата,
                 // чтобы её не "утащило" влево/вправо из-за старой позиции.
                 capturedToy.getBody().setTransform(
@@ -305,6 +314,22 @@ public class Claw {
     private void updateMoveUp(float delta) {
         y += MOVE_SPEED_Y * delta;
         velocityX = 0f;
+
+        // 🔥 ЛОЖНЫЙ ЗАХВАТ (выпадает почти сразу)
+        if (capturedToy != null && fakeGrabThisCycle && y > FAKE_GRAB_RELEASE_Y) {
+
+            Toy toy = capturedToy;
+            capturedToy = null;
+            fakeGrabThisCycle = false;
+
+            toy.releaseFailedGrab(
+                (float)(Math.random() * 0.2 - 0.1),
+                -0.05f
+            );
+
+            swingVelocity -= 0.15f;
+            return;
+        }
 
         if (capturedToy != null && !slipCheckedThisCycle && y > GameTuning.SLIP_CHECK_Y) {
             slipCheckedThisCycle = true;

@@ -57,6 +57,13 @@ public final class GameTuning {
     // Небольшой рывок клешней вниз давление при первом контакте
     public static final float CLAW_INITIAL_PRESS_IMPULSE = 0.02f;
 
+    // Выпадание из клешни, ложный захват
+    public static final float BASE_FAKE_GRAB_CHANCE = 0.20f;
+    public static final float FAKE_GRAB_DIFFICULTY_MULT = 0.4f;
+
+    // где отпускаем (чуть выше кучи)
+    public static final float FAKE_GRAB_RELEASE_Y = 3.2f;
+
     // =========================
     // Раскачка троса
     // =========================
