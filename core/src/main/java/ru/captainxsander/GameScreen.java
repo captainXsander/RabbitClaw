@@ -58,6 +58,7 @@ public class GameScreen implements Screen {
         winZone.create(world);
 
         claw = new Claw();
+        claw.createPhysics(world);
 
         debugOverlay = new DebugOverlay();
 

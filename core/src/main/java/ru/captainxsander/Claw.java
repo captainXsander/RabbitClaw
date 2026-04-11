@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.physics.box2d.*;
 
 import java.util.List;
 
@@ -31,6 +32,8 @@ public class Claw {
 
     private static final float FINGER_GAP_OPEN = GameTuning.CLAW_FINGER_GAP_OPEN;
     private static final float FINGER_GAP_CLOSED = GameTuning.CLAW_FINGER_GAP_CLOSED;
+
+    private Body physicsBody;
 
     private final Texture headTexture;
     private final Texture fingerTexture;
@@ -77,6 +80,30 @@ public class Claw {
         cableTexture = createRectTexture(6, 240, Color.LIGHT_GRAY);
     }
 
+    public void createPhysics(World world) {
+        BodyDef def = new BodyDef();
+        def.type = BodyDef.BodyType.KinematicBody;
+        def.position.set(getRealX(), y - 0.9f);
+
+        physicsBody = world.createBody(def);
+        physicsBody.setBullet(true);
+
+        PolygonShape shape = new PolygonShape();
+
+        // Небольшой "толкатель" в зоне головы/пальцев.
+        // Пока делаем только один прямоугольник, без физических пальцев.
+        shape.setAsBox(0.42f, 0.18f);
+
+        FixtureDef fix = new FixtureDef();
+        fix.shape = shape;
+        fix.density = 1f;
+        fix.friction = 0.4f;
+        fix.restitution = 0.08f;
+
+        physicsBody.createFixture(fix);
+        shape.dispose();
+    }
+
     public void update(float delta, List<Toy> toys, List<Toy> trayToys, WinZone winZone) {
 
         if (state == State.IDLE) {
@@ -114,6 +141,11 @@ public class Claw {
         // "приклеиваем" игрушку к клешне
         if (capturedToy != null) {
             capturedToy.attachTo(getRealX(), y - 1.10f, headSwing);
+        }
+        if (physicsBody != null) {
+            physicsBody.setTransform(getRealX(), y - 0.9f, 0f);
+            physicsBody.setLinearVelocity(0f, 0f);
+            physicsBody.setAngularVelocity(0f);
         }
         updateSwing(delta);
     }
