@@ -85,11 +85,19 @@ public class Claw {
             if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
                 state = State.MOVE_DOWN;
                 stateTimer = 0f;
+
                 slipCheckedThisCycle = false;
                 earlyReleaseCheckedThisCycle = false;
 
-                // лёгкий "толчок" маятнику
-                swingVelocity += 0.85f;
+                // 🔥 ОБНУЛЕНИЕ (ключ!)
+                boolean noInput =
+                    !Gdx.input.isKeyPressed(Input.Keys.LEFT) &&
+                        !Gdx.input.isKeyPressed(Input.Keys.RIGHT);
+
+                if (noInput && Math.abs(swing) < 0.05f && Math.abs(swingVelocity) < 0.05f) {
+                    swing = 0f;
+                    swingVelocity = 0f;
+                }
             }
         }
 
@@ -163,7 +171,7 @@ public class Claw {
             y = DOWN_LIMIT_Y;
             state = State.CLOSE;
             stateTimer = 0f;
-            swingVelocity -= 0.45f;
+            swingVelocity *= 0.7f;
             triedToCatch = false;
         }
     }
@@ -185,7 +193,19 @@ public class Claw {
 
             if (capturedToy != null) {
                 capturedToy.setCaptured(true);
-                swingVelocity += 0.22f;
+
+                // Выравниваем игрушку по центру клешни в момент захвата,
+                // чтобы её не "утащило" влево/вправо из-за старой позиции.
+                capturedToy.getBody().setTransform(
+                    getRealX(),
+                    capturedToy.getY(),
+                    capturedToy.getBody().getAngle()
+                );
+
+                // 🔥 фикс перелёта
+                if (Math.abs(swing) < 0.15f) {
+                    swingVelocity *= 0.2f;
+                }
             }
         }
 
@@ -342,7 +362,12 @@ public class Claw {
         swing += swingVelocity * delta;
 
         // 🔥 Амплитуда раскачки
-        swingOffsetX = (float) Math.sin(swing) * cableLen * 5f;
+        float sin = (float) Math.sin(swing);
+        float boostedSin = sin * (1f + 2.0f * Math.abs(swing));
+
+        swingOffsetX =
+            boostedSin * cableLen * 5f
+                + swingVelocity * 0.12f * cableLen;
 
         // 🔥 голова догоняет
         float diff = swing - headSwing;

@@ -53,7 +53,7 @@ public final class GameTuning {
     public static final float SWING_DAMPING = 0.998f;
 
     // Ограничение максимального отклонения
-    public static final float SWING_MAX = 0.32f;
+    public static final float SWING_MAX = 0.65f;
 
     // Почти ноль -> сразу останавливаем
     public static final float SWING_STOP_EPS = 0.0015f;
