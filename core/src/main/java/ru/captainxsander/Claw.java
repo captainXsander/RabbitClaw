@@ -74,7 +74,6 @@ public class Claw {
     private boolean slipCheckedThisCycle = false;
     private boolean earlyReleaseCheckedThisCycle = false;
     private boolean triedToCatch = false;
-    private float dropIgnoreTimer = 0f;
     private boolean hasMovedDown = false;
 
     public Claw() {
@@ -118,7 +117,6 @@ public class Claw {
             handleIdleInput(delta);
 
             if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
-                dropIgnoreTimer = 0f;
                 hasMovedDown = false;
                 capturedToy = null;
 
@@ -151,7 +149,8 @@ public class Claw {
             case MOVE_TO_TRAY -> updateMoveToTray(delta, trayToys, winZone);
             case OPEN -> updateOpen(delta, trayToys, winZone);
             case RETURN_HOME -> updateReturnHome(delta);
-            case IDLE -> {}
+            case IDLE -> {
+            }
         }
 
         // "приклеиваем" игрушку к клешне
@@ -208,7 +207,6 @@ public class Claw {
 
     private void updateMoveDown(float delta) {
         y -= MOVE_SPEED_Y * delta;
-        dropIgnoreTimer += delta;
         if (y < HOME_Y - 0.3f) {
             hasMovedDown = true;
         }
@@ -337,14 +335,7 @@ public class Claw {
                 float toyX = toy.getX();
                 float trayLeft = winZone.getInnerLeft();
 
-                boolean canMiss = toyX < trayLeft;
-
-                boolean missTray = canMiss && Math.random() < (
-                    GameTuning.BASE_TRAY_MISS_CHANCE
-                        + toy.getCatchDifficulty() * GameTuning.TRAY_MISS_DIFFICULTY_MULT
-                );
-
-                toy.releaseToPhysicalTray(winZone, missTray, true, velocityX);
+                toy.releaseToPhysicalTray(winZone, true, velocityX);
 
                 if (!trayToys.contains(toy)) trayToys.add(toy);
 
@@ -366,12 +357,7 @@ public class Claw {
 
             boolean canMiss = toyX < trayLeft;
 
-            boolean missTray = canMiss && Math.random() < (
-                GameTuning.BASE_TRAY_MISS_CHANCE
-                    + toy.getCatchDifficulty() * GameTuning.TRAY_MISS_DIFFICULTY_MULT
-            );
-
-            toy.releaseToPhysicalTray(winZone, missTray, false, velocityX);
+            toy.releaseToPhysicalTray(winZone, false, velocityX);
 
             if (!trayToys.contains(toy)) trayToys.add(toy);
 

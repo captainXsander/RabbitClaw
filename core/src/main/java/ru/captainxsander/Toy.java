@@ -277,7 +277,6 @@ public class Toy {
      * Сброс игрушки в сторону лотка
      */
     public void releaseToPhysicalTray(WinZone winZone,
-                                      boolean missTray,
                                       boolean earlyRelease,
                                       float clawVelocityX) {
 
@@ -403,10 +402,6 @@ public class Toy {
 
     public boolean isInTray() {
         return inTray;
-    }
-
-    public boolean isReleasedToPhysicsTray() {
-        return releasedToPhysicsTray;
     }
 
     public float getCatchDifficulty() {
