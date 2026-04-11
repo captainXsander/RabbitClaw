@@ -76,12 +76,8 @@ public class Toy {
      */
     private float settleTimer = 0f;
 
-    public Toy(World world, float x, float y, String texturePath) {
-        this(world, x, y, texturePath, 0.25f, 0.15f, 0.20f);
-    }
-
     public Toy(World world, float x, float y, String texturePath,
-               float catchDifficulty, float trayScatterX, float trayRestitution) {
+               float catchDifficulty, float trayRestitution) {
 
         texture = new Texture(Gdx.files.internal(texturePath));
 
