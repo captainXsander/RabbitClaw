@@ -28,6 +28,7 @@ public class GameScreen implements Screen {
     private WinZone winZone;
     private Claw claw;
     private DebugOverlay debugOverlay;
+    private MachineBounds bounds;
 
     // Игрушки на полу
     private final List<Toy> toys = new ArrayList<>();
@@ -47,6 +48,9 @@ public class GameScreen implements Screen {
 
         batch = new SpriteBatch();
 
+        bounds = new MachineBounds();
+        bounds.create(world);
+
         floor = new Floor();
         floor.create(world);
 
@@ -61,10 +65,26 @@ public class GameScreen implements Screen {
     }
 
     private void createToys() {
-        // V2.1+: разные параметры игрушек
-        toys.add(new Toy(world, 5.1f, 1.12f, "pig.png",   0.22f, 0.10f, 0.16f));
-        toys.add(new Toy(world, 6.05f, 1.12f, "cow.png",  0.38f, 0.16f, 0.22f));
-        toys.add(new Toy(world, 7.2f, 1.12f, "heart.png", 0.50f, 0.22f, 0.28f));
+
+        String[] textures = {
+            "pig.png",
+            "cow.png",
+            "heart.png"
+        };
+
+        for (int i = 0; i < 45; i++) {
+
+            float x = 3.5f + (float) Math.random() * 6.5f; // центр автомата
+            float y = 1.0f + (float) Math.random() * 2.5f; // куча вверх
+
+            String texture = textures[(int)(Math.random() * textures.length)];
+
+            float difficulty = 0.2f + (float)Math.random() * 0.5f;
+            float scatter = 0.1f + (float)Math.random() * 0.2f;
+            float restitution = 0.1f + (float)Math.random() * 0.3f;
+
+            toys.add(new Toy(world, x, y, texture, difficulty, scatter, restitution));
+        }
     }
 
     @Override
@@ -98,6 +118,7 @@ public class GameScreen implements Screen {
         batch.begin();
         floor.render(batch);
         winZone.render(batch);
+        bounds.render(batch);
 
         for (Toy toy : toys) {
             toy.render(batch);
@@ -131,6 +152,7 @@ public class GameScreen implements Screen {
         winZone.dispose();
         debugOverlay.dispose();
         batch.dispose();
+        bounds.dispose();
         world.dispose();
     }
 }
