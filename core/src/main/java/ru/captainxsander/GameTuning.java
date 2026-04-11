@@ -107,8 +107,8 @@ public final class GameTuning {
 
     // Базовая физика игрушек в куче
     public static final float TOY_DENSITY = 0.7f;
-    public static final float TOY_FRICTION = 1.0f;
-    public static final float TOY_RESTITUTION = 0.04f;
+    public static final float TOY_FRICTION = 0.6f;
+    public static final float TOY_RESTITUTION = 0.12f;
     public static final float TOY_LINEAR_DAMPING = 0.90f;
     public static final float TOY_ANGULAR_DAMPING = 1.4f;
 
