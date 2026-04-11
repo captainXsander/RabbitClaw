@@ -40,6 +40,11 @@ public final class GameTuning {
     public static final float CLAW_CLOSE_TIME = 0.24f;
     public static final float CLAW_OPEN_TIME = 0.24f;
 
+    // Защита от раннего срабатывания клешни
+    public static final float CLAW_MIN_DROP_BEFORE_CHECK = 0.3f;
+    // Точность захвата клешни
+    public static final float CLAW_GRAB_X_MARGIN = 0.08f;
+
     // =========================
     // Раскачка троса
     // =========================
@@ -57,6 +62,14 @@ public final class GameTuning {
 
     // Почти ноль -> сразу останавливаем
     public static final float SWING_STOP_EPS = 0.0015f;
+
+    // Ограничение раскачки velocity
+    public static final float SWING_MAX_VELOCITY = 6f;
+
+    // Коэффициенты импульса раскачки
+    public static final float SWING_INPUT_BASE = 8.0f;
+    public static final float SWING_ACCEL_MULT = 0.08f;
+    public static final float SWING_DIRECTION_CHANGE_MULT = 0.12f;
 
     // =========================
     // Срыв / ранний сброс
@@ -163,4 +176,8 @@ public final class GameTuning {
     // Когда промахнувшуюся игрушку возвращаем в обычную игру
     public static final float TOY_BACK_ON_FLOOR_Y = 1.25f;
     public static final float TOY_BACK_ON_FLOOR_MAX_VY = 0.8f;
+
+    // Продавливание
+    public static final float SUPPORT_CHECK_DY = 0.5f;
+    public static final float SUPPORT_CHECK_DX = 0.5f;
 }

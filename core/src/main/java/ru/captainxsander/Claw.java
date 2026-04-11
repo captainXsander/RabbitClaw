@@ -11,6 +11,8 @@ import com.badlogic.gdx.utils.Array;
 
 import java.util.List;
 
+import static ru.captainxsander.GameTuning.*;
+
 public class Claw {
 
     private enum State {
@@ -178,7 +180,7 @@ public class Claw {
         // =========================
         // 🔥 0. СЛАБЫЙ БАЗОВЫЙ ИМПУЛЬС (очень важен!)
         // =========================
-        swingVelocity += dx * 8.0f * lengthFactor;
+        swingVelocity += dx * SWING_INPUT_BASE * lengthFactor;
 
         // =========================
         // 🔥 1. РЫВОК
@@ -186,7 +188,7 @@ public class Claw {
         float accel = (inputVelocity - lastInputVelocity);
 
         if (Math.abs(accel) > 2.0f) { // ↓ БЫЛО 6 → стало 2
-            swingVelocity += accel * 0.08f * lengthFactor;
+            swingVelocity += accel * SWING_ACCEL_MULT * lengthFactor;
         }
 
         // =========================
@@ -197,7 +199,7 @@ public class Claw {
 
             float phaseBoost = (float) Math.cos(swing);
 
-            swingVelocity += inputVelocity * 0.12f * lengthFactor * phaseBoost;
+            swingVelocity += inputVelocity * SWING_DIRECTION_CHANGE_MULT * lengthFactor * phaseBoost;
         }
 
         lastInputVelocity = inputVelocity;
@@ -207,7 +209,7 @@ public class Claw {
 
     private void updateMoveDown(float delta) {
         y -= MOVE_SPEED_Y * delta;
-        if (y < HOME_Y - 0.3f) {
+        if (y < HOME_Y - CLAW_MIN_DROP_BEFORE_CHECK) {
             hasMovedDown = true;
         }
 
@@ -385,7 +387,7 @@ public class Claw {
         swingVelocity += (-swing * GameTuning.SWING_SPRING) * delta;
         swingVelocity *= GameTuning.SWING_DAMPING;
 
-        swingVelocity = clamp(swingVelocity, -6f, 6f);
+        swingVelocity = clamp(swingVelocity, -SWING_MAX_VELOCITY, SWING_MAX_VELOCITY);
 
         swing += swingVelocity * delta;
 
@@ -468,9 +470,7 @@ public class Claw {
         float leftEdge = realX - fingerGap * 0.5f;
         float rightEdge = realX + fingerGap * 0.5f;
 
-        float margin = 0.08f;
-
-        return toyX > leftEdge + margin && toyX < rightEdge - margin;
+        return toyX > leftEdge + CLAW_GRAB_X_MARGIN && toyX < rightEdge - CLAW_GRAB_X_MARGIN;
     }
 
     private boolean passesCatchChance(Toy toy) {
@@ -646,7 +646,7 @@ public class Claw {
                 float dy = toyY - belowToy.getY();
                 float dx = Math.abs(toy.getX() - belowToy.getX());
 
-                if (dy > 0 && dy < 0.5f && dx < 0.5f) {
+                if (dy > 0 && dy < SUPPORT_CHECK_DY && dx < SUPPORT_CHECK_DX) {
                     hasSupport = true;
                     break;
                 }
