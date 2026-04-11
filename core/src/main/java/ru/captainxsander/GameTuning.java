@@ -47,10 +47,10 @@ public final class GameTuning {
     public static final float SWING_INPUT_MULTIPLIER = 30f;
 
     // Чем больше SPRING, тем быстрее тянет к вертикали
-    public static final float SWING_SPRING = 34f;
+    public static final float SWING_SPRING = 15f;
 
     // Чем меньше DAMPING, тем быстрее затухают колебания
-    public static final float SWING_DAMPING = 0.80f;
+    public static final float SWING_DAMPING = 0.995f;
 
     // Ограничение максимального отклонения
     public static final float SWING_MAX = 0.32f;
