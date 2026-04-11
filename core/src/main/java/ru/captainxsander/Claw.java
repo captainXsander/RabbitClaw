@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.Array;
 
@@ -77,6 +78,7 @@ public class Claw {
     private boolean earlyReleaseCheckedThisCycle = false;
     private boolean triedToCatch = false;
     private boolean hasMovedDown = false;
+    private float pressDepth = 0f;
 
     public Claw() {
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
@@ -121,6 +123,7 @@ public class Claw {
             if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
                 hasMovedDown = false;
                 capturedToy = null;
+                pressDepth = 0f;
 
                 state = State.MOVE_DOWN;
                 stateTimer = 0f;
@@ -213,11 +216,33 @@ public class Claw {
             hasMovedDown = true;
         }
 
-        if (hasMovedDown && isBlockedByToy()) {
-            state = State.CLOSE;
-            stateTimer = 0f;
-            triedToCatch = false;
-            return;
+        boolean touching = hasMovedDown && isTouchingAnyToy();
+        boolean blocked = hasMovedDown && isBlockedByToy();
+
+        if (touching) {
+
+            // если есть опора — ограничиваем продавливание
+            if (blocked) {
+
+                pressDepth += MOVE_SPEED_Y * delta;
+
+                if (pressDepth >= CLAW_MAX_PRESS_DEPTH) {
+                    state = State.CLOSE;
+                    stateTimer = 0f;
+                    triedToCatch = false;
+                    return;
+                }
+
+            } else {
+                // нет опоры → сразу пытаемся схватить
+                state = State.CLOSE;
+                stateTimer = 0f;
+                triedToCatch = false;
+                return;
+            }
+
+        } else {
+            pressDepth = 0f;
         }
 
         if (y <= DOWN_LIMIT_Y) {
@@ -656,6 +681,44 @@ public class Claw {
             if (hasSupport) {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    private boolean isTouchingAnyToy() {
+
+        if (physicsBody == null || world == null) return false;
+
+        for (Contact contact : world.getContactList()) {
+            if (!contact.isTouching()) continue;
+
+            Body a = contact.getFixtureA().getBody();
+            Body b = contact.getFixtureB().getBody();
+
+            Body other = null;
+
+            if (a == physicsBody) other = b;
+            else if (b == physicsBody) other = a;
+            else continue;
+
+            if (!(other.getUserData() instanceof Toy toy)) continue;
+
+            if (toy.isCaptured() || toy.isWon() || toy.isInTray()) continue;
+
+            // 🔥 КЛЮЧ 1: контакт должен быть РЯДОМ (не старый)
+            Vector2 posA = physicsBody.getPosition();
+            Vector2 posB = other.getPosition();
+
+            if (posA.dst2(posB) > 0.5f) continue;
+
+            // 🔥 КЛЮЧ 2: игрушка должна быть ПОД клешней
+            float dy = toy.getY() - (y - 0.9f);
+
+            if (dy > 0.3f) continue; // слишком высоко
+            if (dy < -0.2f) continue; // слишком низко
+
+            return true;
         }
 
         return false;
