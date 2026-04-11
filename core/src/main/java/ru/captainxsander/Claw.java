@@ -445,7 +445,7 @@ public class Claw {
         if (physicsBody == null || world == null) return null;
 
         Toy best = null;
-        float bestY = -999f;
+        float bestScore = Float.MAX_VALUE;
 
         for (Contact contact : world.getContactList()) {
             if (!contact.isTouching()) continue;
@@ -474,8 +474,16 @@ public class Claw {
                 // чтобы не цеплять крайние касания
                 if (!isToyCatchableByXOnly(toy)) continue;
 
-                if (toy.getY() > bestY) {
-                    bestY = toy.getY();
+                float dx = Math.abs(toy.getX() - getRealX());
+                float dy = Math.abs(toy.getY() - (y - 0.9f));
+
+                float score =
+                    dx * CLAW_SCORE_WEIGHT_X +
+                        dy * CLAW_SCORE_WEIGHT_Y +
+                        toy.getCatchDifficulty() * CLAW_SCORE_WEIGHT_DIFFICULTY;
+
+                if (score < bestScore) {
+                    bestScore = score;
                     best = toy;
                 }
             }

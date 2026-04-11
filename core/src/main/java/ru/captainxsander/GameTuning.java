@@ -48,6 +48,12 @@ public final class GameTuning {
     // Сила продавливаемости клешни, на сколько может продавить
     public static final float CLAW_MAX_PRESS_DEPTH = 0.35f;
 
+    // Выбираем игрушку ближе к центру клешни, чем сложнее, чем хуже ловиться
+    public static final float CLAW_SCORE_WEIGHT_X = 0.6f;
+    public static final float CLAW_SCORE_WEIGHT_Y = 1.2f;
+    // чем сложнее, тем хуже ловиться
+    public static final float CLAW_SCORE_WEIGHT_DIFFICULTY = 0.3f;
+
     // =========================
     // Раскачка троса
     // =========================
