@@ -212,7 +212,7 @@ public class Claw {
             hasMovedDown = true;
         }
 
-        if (hasMovedDown && isTouchingAnyToy()) {
+        if (hasMovedDown && isReallyTouchingToy()) {
             state = State.CLOSE;
             stateTimer = 0f;
             triedToCatch = false;
@@ -681,7 +681,7 @@ public class Claw {
         this.world = world;
     }
 
-    private boolean isTouchingAnyToy() {
+    private boolean isReallyTouchingToy() {
 
         if (physicsBody == null || world == null) return false;
 
@@ -691,8 +691,24 @@ public class Claw {
             Body a = contact.getFixtureA().getBody();
             Body b = contact.getFixtureB().getBody();
 
-            if (a == physicsBody || b == physicsBody) {
-                return true;
+            Body other = null;
+
+            if (a == physicsBody) other = b;
+            else if (b == physicsBody) other = a;
+            else continue;
+
+            // 🔥 ВАЖНО: проверяем, что это именно игрушка
+            if (other.getUserData() instanceof Toy toy) {
+
+                // игнорим уже захваченные / выигранные
+                if (toy.isCaptured() || toy.isWon() || toy.isInTray()) continue;
+
+                // 🔥 ВАЖНО: проверка что реально под клешней
+                float dy = Math.abs(toy.getY() - (y - 0.9f));
+
+                if (dy < 0.25f) {
+                    return true;
+                }
             }
         }
 

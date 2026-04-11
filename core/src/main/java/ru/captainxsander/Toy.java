@@ -97,6 +97,7 @@ public class Toy {
         def.position.set(x, y);
 
         body = world.createBody(def);
+        body.setUserData(this);
 
         CircleShape shape = new CircleShape();
         shape.setRadius(GameTuning.TOY_RADIUS);
