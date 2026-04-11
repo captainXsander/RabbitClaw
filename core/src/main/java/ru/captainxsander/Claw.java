@@ -56,10 +56,9 @@ public class Claw {
     private float swing = 0f;
     private float swingVelocity = 0f;
     private float lastInputVelocity = 0f;
-
     // =========================
-// 🔥 ГОЛОВА (запаздывает за тросом)
-// =========================
+    // 🔥 ГОЛОВА (запаздывает за тросом)
+    // =========================
     private float headSwing = 0f;
     private float headSwingVelocity = 0f;
 
@@ -172,18 +171,18 @@ public class Claw {
         float dx = x - oldX;
         float inputVelocity = dx / delta;
 
-// длина троса
+        // длина троса
         float cableLen = Math.max(0.2f, 9f - y);
         float lengthFactor = cableLen / 6f;
 
-// =========================
-// 🔥 0. СЛАБЫЙ БАЗОВЫЙ ИМПУЛЬС (очень важен!)
-// =========================
+        // =========================
+        // 🔥 0. СЛАБЫЙ БАЗОВЫЙ ИМПУЛЬС (очень важен!)
+        // =========================
         swingVelocity += dx * 8.0f * lengthFactor;
 
-// =========================
-// 🔥 1. РЫВОК
-// =========================
+        // =========================
+        // 🔥 1. РЫВОК
+        // =========================
         float accel = (inputVelocity - lastInputVelocity);
 
         if (Math.abs(accel) > 2.0f) { // ↓ БЫЛО 6 → стало 2
