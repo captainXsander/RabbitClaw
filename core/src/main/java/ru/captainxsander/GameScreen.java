@@ -59,7 +59,7 @@ public class GameScreen implements Screen {
 
         claw = new Claw();
         claw.createPhysics(world);
-
+        claw.setWorld(world);
         debugOverlay = new DebugOverlay();
 
         createToys();

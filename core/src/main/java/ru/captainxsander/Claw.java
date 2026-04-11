@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 
 import java.util.List;
@@ -34,6 +35,7 @@ public class Claw {
     private static final float FINGER_GAP_CLOSED = GameTuning.CLAW_FINGER_GAP_CLOSED;
 
     private Body physicsBody;
+    private World world;
 
     private final Texture headTexture;
     private final Texture fingerTexture;
@@ -105,7 +107,9 @@ public class Claw {
     }
 
     public void update(float delta, List<Toy> toys, List<Toy> trayToys, WinZone winZone) {
-
+        physicsBody.setTransform(getRealX(), y - 0.9f, 0f);
+        physicsBody.setLinearVelocity(0f, 0f);
+        physicsBody.setAngularVelocity(0f);
         if (state == State.IDLE) {
             handleIdleInput(delta);
 
@@ -141,11 +145,6 @@ public class Claw {
         // "приклеиваем" игрушку к клешне
         if (capturedToy != null) {
             capturedToy.attachTo(getRealX(), y - 1.10f, headSwing);
-        }
-        if (physicsBody != null) {
-            physicsBody.setTransform(getRealX(), y - 0.9f, 0f);
-            physicsBody.setLinearVelocity(0f, 0f);
-            physicsBody.setAngularVelocity(0f);
         }
         updateSwing(delta);
     }
@@ -196,21 +195,27 @@ public class Claw {
     }
 
     private void updateMoveDown(float delta) {
-        velocityX = 0f;
-
         y -= MOVE_SPEED_Y * delta;
+
+        // 🔥 проверка столкновения через контакт (а не скорость!)
+        if (isTouchingAnyToy()) {
+            state = State.CLOSE;
+            stateTimer = 0f;
+            triedToCatch = false;
+            return;
+        }
+
         if (y <= DOWN_LIMIT_Y) {
             y = DOWN_LIMIT_Y;
             state = State.CLOSE;
             stateTimer = 0f;
-            swingVelocity *= 0.7f;
             triedToCatch = false;
         }
     }
 
     private void updateClose(float delta, List<Toy> toys, List<Toy> trayToys) {
+        physicsBody.setLinearVelocity(0f, 0f);
         velocityX = 0f;
-
         stateTimer += delta;
         float progress = clamp(stateTimer / GameTuning.CLAW_CLOSE_TIME, 0f, 1f);
         fingerGap = lerp(FINGER_GAP_OPEN, FINGER_GAP_CLOSED, progress);
@@ -218,9 +223,17 @@ public class Claw {
         if (!triedToCatch && stateTimer < 0.08f) {
             triedToCatch = true;
 
-            capturedToy = findCatchableToy(toys);
+            capturedToy = findTouchingToy(toys);
             if (capturedToy == null) {
-                capturedToy = findCatchableToy(trayToys);
+                capturedToy = findTouchingToy(trayToys);
+            }
+
+            // fallback на старую логику — только если контакта вообще нет
+            if (capturedToy == null) {
+                capturedToy = findCatchableToy(toys);
+                if (capturedToy == null) {
+                    capturedToy = findCatchableToy(trayToys);
+                }
             }
 
             if (capturedToy != null) {
@@ -248,9 +261,8 @@ public class Claw {
     }
 
     private void updateMoveUp(float delta) {
-        velocityX = 0f;
-
         y += MOVE_SPEED_Y * delta;
+        velocityX = 0f;
 
         if (capturedToy != null && !slipCheckedThisCycle && y > GameTuning.SLIP_CHECK_Y) {
             slipCheckedThisCycle = true;
@@ -419,11 +431,87 @@ public class Claw {
     }
 
     private Toy findCatchableToy(List<Toy> source) {
+
+        Toy best = null;
+        float bestY = -999f;
+
         for (Toy toy : source) {
+
             if (toy.isWon() || toy.isCaptured() || toy.isInTray()) continue;
-            if (isToyCatchable(toy) && passesCatchChance(toy)) return toy;
+
+            if (!isToyCatchable(toy)) continue;
+
+            // 🔥 выбираем самую верхнюю
+            if (toy.getY() > bestY) {
+                bestY = toy.getY();
+                best = toy;
+            }
         }
+
+        if (best != null && passesCatchChance(best)) {
+            return best;
+        }
+
         return null;
+    }
+
+    private Toy findTouchingToy(List<Toy> source) {
+        if (physicsBody == null || world == null) return null;
+
+        Toy best = null;
+        float bestY = -999f;
+
+        for (Contact contact : world.getContactList()) {
+            if (!contact.isTouching()) continue;
+
+            Fixture fixtureA = contact.getFixtureA();
+            Fixture fixtureB = contact.getFixtureB();
+
+            Body bodyA = fixtureA.getBody();
+            Body bodyB = fixtureB.getBody();
+
+            Body otherBody = null;
+
+            if (bodyA == physicsBody) {
+                otherBody = bodyB;
+            } else if (bodyB == physicsBody) {
+                otherBody = bodyA;
+            } else {
+                continue;
+            }
+
+            for (Toy toy : source) {
+                if (toy.isWon() || toy.isCaptured() || toy.isInTray()) continue;
+                if (toy.getBody() != otherBody) continue;
+
+                // дополнительно оставляем проверку по X,
+                // чтобы не цеплять крайние касания
+                if (!isToyCatchableByXOnly(toy)) continue;
+
+                if (toy.getY() > bestY) {
+                    bestY = toy.getY();
+                    best = toy;
+                }
+            }
+        }
+
+        if (best != null && passesCatchChance(best)) {
+            return best;
+        }
+
+        return null;
+    }
+
+    private boolean isToyCatchableByXOnly(Toy toy) {
+        float toyX = toy.getX();
+        float realX = getRealX();
+
+        float leftEdge = realX - fingerGap * 0.5f;
+        float rightEdge = realX + fingerGap * 0.5f;
+
+        float margin = 0.08f;
+
+        return toyX > leftEdge + margin && toyX < rightEdge - margin;
     }
 
     private boolean passesCatchChance(Toy toy) {
@@ -574,6 +662,28 @@ public class Claw {
 
     public float getRealX() {
         return x + swingOffsetX;
+    }
+
+    public void setWorld(World world) {
+        this.world = world;
+    }
+
+    private boolean isTouchingAnyToy() {
+
+        if (physicsBody == null || world == null) return false;
+
+        for (Contact contact : world.getContactList()) {
+            if (!contact.isTouching()) continue;
+
+            Body a = contact.getFixtureA().getBody();
+            Body b = contact.getFixtureB().getBody();
+
+            if (a == physicsBody || b == physicsBody) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 }
