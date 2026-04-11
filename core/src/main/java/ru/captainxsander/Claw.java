@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.box2d.*;
+import com.badlogic.gdx.utils.Array;
 
 import java.util.List;
 
@@ -212,7 +213,7 @@ public class Claw {
             hasMovedDown = true;
         }
 
-        if (hasMovedDown && isReallyTouchingToy()) {
+        if (hasMovedDown && isBlockedByToy()) {
             state = State.CLOSE;
             stateTimer = 0f;
             triedToCatch = false;
@@ -681,7 +682,7 @@ public class Claw {
         this.world = world;
     }
 
-    private boolean isReallyTouchingToy() {
+    private boolean isBlockedByToy() {
 
         if (physicsBody == null || world == null) return false;
 
@@ -697,18 +698,38 @@ public class Claw {
             else if (b == physicsBody) other = a;
             else continue;
 
-            // 🔥 ВАЖНО: проверяем, что это именно игрушка
-            if (other.getUserData() instanceof Toy toy) {
+            if (!(other.getUserData() instanceof Toy toy)) continue;
 
-                // игнорим уже захваченные / выигранные
-                if (toy.isCaptured() || toy.isWon() || toy.isInTray()) continue;
+            if (toy.isCaptured() || toy.isWon() || toy.isInTray()) continue;
 
-                // 🔥 ВАЖНО: проверка что реально под клешней
-                float dy = Math.abs(toy.getY() - (y - 0.9f));
+            float toyY = toy.getY();
 
-                if (dy < 0.25f) {
-                    return true;
+            // 🔥 ИЩЕМ ОПОРУ СНИЗУ
+            boolean hasSupport = false;
+
+            Array<Body> bodies = new Array<>();
+            world.getBodies(bodies);
+
+            for (Body body : bodies) {
+
+                if (body == other) continue;
+
+                if (!(body.getUserData() instanceof Toy belowToy)) continue;
+
+                if (belowToy.isCaptured() || belowToy.isWon()) continue;
+
+                float dy = toyY - belowToy.getY();
+                float dx = Math.abs(toy.getX() - belowToy.getX());
+
+                if (dy > 0 && dy < 0.5f && dx < 0.5f) {
+                    hasSupport = true;
+                    break;
                 }
+            }
+
+            // 🔥 ЕСЛИ ЕСТЬ ОПОРА — БЛОК
+            if (hasSupport) {
+                return true;
             }
         }
 
