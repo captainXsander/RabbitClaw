@@ -70,8 +70,6 @@ public final class GameTuning {
     public static final double BASE_EARLY_RELEASE_CHANCE = 0.46;
     public static final double EARLY_RELEASE_DIFFICULTY_MULT = 0.28;
 
-    public static final double BASE_TRAY_MISS_CHANCE = 0.24;
-    public static final double TRAY_MISS_DIFFICULTY_MULT = 0.32;
 
     // =========================
     // Лоток
