@@ -5,6 +5,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.box2d.*;
 
+import static ru.captainxsander.GameTuning.CLAW_VELOCITY_TRANSFER;
+
 /**
  * Игрушка — это физический объект (Box2D), который:
  * * лежит в куче
@@ -40,11 +42,6 @@ public class Toy {
      * (чисто визуальная задержка — НЕ влияет на velocity)
      */
     private float slidePhase = 0f;
-
-    /**
-     * Направление соскальзывания (-1 или 1)
-     */
-    private float slideDir = 0f;
 
     // =========================
     // Состояния игрушки
@@ -280,7 +277,8 @@ public class Toy {
      * Сброс игрушки в сторону лотка
      */
     public void releaseToPhysicalTray(WinZone winZone,
-                                      boolean earlyRelease) {
+                                      boolean earlyRelease,
+                                      float clawVelocityX) {
 
         captured = false;
         releasedToPhysicsTray = true;
@@ -293,7 +291,6 @@ public class Toy {
         // задержки для визуального эффекта
         releaseDelay = 0.08f + (float) Math.random() * 0.12f;
         slidePhase = 0.12f + (float) Math.random() * 0.1f;
-        slideDir = Math.random() < 0.5 ? -1f : 1f;
 
         body.setType(BodyDef.BodyType.DynamicBody);
 
@@ -313,7 +310,7 @@ public class Toy {
         // =========================
 
         // скорость от клешни
-        vx = 0f;
+        vx = clawVelocityX * CLAW_VELOCITY_TRANSFER;
 
         // случайный шум
         vx += (float) ((Math.random() - 0.5f) * GameTuning.RELEASE_RANDOM_X);
@@ -321,9 +318,6 @@ public class Toy {
         if (earlyRelease) {
             vx += (float) ((Math.random() - 0.5f) * GameTuning.RELEASE_RANDOM_X_EARLY);
         }
-
-        // эффект "соскальзывания"
-        vx += slideDir * GameTuning.RELEASE_SLIDE_IMPULSE;
 
         // влияние "веса"
         vx *= 0.9f + (1f - catchDifficulty) * 0.2f;
@@ -339,22 +333,6 @@ public class Toy {
         // =========================
         // 🎯 ЗОНЫ ПОПАДАНИЯ
         // =========================
-
-        float trayCenter = winZone.getCenterX();
-        float dx = trayCenter - body.getPosition().x;
-        float distance = Math.abs(dx);
-
-        if (distance < GameTuning.TRAY_PERFECT_ZONE) {
-            vx += dx * GameTuning.TRAY_PERFECT_ASSIST_X;
-            vy += GameTuning.TRAY_PERFECT_ASSIST_Y;
-        } else if (distance < GameTuning.TRAY_ASSIST_ZONE) {
-            float t = 1f - (distance - GameTuning.TRAY_PERFECT_ZONE)
-                / (GameTuning.TRAY_ASSIST_ZONE - GameTuning.TRAY_PERFECT_ZONE);
-
-            vx += dx * GameTuning.TRAY_ASSIST_X * t;
-            vy += GameTuning.TRAY_ASSIST_Y * t;
-
-        }
 
         // 🔥 задаём скорость ОДИН РАЗ
         body.setLinearVelocity(vx, vy);

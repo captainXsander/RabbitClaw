@@ -77,6 +77,8 @@ public class Claw {
     private float pressDepth = 0f;
     private boolean fakeGrabThisCycle = false;
     private float dropCheckTimer = 0f;
+    // Скорость клешни
+    private float velocityX = 0f;
 
     public Claw() {
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
@@ -360,6 +362,8 @@ public class Claw {
     }
 
     private void updateMoveToTray(float delta, List<Toy> trayToys, WinZone winZone) {
+        float oldX = getRealX();
+
         // 🔥 ФИЗИЧЕСКОЕ ВЫПАДЕНИЕ ВО ВРЕМЯ ДВИЖЕНИЯ
         if (capturedToy != null) {
 
@@ -376,7 +380,7 @@ public class Claw {
                     Toy toy = capturedToy;
                     capturedToy = null;
 
-                    toy.releaseToPhysicalTray(winZone, true);
+                    toy.releaseToPhysicalTray(winZone, true, velocityX);
 
                     if (!trayToys.contains(toy)) trayToys.add(toy);
 
@@ -397,6 +401,8 @@ public class Claw {
 
         x += Math.signum(dx) * MOVE_SPEED_X * delta;
 
+        float newX = getRealX();
+        velocityX = (newX - oldX) / delta;
     }
 
     private float getDropChance() {
@@ -420,7 +426,7 @@ public class Claw {
         if (capturedToy != null) {
             Toy toy = capturedToy;
 
-            toy.releaseToPhysicalTray(winZone, false);
+            toy.releaseToPhysicalTray(winZone, false, velocityX);
 
             if (!trayToys.contains(toy)) trayToys.add(toy);
 

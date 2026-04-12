@@ -159,22 +159,6 @@ public final class GameTuning {
     public static final float RELEASE_BASE_VY = -0.6f;
     public static final float RELEASE_RANDOM_VY = 0.2f;
 
-    // =========================
-    // Зоны попадания в лоток
-    // =========================
-
-    // Почти гарант попадания
-    public static final float TRAY_PERFECT_ZONE = 0.6f;
-
-    // Зона, где ещё есть шанс
-    public static final float TRAY_ASSIST_ZONE = 2.2f;
-
-    // Насколько "помогаем" попасть
-    public static final float TRAY_PERFECT_ASSIST_X = 0.35f;
-    public static final float TRAY_PERFECT_ASSIST_Y = 0.35f;
-
-    public static final float TRAY_ASSIST_X = 0.25f;
-    public static final float TRAY_ASSIST_Y = 0.25f;
 
     // =========================
     // Поведение в лотке
@@ -210,4 +194,7 @@ public final class GameTuning {
     // Продавливание
     public static final float SUPPORT_CHECK_DY = 0.5f;
     public static final float SUPPORT_CHECK_DX = 0.5f;
+
+    // Передача скорости игрушки от клешни
+    public static final float CLAW_VELOCITY_TRANSFER = 3.0f;
 }
