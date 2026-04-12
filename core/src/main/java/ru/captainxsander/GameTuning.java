@@ -100,11 +100,6 @@ public final class GameTuning {
     public static final double SLIP_DIFFICULTY_MULT = 0.45;
 
 
-    // Импульс при столкновении с игрушкой для раскачки
-    public static final float SWING_HIT_IMPULSE_BASE = 0.14f;
-    public static final float SWING_HIT_IMPULSE_FROM_X = 0.08f;
-    public static final float SWING_HIT_IMPULSE_MAX = 0.29f;
-
     // =========================
     // Лоток
     // =========================
@@ -147,9 +142,6 @@ public final class GameTuning {
     // =========================
     // Полёт игрушки (🔥 ключевая часть)
     // =========================
-
-    // Насколько сильно скорость клешни влияет на игрушку
-    public static final float RELEASE_VX_FROM_CLAW_MULT = 0.6f;
 
     // Случайный разброс по X
     public static final float RELEASE_RANDOM_X = 0.3f;
@@ -202,12 +194,9 @@ public final class GameTuning {
     // Выпадение из клешни (новая физика)
     // =========================
     public static final float CLAW_DROP_BASE_CHANCE = 0.235f;
-    public static final float CLAW_DROP_SWING_MULT = 0.8f;
-    public static final float CLAW_DROP_VELOCITY_MULT = 0.4f;
-    public static final float CLAW_DROP_INSTABILITY_MULT = 0.25f;
     public static final float CLAW_DROP_DIFFICULTY_MULT = 0.08f;
-    public static final float CLAW_DROP_SWING_PENALTY = 0.2f;
     public static final float CLAW_CHECK_DROP_CHANCE_TIMER = 1f;
+    public static final float CLAW_DROP_MIN_CHANCE = 0.08f;
 
     // =========================
     // Болтание игрушки в лапах

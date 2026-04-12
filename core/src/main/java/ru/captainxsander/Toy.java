@@ -216,27 +216,18 @@ public class Toy {
             return;
         }
 
-        if (Math.abs(body.getLinearVelocity().x) < 0.008f) {
-            body.setLinearVelocity(0, body.getLinearVelocity().y);
-        }
-        if (Math.abs(body.getAngularVelocity()) < 0.008f) {
-            body.setAngularVelocity(0);
-        }
         // 🔥 микро-жизнь кучи (очень слабая)
-        if (!captured && !inTray && !releasedToPhysicsTray) {
+        if (Math.random() < 0.002f) { // редко!
+            float impulseX = (float) (Math.random() * 0.02f - 0.01f);
+            float impulseY = (float) (Math.random() * 0.02f);
 
-            if (Math.random() < 0.002f) { // редко!
-                float impulseX = (float)(Math.random() * 0.02f - 0.01f);
-                float impulseY = (float)(Math.random() * 0.02f);
-
-                body.applyLinearImpulse(
-                    impulseX,
-                    impulseY,
-                    body.getWorldCenter().x,
-                    body.getWorldCenter().y,
-                    true
-                );
-            }
+            body.applyLinearImpulse(
+                impulseX,
+                impulseY,
+                body.getWorldCenter().x,
+                body.getWorldCenter().y,
+                true
+            );
         }
     }
 
@@ -289,8 +280,7 @@ public class Toy {
      * Сброс игрушки в сторону лотка
      */
     public void releaseToPhysicalTray(WinZone winZone,
-                                      boolean earlyRelease,
-                                      float clawVelocityX) {
+                                      boolean earlyRelease) {
 
         captured = false;
         releasedToPhysicsTray = true;
@@ -323,13 +313,13 @@ public class Toy {
         // =========================
 
         // скорость от клешни
-        vx = clawVelocityX * GameTuning.RELEASE_VX_FROM_CLAW_MULT;
+        vx = 0f;
 
         // случайный шум
-        vx += (Math.random() - 0.5f) * GameTuning.RELEASE_RANDOM_X;
+        vx += (float) ((Math.random() - 0.5f) * GameTuning.RELEASE_RANDOM_X);
 
         if (earlyRelease) {
-            vx += (Math.random() - 0.5f) * GameTuning.RELEASE_RANDOM_X_EARLY;
+            vx += (float) ((Math.random() - 0.5f) * GameTuning.RELEASE_RANDOM_X_EARLY);
         }
 
         // эффект "соскальзывания"
