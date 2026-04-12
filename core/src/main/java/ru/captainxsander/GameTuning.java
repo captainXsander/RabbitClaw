@@ -95,13 +95,10 @@ public final class GameTuning {
     // Срыв / ранний сброс
     // =========================
     public static final float SLIP_CHECK_Y = 4.2f;
-    public static final float EARLY_RELEASE_CHECK_X = 10.2f;
 
     public static final double BASE_SLIP_CHANCE = 0.22;
     public static final double SLIP_DIFFICULTY_MULT = 0.45;
 
-    public static final double BASE_EARLY_RELEASE_CHANCE = 0.46;
-    public static final double EARLY_RELEASE_DIFFICULTY_MULT = 0.28;
 
     // Импульс при столкновении с игрушкой для раскачки
     public static final float SWING_HIT_IMPULSE_BASE = 0.14f;
@@ -200,6 +197,25 @@ public final class GameTuning {
     // Когда промахнувшуюся игрушку возвращаем в обычную игру
     public static final float TOY_BACK_ON_FLOOR_Y = 1.25f;
     public static final float TOY_BACK_ON_FLOOR_MAX_VY = 0.8f;
+
+    // =========================
+    // Выпадение из клешни (новая физика)
+    // =========================
+    public static final float CLAW_DROP_BASE_CHANCE = 0.015f;
+    public static final float CLAW_DROP_SWING_MULT = 0.8f;
+    public static final float CLAW_DROP_VELOCITY_MULT = 0.4f;
+    public static final float CLAW_DROP_INSTABILITY_MULT = 0.05f;
+    public static final float CLAW_DROP_DIFFICULTY_MULT = 0.08f;
+    public static final float CLAW_DROP_SWING_PENALTY = 0.2f;
+
+    // =========================
+    // Болтание игрушки в лапах
+    // =========================
+    public static final float CLAW_WOBBLE_AMPLITUDE_X = 0.03f;
+    public static final float CLAW_WOBBLE_AMPLITUDE_Y = 0.02f;
+
+    public static final float CLAW_WOBBLE_FREQ_X = 18f;
+    public static final float CLAW_WOBBLE_FREQ_Y = 14f;
 
     // Продавливание
     public static final float SUPPORT_CHECK_DY = 0.5f;
