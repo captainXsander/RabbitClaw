@@ -35,7 +35,4 @@ Note that most tasks that are not specific to a single project can be run with `
 For example, `core:clean` removes `build` folder only from the `core` project.
 
 Давай запомним такой список и пойдем делать улучшения по порядку: 
-5) Микро-раскачка от удара 
-6) Убрать “идеальную стабилизацию игрушек” 
 7) Сделать пальцы физическими телами
-8) “почти выиграл, но застрял на краю лотка” (очень мощная механика для удержания игрока) 
