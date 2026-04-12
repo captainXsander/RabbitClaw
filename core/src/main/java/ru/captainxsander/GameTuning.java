@@ -201,12 +201,13 @@ public final class GameTuning {
     // =========================
     // Выпадение из клешни (новая физика)
     // =========================
-    public static final float CLAW_DROP_BASE_CHANCE = 0.015f;
+    public static final float CLAW_DROP_BASE_CHANCE = 0.235f;
     public static final float CLAW_DROP_SWING_MULT = 0.8f;
     public static final float CLAW_DROP_VELOCITY_MULT = 0.4f;
-    public static final float CLAW_DROP_INSTABILITY_MULT = 0.05f;
+    public static final float CLAW_DROP_INSTABILITY_MULT = 0.25f;
     public static final float CLAW_DROP_DIFFICULTY_MULT = 0.08f;
     public static final float CLAW_DROP_SWING_PENALTY = 0.2f;
+    public static final float CLAW_CHECK_DROP_CHANCE_TIMER = 1f;
 
     // =========================
     // Болтание игрушки в лапах

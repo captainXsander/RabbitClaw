@@ -79,6 +79,7 @@ public class Claw {
     private boolean hasMovedDown = false;
     private float pressDepth = 0f;
     private boolean fakeGrabThisCycle = false;
+    private float dropCheckTimer = 0f;
 
     public Claw() {
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
@@ -295,7 +296,7 @@ public class Claw {
 
             if (capturedToy != null) {
                 capturedToy.setCaptured(true);
-
+                dropCheckTimer = 0f;
                 // 🔥 определяем ложный захват
                 float fakeChance =
                     BASE_FAKE_GRAB_CHANCE +
@@ -368,30 +369,29 @@ public class Claw {
 
     private void updateMoveToTray(float delta, List<Toy> trayToys, WinZone winZone) {
         // 🔥 ФИЗИЧЕСКОЕ ВЫПАДЕНИЕ ВО ВРЕМЯ ДВИЖЕНИЯ
+        // 🔥 ФИЗИЧЕСКОЕ ВЫПАДЕНИЕ ВО ВРЕМЯ ДВИЖЕНИЯ
         if (capturedToy != null) {
 
-            float swingStrength = Math.abs(swing) + Math.abs(swingVelocity);
+            float dropChance = getDropChance();
 
-            float instability =
-                swingStrength * CLAW_DROP_SWING_MULT +
-                    Math.abs(velocityX) * CLAW_DROP_VELOCITY_MULT;
+            dropCheckTimer += delta;
 
-            float dropChance =
-                CLAW_DROP_BASE_CHANCE +
-                    instability * CLAW_DROP_INSTABILITY_MULT +
-                    capturedToy.getCatchDifficulty() * CLAW_DROP_DIFFICULTY_MULT;
+            if (dropCheckTimer > CLAW_CHECK_DROP_CHANCE_TIMER) {
+                dropCheckTimer = 0f;
 
-            if (Math.random() < dropChance * delta) {
 
-                Toy toy = capturedToy;
-                capturedToy = null;
+                if (Math.random() < dropChance) {
 
-                toy.releaseToPhysicalTray(winZone, true, velocityX);
+                    Toy toy = capturedToy;
+                    capturedToy = null;
 
-                if (!trayToys.contains(toy)) trayToys.add(toy);
+                    toy.releaseToPhysicalTray(winZone, true, velocityX);
 
-                swingVelocity -= CLAW_DROP_SWING_PENALTY;
-                return;
+                    if (!trayToys.contains(toy)) trayToys.add(toy);
+
+                    swingVelocity -= CLAW_DROP_SWING_PENALTY;
+                    return;
+                }
             }
         }
         float oldX = getRealX();
@@ -416,6 +416,24 @@ public class Claw {
 
         float moved = newX - oldX;
         velocityX = moved / delta;
+    }
+
+    private float getDropChance() {
+        float swingNorm = Math.abs(swing) / SWING_MAX;
+        float velNorm = Math.abs(swingVelocity) / SWING_MAX_VELOCITY;
+
+        float swingStrength = (swingNorm + velNorm) * 0.5f;
+
+        float instability =
+            swingStrength * CLAW_DROP_SWING_MULT +
+                Math.abs(velocityX) * CLAW_DROP_VELOCITY_MULT;
+
+        float moveFactor = Math.min(1f, Math.abs(velocityX) / 3f);
+
+        return CLAW_DROP_BASE_CHANCE +
+            instability * CLAW_DROP_INSTABILITY_MULT +
+            moveFactor * 0.15f +
+            capturedToy.getCatchDifficulty() * CLAW_DROP_DIFFICULTY_MULT;
     }
 
     private void updateOpen(float delta, List<Toy> trayToys, WinZone winZone) {
