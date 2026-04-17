@@ -26,18 +26,18 @@ public class MainGame extends Game {
     }
 
     public void showMenagerie() {
-        // Временный экран зверинца.
-        switchScreen(new PlaceholderScreen(this, "menu_menagerie_title.png"));
+        // Полноценный экран зверинца с карточками игрушек.
+        switchScreen(new MenagerieScreen(this));
     }
 
-    public void showRescueMode() {
-        // Временный экран режима "Спасти Зверей".
-        switchScreen(new PlaceholderScreen(this, "menu_rescue_title.png"));
+    public void startRescueGame() {
+        // Запускаем режим спасения зверей с открытием карточек.
+        switchScreen(new GameScreen(GameMode.RESCUE));
     }
 
     public void startNormalGame() {
         // Запускаем текущую обычную игру.
-        switchScreen(new GameScreen());
+        switchScreen(new GameScreen(GameMode.NORMAL));
     }
 
     private void switchScreen(Screen newScreen) {

@@ -6,8 +6,8 @@ class GameModeMenuScreen extends AbstractMenuScreen {
         super(game, "menu_mode_title.png");
         // Запускаем существующий игровой экран.
         addOption("menu_mode_normal.png", game::startNormalGame);
-        // Отдельный маршрут под будущий режим спасения зверей.
-        addOption("menu_mode_rescue.png", game::showRescueMode);
+        // Здесь открываем обычную игру, но в режиме спасения зверей.
+        addOption("menu_mode_rescue.png", game::startRescueGame);
     }
 
     @Override
