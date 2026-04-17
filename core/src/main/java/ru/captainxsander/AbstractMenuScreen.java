@@ -1,0 +1,242 @@
+package ru.captainxsander;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputAdapter;
+import com.badlogic.gdx.ScreenAdapter;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
+
+abstract class AbstractMenuScreen extends ScreenAdapter {
+    // Логические размеры UI, чтобы меню выглядело одинаково на разных экранах.
+    protected static final float UI_WIDTH = 16f;
+    protected static final float UI_HEIGHT = 9f;
+
+    // Ссылка на главный объект игры нужна для переключения экранов.
+    protected final MainGame game;
+    // Путь к текстуре заголовка текущего меню.
+    private final String titleTexturePath;
+    // Список пунктов меню с текстурой, действием и зоной клика.
+    private final Array<MenuOption> options = new Array<>();
+
+    // Камера и viewport управляют отображением меню на любом разрешении.
+    private final OrthographicCamera camera = new OrthographicCamera();
+    private final Viewport viewport = new FitViewport(UI_WIDTH, UI_HEIGHT, camera);
+    // Один batch используется для рисования всего интерфейса.
+    private final SpriteBatch batch = new SpriteBatch();
+    // Полупрозрачная подложка под панель и кнопки.
+    private final Texture panelTexture = createSolidTexture(1, 1, new Color(1f, 1f, 1f, 0.12f));
+    // Подсветка выбранного пункта меню.
+    private final Texture highlightTexture = createSolidTexture(1, 1, new Color(0.98f, 0.84f, 0.25f, 0.3f));
+    // Заголовок меню хранится отдельной текстурой.
+    private final Texture titleTexture;
+
+    // Индекс текущего выбранного пункта.
+    private int selectedIndex;
+
+    protected AbstractMenuScreen(MainGame game, String titleTexturePath) {
+        this.game = game;
+        this.titleTexturePath = titleTexturePath;
+        // Загружаем картинку заголовка из assets.
+        this.titleTexture = new Texture(Gdx.files.internal(titleTexturePath));
+    }
+
+    protected void addOption(String texturePath, Runnable action) {
+        // Каждый пункт состоит из картинки-кнопки и действия при выборе.
+        options.add(new MenuOption(new Texture(Gdx.files.internal(texturePath)), action));
+    }
+
+    @Override
+    public void show() {
+        // Сразу применяем viewport и начинаем слушать клавиатуру/тач.
+        viewport.apply(true);
+        Gdx.input.setInputProcessor(new MenuInputAdapter());
+    }
+
+    @Override
+    public void render(float delta) {
+        // Очищаем экран перед отрисовкой меню.
+        ScreenUtils.clear(0.07f, 0.06f, 0.09f, 1f);
+        viewport.apply();
+        batch.setProjectionMatrix(camera.combined);
+
+        // Общая раскладка экрана: заголовок сверху, кнопки ниже по центру.
+        float centerX = UI_WIDTH * 0.5f;
+        float titleWidth = 8.8f;
+        float titleHeight = titleWidth * titleTexture.getHeight() / titleTexture.getWidth();
+        float titleY = 7f;
+        float buttonWidth = 6.6f;
+        float buttonGap = 0.3f;
+        float buttonY = 5.1f;
+
+        batch.begin();
+        // Фон и декоративные элементы.
+        drawBackground();
+        // Рисуем заголовок меню.
+        batch.draw(titleTexture, centerX - titleWidth / 2f, titleY, titleWidth, titleHeight);
+
+        for (int i = 0; i < options.size; i++) {
+            MenuOption option = options.get(i);
+            // Высоту кнопки считаем по пропорциям изображения, чтобы не искажать текст.
+            float textureHeight = buttonWidth * option.texture.getHeight() / option.texture.getWidth();
+            float x = centerX - buttonWidth / 2f;
+            float y = buttonY - i * (textureHeight + buttonGap);
+
+            // Запоминаем область клика немного больше самой текстуры для удобства.
+            option.bounds.set(x - 0.25f, y - 0.15f, buttonWidth + 0.5f, textureHeight + 0.3f);
+            // Рисуем подложку для каждой кнопки.
+            batch.draw(panelTexture, option.bounds.x, option.bounds.y, option.bounds.width, option.bounds.height);
+            if (selectedIndex == i) {
+                // Выбранный пункт подсвечивается поверх подложки.
+                batch.draw(highlightTexture, option.bounds.x, option.bounds.y, option.bounds.width, option.bounds.height);
+            }
+            // Рисуем саму кнопку-текстуру.
+            batch.draw(option.texture, x, y, buttonWidth, textureHeight);
+        }
+        batch.end();
+    }
+
+    protected void drawBackground() {
+        // Основная полупрозрачная панель меню.
+        batch.draw(panelTexture, 0.8f, 0.8f, 14.4f, 7.4f);
+        // Тонкая светлая линия под шапкой для визуального разделения.
+        batch.draw(highlightTexture, 1.1f, 6.95f, 13.8f, 0.08f);
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        // При изменении окна пересчитываем viewport с центрированием камеры.
+        viewport.update(width, height, true);
+    }
+
+    @Override
+    public void hide() {
+        // Когда экран скрывается, снимаем обработчик ввода.
+        if (Gdx.input.getInputProcessor() != null) {
+            Gdx.input.setInputProcessor(null);
+        }
+    }
+
+    @Override
+    public void dispose() {
+        // Освобождаем все ресурсы, созданные этим экраном.
+        titleTexture.dispose();
+        panelTexture.dispose();
+        highlightTexture.dispose();
+        batch.dispose();
+        for (MenuOption option : options) {
+            // У каждой кнопки своя текстура.
+            option.texture.dispose();
+        }
+    }
+
+    protected void moveSelection(int direction) {
+        // Если кнопок нет, двигаться некуда.
+        if (options.size == 0) {
+            return;
+        }
+        // Ходим по списку циклически.
+        selectedIndex = (selectedIndex + direction + options.size) % options.size;
+    }
+
+    protected void activateSelected() {
+        // Нечего активировать, если список пуст.
+        if (options.size == 0) {
+            return;
+        }
+        // Запускаем действие выбранного пункта.
+        options.get(selectedIndex).action.run();
+    }
+
+    protected boolean handleTouch(float screenX, float screenY) {
+        // Без пунктов меню обработка клика не имеет смысла.
+        if (options.size == 0) {
+            return false;
+        }
+        // Переводим координаты экрана в координаты нашего viewport.
+        float worldX = viewport.unproject(new com.badlogic.gdx.math.Vector2(screenX, screenY)).x;
+        float worldY = viewport.unproject(new com.badlogic.gdx.math.Vector2(screenX, screenY)).y;
+
+        for (int i = 0; i < options.size; i++) {
+            if (options.get(i).bounds.contains(worldX, worldY)) {
+                // Клик по кнопке делает её выбранной и сразу активирует.
+                selectedIndex = i;
+                activateSelected();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean onKeyDown(int keycode) {
+        // Стрелки и WASD двигают выбор по меню.
+        if (keycode == Input.Keys.UP || keycode == Input.Keys.W) {
+            moveSelection(-1);
+            return true;
+        }
+        if (keycode == Input.Keys.DOWN || keycode == Input.Keys.S) {
+            moveSelection(1);
+            return true;
+        }
+        // Enter и Space подтверждают выбор.
+        if (keycode == Input.Keys.ENTER || keycode == Input.Keys.SPACE) {
+            activateSelected();
+            return true;
+        }
+        return false;
+    }
+
+    protected boolean onBackRequested() {
+        // По умолчанию экран сам не знает, что делать по Back/Escape.
+        return false;
+    }
+
+    private Texture createSolidTexture(int width, int height, Color color) {
+        // Маленькая одноцветная текстура растягивается как фон и подсветка.
+        Pixmap pixmap = new Pixmap(width, height, Pixmap.Format.RGBA8888);
+        pixmap.setColor(color);
+        pixmap.fill();
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return texture;
+    }
+
+    private final class MenuInputAdapter extends InputAdapter {
+        @Override
+        public boolean keyDown(int keycode) {
+            // Escape/Back обрабатываются отдельно как кнопка возврата.
+            if (keycode == Input.Keys.ESCAPE || keycode == Input.Keys.BACK) {
+                return onBackRequested();
+            }
+            return onKeyDown(keycode);
+        }
+
+        @Override
+        public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+            // На тач-экране и мыши выбираем пункт нажатием.
+            return handleTouch(screenX, screenY);
+        }
+    }
+
+    private static final class MenuOption {
+        // Изображение кнопки.
+        private final Texture texture;
+        // Что должно произойти при выборе.
+        private final Runnable action;
+        // Область, в которую можно нажать.
+        private final Rectangle bounds = new Rectangle();
+
+        private MenuOption(Texture texture, Runnable action) {
+            this.texture = texture;
+            this.action = action;
+        }
+    }
+}

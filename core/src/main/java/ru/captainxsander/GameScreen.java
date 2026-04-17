@@ -68,7 +68,7 @@ public class GameScreen implements Screen {
     private void createToys() {
 
         String[] textures = {
-            "racoon.png",
+            "heart.png",
             "coala.png",
             "rabbit_big.png"
         };

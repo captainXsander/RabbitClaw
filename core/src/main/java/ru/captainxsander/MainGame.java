@@ -1,10 +1,53 @@
 package ru.captainxsander;
 
 import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Screen;
 
 public class MainGame extends Game {
     @Override
     public void create() {
-        setScreen(new GameScreen());
+        // При запуске игры сразу показываем главное меню.
+        showMainMenu();
+    }
+
+    public void showMainMenu() {
+        // Главное меню приложения.
+        switchScreen(new MainMenuScreen(this));
+    }
+
+    public void showGameModeMenu() {
+        // Подменю выбора режима игры.
+        switchScreen(new GameModeMenuScreen(this));
+    }
+
+    public void showSettings() {
+        // Временный экран настроек.
+        switchScreen(new PlaceholderScreen(this, "menu_settings_title.png"));
+    }
+
+    public void showMenagerie() {
+        // Временный экран зверинца.
+        switchScreen(new PlaceholderScreen(this, "menu_menagerie_title.png"));
+    }
+
+    public void showRescueMode() {
+        // Временный экран режима "Спасти Зверей".
+        switchScreen(new PlaceholderScreen(this, "menu_rescue_title.png"));
+    }
+
+    public void startNormalGame() {
+        // Запускаем текущую обычную игру.
+        switchScreen(new GameScreen());
+    }
+
+    private void switchScreen(Screen newScreen) {
+        // Сохраняем старый экран, чтобы освободить его ресурсы после переключения.
+        Screen previousScreen = getScreen();
+        // Передаём управление новому экрану.
+        setScreen(newScreen);
+        if (previousScreen != null) {
+            // Освобождаем текстуры, батчи и прочие ресурсы предыдущего экрана.
+            previousScreen.dispose();
+        }
     }
 }
