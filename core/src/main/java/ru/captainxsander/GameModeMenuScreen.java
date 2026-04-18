@@ -8,12 +8,14 @@ class GameModeMenuScreen extends AbstractMenuScreen {
         addOption("menu_mode_normal.png", game::startNormalGame);
         // Здесь открываем обычную игру, но в режиме спасения зверей.
         addOption("menu_mode_rescue.png", game::startRescueGame);
+        // Явная кнопка возврата в предыдущее меню.
+        addOption("menu_back.png", game::showPreviousMenu);
     }
 
     @Override
     protected boolean onBackRequested() {
-        // Возврат из выбора режима обратно в главное меню.
-        game.showMainMenu();
+        // Back/Escape возвращает именно в предыдущее меню.
+        game.showPreviousMenu();
         return true;
     }
 }

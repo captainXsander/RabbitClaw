@@ -384,8 +384,8 @@ public class MenagerieScreen extends ScreenAdapter {
         }
 
         if (backBounds.contains(worldTouch)) {
-            // Кнопка назад возвращает в главное меню.
-            game.showMainMenu();
+            // Кнопка назад возвращает в предыдущее меню.
+            game.showPreviousMenu();
             return true;
         }
 
@@ -423,7 +423,7 @@ public class MenagerieScreen extends ScreenAdapter {
                 if (openedCard != null) {
                     openedCard = null;
                 } else {
-                    game.showMainMenu();
+                    game.showPreviousMenu();
                 }
                 return true;
             }
