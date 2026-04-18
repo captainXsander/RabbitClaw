@@ -11,13 +11,18 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class GameScreen implements Screen {
 
-    // V1: мир в логических юнитах, не в пикселях
+    // Мир в логических единицах, а не в пикселях.
     public static final float WORLD_WIDTH = GameTuning.WORLD_WIDTH;
     public static final float WORLD_HEIGHT = GameTuning.WORLD_HEIGHT;
+
+    private final GameMode gameMode;
+    private final MenagerieProgress menagerieProgress;
 
     private World world;
     private OrthographicCamera camera;
@@ -30,18 +35,27 @@ public class GameScreen implements Screen {
     private DebugOverlay debugOverlay;
     private MachineBounds bounds;
 
-    // Игрушки на полу
+    // Игрушки на полу.
     private final List<Toy> toys = new ArrayList<>();
 
-    // Игрушки, которые уже летали к лотку
+    // Игрушки, которые уже летали к лотку.
     private final List<Toy> trayToys = new ArrayList<>();
+
+    // Уже обработанные выигрыши текущего запуска.
+    private final Set<Toy> reportedWins = new HashSet<>();
+
+    public GameScreen(GameMode gameMode) {
+        // Экран знает свой режим, потому что только rescue открывает карточки.
+        this.gameMode = gameMode;
+        this.menagerieProgress = new MenagerieProgress();
+    }
 
     @Override
     public void show() {
         Box2D.init();
         world = new World(new Vector2(0, -9.8f), true);
 
-        // V1 -> V2: фиксированный viewport
+        // Фиксированный viewport для одинаковой камеры на разных разрешениях.
         camera = new OrthographicCamera();
         viewport = new FitViewport(WORLD_WIDTH, WORLD_HEIGHT, camera);
         viewport.apply(true);
@@ -66,24 +80,21 @@ public class GameScreen implements Screen {
     }
 
     private void createToys() {
-
-        String[] textures = {
-            "racoon.png",
-            "coala.png",
-            "rabbit_big.png"
-        };
+        // В обычной игре оставляем знакомый набор игрушек,
+        // а в режиме спасения используем весь каталог зверинца.
+        ToyType[] toyPool = gameMode == GameMode.RESCUE ? ToyType.values() : ToyType.NORMAL_POOL;
 
         for (int i = 0; i < 45; i++) {
 
-            float x = 3.5f + (float) Math.random() * 6.5f; // центр автомата
-            float y = 1.0f + (float) Math.random() * 2.5f; // куча вверх
+            float x = 3.5f + (float) Math.random() * 6.5f;
+            float y = 1.0f + (float) Math.random() * 2.5f;
 
-            String texture = textures[(int)(Math.random() * textures.length)];
+            ToyType toyType = toyPool[(int) (Math.random() * toyPool.length)];
 
-            float difficulty = 0.2f + (float)Math.random() * 0.5f;
-            float restitution = 0.1f + (float)Math.random() * 0.3f;
+            float difficulty = 0.2f + (float) Math.random() * 0.5f;
+            float restitution = 0.1f + (float) Math.random() * 0.3f;
 
-            toys.add(new Toy(world, x, y, texture, difficulty, restitution));
+            toys.add(new Toy(world, x, y, toyType, difficulty, restitution));
         }
     }
 
@@ -96,7 +107,7 @@ public class GameScreen implements Screen {
     private void update(float delta) {
         claw.update(delta, toys, trayToys, winZone);
 
-        // Фиксированный шаг Box2D
+        // Фиксированный шаг Box2D.
         world.step(1 / 60f, 6, 2);
 
         for (Toy toy : toys) {
@@ -106,7 +117,32 @@ public class GameScreen implements Screen {
             toy.update(delta, winZone);
         }
 
+        updateMenagerieUnlocks();
         debugOverlay.updateToggle();
+    }
+
+    private void updateMenagerieUnlocks() {
+        // Карточки открываются только в режиме спасения зверей.
+        if (gameMode != GameMode.RESCUE) {
+            return;
+        }
+
+        for (Toy toy : toys) {
+            registerWonToy(toy);
+        }
+        for (Toy toy : trayToys) {
+            registerWonToy(toy);
+        }
+    }
+
+    private void registerWonToy(Toy toy) {
+        // Открываем карточку только один раз на первую победу по игрушке.
+        if (!toy.isWon() || reportedWins.contains(toy)) {
+            return;
+        }
+
+        reportedWins.add(toy);
+        menagerieProgress.unlock(toy.getToyType());
     }
 
     private void draw() {
@@ -144,8 +180,12 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
-        for (Toy toy : toys) toy.dispose();
-        for (Toy toy : trayToys) toy.dispose();
+        for (Toy toy : toys) {
+            toy.dispose();
+        }
+        for (Toy toy : trayToys) {
+            toy.dispose();
+        }
 
         claw.dispose();
         floor.dispose();

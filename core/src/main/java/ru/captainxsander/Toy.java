@@ -13,13 +13,15 @@ import static ru.captainxsander.GameTuning.CLAW_VELOCITY_TRANSFER;
  * * может быть захвачен клешнёй
  * * может сорваться
  * * может быть сброшен в лоток
- * <p>
- * 🔥 ВАЖНО:
- * Основной принцип — мы задаём импульс ОДИН раз,
- * дальше вся траектория рассчитывается физикой (Box2D)
+ *
+ * Важно:
+ * основной принцип — мы задаём импульс один раз,
+ * дальше вся траектория рассчитывается физикой.
  */
 public class Toy {
 
+    // Тип игрушки нужен для зверинца и открытия карточек.
+    private final ToyType toyType;
     private final Body body;
     private final Texture texture;
 
@@ -28,18 +30,17 @@ public class Toy {
     // =========================
 
     /**
-     * Задержка перед падением (игрушка "висит" в клешне)
+     * Задержка перед падением, когда игрушка ещё визуально "висит" в клешне.
      */
     private float releaseDelay = 0f;
 
     /**
-     * Флаг: только что отпущена
+     * Флаг: игрушку только что отпустили.
      */
     private boolean justReleased = false;
 
     /**
-     * Время "соскальзывания" с пальцев
-     * (чисто визуальная задержка — НЕ влияет на velocity)
+     * Время визуального "соскальзывания" с пальцев.
      */
     private float slidePhase = 0f;
 
@@ -55,28 +56,25 @@ public class Toy {
     private final float height = GameTuning.TOY_DRAW_H;
 
     /**
-     * Сложность захвата (0..1)
-     * влияет на:
-     * * шанс поймать
-     * * шанс сорваться
-     * * поведение в полёте
+     * Сложность захвата (0..1).
      */
     private final float catchDifficulty;
 
     /**
-     * Насколько "пружинит" в лотке
+     * Насколько игрушка "пружинит" в лотке.
      */
     private final float trayRestitution;
 
     /**
-     * Таймер "успокоения" в лотке
+     * Таймер "успокоения" в лотке.
      */
     private float settleTimer = 0f;
 
-    public Toy(World world, float x, float y, String texturePath,
+    public Toy(World world, float x, float y, ToyType toyType,
                float catchDifficulty, float trayRestitution) {
 
-        texture = new Texture(Gdx.files.internal(texturePath));
+        this.toyType = toyType;
+        texture = new Texture(Gdx.files.internal(toyType.getTexturePath()));
 
         this.catchDifficulty = catchDifficulty;
         this.trayRestitution = trayRestitution;
@@ -103,27 +101,26 @@ public class Toy {
 
         body.createFixture(fix);
 
-        // демпфирование (чтобы не катались бесконечно)
+        // Демпфирование нужно, чтобы игрушки не катались бесконечно.
         body.setLinearDamping(GameTuning.TOY_LINEAR_DAMPING);
         body.setAngularDamping(GameTuning.TOY_ANGULAR_DAMPING);
 
         shape.dispose();
-
     }
 
     /**
-     * Обновление логики игрушки
+     * Обновление логики игрушки.
      */
     public void update(float delta, WinZone winZone) {
 
         // =========================
-        // ФАЗА: только что отпустили
+        // Фаза: только что отпустили
         // =========================
         if (justReleased) {
 
             releaseDelay -= delta;
 
-            // 🔥 "висит" в клешне
+            // Некоторое время игрушка ещё "висит" в клешне.
             if (releaseDelay > 0) {
                 body.setLinearVelocity(
                     body.getLinearVelocity().x * 0.9f,
@@ -132,35 +129,25 @@ public class Toy {
                 return;
             }
 
-            // 🔥 фаза "соскальзывания"
+            // Фаза визуального соскальзывания без вмешательства в скорость.
             if (slidePhase > 0) {
                 slidePhase -= delta;
-
-                // ⚠️ ВАЖНО:
-                // НЕ трогаем velocity!
-                // иначе ломаем физику
-
                 return;
             }
 
-            // 🔥 включаем нормальную физику
+            // Включаем нормальную физику лотка.
             justReleased = false;
             body.setGravityScale(GameTuning.TOY_TRAY_GRAVITY_SCALE);
-
         }
 
-        // =========================
-        // Если в клешне
-        // =========================
+        // Если игрушка уже в клешне, замораживаем её скорость.
         if (captured) {
             body.setLinearVelocity(0, 0);
             body.setAngularVelocity(0);
             return;
         }
 
-        // =========================
-        // Если уже выиграна
-        // =========================
+        // Если игрушка уже зафиксирована как выигранная, больше не двигаем её.
         if (inTray) {
             body.setLinearVelocity(0, 0);
             body.setAngularVelocity(0);
@@ -168,7 +155,7 @@ public class Toy {
         }
 
         // =========================
-        // ФИЗИКА В ЛОТКЕ
+        // Физика в лотке
         // =========================
         if (releasedToPhysicsTray) {
 
@@ -180,7 +167,7 @@ public class Toy {
 
             float speed = body.getLinearVelocity().len();
 
-            // 🔥 проверка: "успокоилась ли игрушка"
+            // Проверяем, успокоилась ли игрушка внутри зоны выигрыша.
             if (inside
                 && speed < GameTuning.TOY_SETTLE_SPEED
                 && Math.abs(body.getAngularVelocity()) < GameTuning.TOY_SETTLE_ANGULAR_SPEED) {
@@ -194,7 +181,7 @@ public class Toy {
                 settleTimer = 0f;
             }
 
-            // 🔥 если вылетела обратно
+            // Если игрушка вылетела обратно, возвращаем ей обычную физику кучи.
             boolean backOnFloor =
                 body.getPosition().y < GameTuning.TOY_BACK_ON_FLOOR_Y &&
                     Math.abs(body.getLinearVelocity().y) < GameTuning.TOY_BACK_ON_FLOOR_MAX_VY &&
@@ -213,8 +200,8 @@ public class Toy {
             return;
         }
 
-        // 🔥 микро-жизнь кучи (очень слабая)
-        if (Math.random() < 0.002f) { // редко!
+        // Слабая "жизнь" кучи, чтобы игрушки не выглядели совсем мёртвыми.
+        if (Math.random() < 0.002f) {
             float impulseX = (float) (Math.random() * 0.02f - 0.01f);
             float impulseY = (float) (Math.random() * 0.02f);
 
@@ -229,7 +216,7 @@ public class Toy {
     }
 
     /**
-     * Зафиксировать игрушку как выигранную
+     * Фиксирует игрушку как выигранную.
      */
     private void lockInTray() {
         releasedToPhysicsTray = false;
@@ -243,7 +230,7 @@ public class Toy {
     }
 
     /**
-     * Прикрепление к клешне
+     * Прикрепление к клешне.
      */
     public void attachTo(float x, float y, float swing) {
         captured = true;
@@ -252,7 +239,7 @@ public class Toy {
         body.setType(BodyDef.BodyType.KinematicBody);
         body.setGravityScale(0f);
 
-        // 🔥 игрушка просто "телепортируется" за клешнёй
+        // Игрушка следует за клешнёй напрямую.
         body.setTransform(x, y, swing * 0.12f);
 
         body.setLinearVelocity(0, 0);
@@ -260,7 +247,7 @@ public class Toy {
     }
 
     /**
-     * Срыв с клешни
+     * Срыв с клешни.
      */
     public void releaseFailedGrab(float impulseX, float impulseY) {
         captured = false;
@@ -273,8 +260,7 @@ public class Toy {
     }
 
     /**
-     * 🔥 ГЛАВНЫЙ МЕТОД
-     * Сброс игрушки в сторону лотка
+     * Сброс игрушки в сторону лотка.
      */
     public void releaseToPhysicalTray(WinZone winZone,
                                       boolean earlyRelease,
@@ -288,13 +274,13 @@ public class Toy {
 
         justReleased = true;
 
-        // задержки для визуального эффекта
+        // Задержки нужны только для визуального эффекта.
         releaseDelay = 0.08f + (float) Math.random() * 0.12f;
         slidePhase = 0.12f + (float) Math.random() * 0.1f;
 
         body.setType(BodyDef.BodyType.DynamicBody);
 
-        // 🔥 слабая гравитация в начале
+        // В начале падения гравитация слабее.
         body.setGravityScale(0.6f);
 
         for (Fixture fixture : body.getFixtureList()) {
@@ -306,35 +292,31 @@ public class Toy {
         float vy;
 
         // =========================
-        // 🎯 ИМПУЛЬС (САМОЕ ВАЖНОЕ)
+        // Импульс
         // =========================
 
-        // скорость от клешни
+        // Передаём горизонтальную скорость от клешни.
         vx = clawVelocityX * CLAW_VELOCITY_TRANSFER;
 
-        // случайный шум
+        // Добавляем небольшой случайный шум.
         vx += (float) ((Math.random() - 0.5f) * GameTuning.RELEASE_RANDOM_X);
 
         if (earlyRelease) {
             vx += (float) ((Math.random() - 0.5f) * GameTuning.RELEASE_RANDOM_X_EARLY);
         }
 
-        // влияние "веса"
+        // Более тяжёлые или сложные игрушки немного хуже долетают.
         vx *= 0.9f + (1f - catchDifficulty) * 0.2f;
 
-        // ограничение скорости
+        // Ограничиваем скорость разумным диапазоном.
         vx = Math.max(-GameTuning.RELEASE_MAX_VX,
             Math.min(GameTuning.RELEASE_MAX_VX, vx));
 
-        // падение вниз
+        // Задаём падение вниз.
         vy = GameTuning.RELEASE_BASE_VY
             - (float) Math.random() * GameTuning.RELEASE_RANDOM_VY;
 
-        // =========================
-        // 🎯 ЗОНЫ ПОПАДАНИЯ
-        // =========================
-
-        // 🔥 задаём скорость ОДИН РАЗ
+        // Скорость задаётся один раз, дальше работает физика.
         body.setLinearVelocity(vx, vy);
 
         body.setAngularVelocity(
@@ -357,7 +339,6 @@ public class Toy {
             texture.getWidth(), texture.getHeight(),
             false, false
         );
-
     }
 
     public float getX() {
@@ -370,6 +351,10 @@ public class Toy {
 
     public Body getBody() {
         return body;
+    }
+
+    public ToyType getToyType() {
+        return toyType;
     }
 
     public boolean isWon() {
