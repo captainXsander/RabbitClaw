@@ -60,6 +60,14 @@ public class MainGame extends Game {
         switchScreen(new GameScreen(GameMode.NORMAL));
     }
 
+    public void startFindAnimalGame() {
+        // Запускаем режим поиска зверей с ручным управлением после захвата.
+        // История меню очищается, чтобы после окончания раунда
+        // возврат происходил в главный поток навигации, как и в других режимах.
+        clearMenuNavigation();
+        switchScreen(new GameScreen(GameMode.FIND_ANIMAL));
+    }
+
     private void showMenu(MenuId menuId) {
         if (currentMenuId != null && currentMenuId != menuId) {
             menuHistory.push(currentMenuId);
