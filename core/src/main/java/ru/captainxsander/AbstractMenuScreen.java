@@ -74,7 +74,8 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         float titleHeight = titleWidth * titleTexture.getHeight() / titleTexture.getWidth();
         float titleY = 7f;
         float buttonWidth = 6.6f;
-        float buttonGap = 0.3f;
+        float buttonHeight = 0.92f;
+        float buttonGap = 0.38f;
         float buttonY = 5.1f;
 
         batch.begin();
@@ -85,13 +86,11 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
 
         for (int i = 0; i < options.size; i++) {
             MenuOption option = options.get(i);
-            // Высоту кнопки считаем по пропорциям изображения, чтобы не искажать текст.
-            float textureHeight = buttonWidth * option.texture.getHeight() / option.texture.getWidth();
             float x = centerX - buttonWidth / 2f;
-            float y = buttonY - i * (textureHeight + buttonGap);
+            float y = buttonY - i * (buttonHeight + buttonGap);
 
             // Запоминаем область клика немного больше самой текстуры для удобства.
-            option.bounds.set(x - 0.25f, y - 0.15f, buttonWidth + 0.5f, textureHeight + 0.3f);
+            option.bounds.set(x - 0.25f, y - 0.12f, buttonWidth + 0.5f, buttonHeight + 0.24f);
             // Рисуем подложку для каждой кнопки.
             batch.draw(panelTexture, option.bounds.x, option.bounds.y, option.bounds.width, option.bounds.height);
             if (selectedIndex == i) {
@@ -99,7 +98,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
                 batch.draw(highlightTexture, option.bounds.x, option.bounds.y, option.bounds.width, option.bounds.height);
             }
             // Рисуем саму кнопку-текстуру.
-            batch.draw(option.texture, x, y, buttonWidth, textureHeight);
+            batch.draw(option.texture, x, y, buttonWidth, buttonHeight);
         }
         batch.end();
     }

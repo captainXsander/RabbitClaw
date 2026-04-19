@@ -10,7 +10,7 @@ class GameModeMenuScreen extends AbstractMenuScreen {
         addOption("menu_mode_rescue.png", game::startRescueGame);
         // Новый режим: поиск конкретной игрушки с ручным доворотом клешни.
         // Используем существующий ассет кнопки, который точно есть в assets.
-        addOption("menu_menagerie.png", game::startFindAnimalGame);
+        addOption("find_animals.png", game::startFindAnimalGame);
         // Явная кнопка возврата в предыдущее меню.
         addOption("menu_back.png", game::showPreviousMenu);
     }

@@ -377,12 +377,21 @@ public class Claw {
         if (y >= HOME_Y) {
             y = HOME_Y;
             state = State.MOVE_TO_TRAY;
-            swingVelocity += 0.18f;
+            if (!canControlAfterCatch()) {
+                swingVelocity += 0.18f;
+            }
         }
     }
 
     private void updateMoveToTray(float delta, List<Toy> trayToys, WinZone winZone) {
         float oldX = getRealX();
+
+        if (extendedFindAnimalControl && capturedToy == null) {
+            state = State.RETURN_HOME;
+            stateTimer = 0f;
+            velocityX = 0f;
+            return;
+        }
 
         // 🔥 ФИЗИЧЕСКОЕ ВЫПАДЕНИЕ ВО ВРЕМЯ ДВИЖЕНИЯ
         if (capturedToy != null) {
@@ -409,9 +418,18 @@ public class Claw {
             }
         }
         if (canControlAfterCatch()) {
-            // FIND_ANIMAL: движение к лотку управляется игроком вручную,
-            // чтобы можно было "откинуть" игрушку в нужную сторону кучи.
+            // FIND_ANIMAL: после подъёма игрушки клешня остаётся под контролем игрока.
             applyHorizontalInput(delta);
+
+            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+                state = State.OPEN;
+                stateTimer = 0f;
+                return;
+            }
+
+            float newX = getRealX();
+            velocityX = (newX - oldX) / delta;
+            return;
         } else {
             // Базовые режимы: стандартный автопроезд к лотку.
             float dx = TRAY_DROP_X - getRealX();
