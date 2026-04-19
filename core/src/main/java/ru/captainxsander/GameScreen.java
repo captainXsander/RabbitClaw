@@ -71,7 +71,9 @@ public class GameScreen implements Screen {
         winZone = new WinZone();
         winZone.create(world);
 
-        claw = new Claw();
+        // Клешня получает активный режим, чтобы внутри себя
+        // включать/отключать расширенное управление после захвата.
+        claw = new Claw(gameMode);
         claw.createPhysics(world);
         claw.setWorld(world);
         debugOverlay = new DebugOverlay();
@@ -82,7 +84,9 @@ public class GameScreen implements Screen {
     private void createToys() {
         // В обычной игре оставляем знакомый набор игрушек,
         // а в режиме спасения используем весь каталог зверинца.
-        ToyType[] toyPool = gameMode == GameMode.RESCUE ? ToyType.values() : ToyType.NORMAL_POOL;
+        // В "Поиске Зверей" используем тот же полный каталог,
+        // что и в "Спасении", чтобы можно было искать любую игрушку.
+        ToyType[] toyPool = usesAllToysPool() ? ToyType.values() : ToyType.NORMAL_POOL;
 
         for (int i = 0; i < 45; i++) {
 
@@ -133,6 +137,13 @@ public class GameScreen implements Screen {
         for (Toy toy : trayToys) {
             registerWonToy(toy);
         }
+    }
+
+    private boolean usesAllToysPool() {
+        // Полный пул нужен в двух режимах:
+        // 1) rescue — для открытия карточек;
+        // 2) find-animal — для ручного поиска конкретной игрушки в куче.
+        return gameMode == GameMode.RESCUE || gameMode == GameMode.FIND_ANIMAL;
     }
 
     private void registerWonToy(Toy toy) {
