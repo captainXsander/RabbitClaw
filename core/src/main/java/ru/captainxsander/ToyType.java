@@ -1,5 +1,7 @@
 package ru.captainxsander;
 
+import java.util.Arrays;
+
 /**
  * Каталог всех игрушек, которые могут появиться в игре и в зверинце.
  * Для каждой игрушки здесь хранится:
@@ -55,6 +57,17 @@ public enum ToyType {
         COALA,
         RABBIT_BIG
     };
+
+    /**
+     * Пул игрушек для режима "Найти зверей".
+     * Включает только ассеты из пакета toys/animals.
+     */
+    public static final ToyType[] FIND_ANIMAL_POOL =
+        // Для режима поиска подбираем типы по пути текстуры,
+        // чтобы автоматически не захватывать default/cats ассеты.
+        Arrays.stream(values())
+            .filter(toyType -> toyType.texturePath.startsWith("toys/animals/"))
+            .toArray(ToyType[]::new);
 
     // Путь к изображению игрушки в каталоге assets.
     private final String texturePath;
