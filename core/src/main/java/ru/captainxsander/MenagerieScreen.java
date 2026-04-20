@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.ScreenAdapter;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -73,7 +74,7 @@ public class MenagerieScreen extends ScreenAdapter {
     private final Texture darkOverlayTexture = createSolidTexture(1, 1, new Color(0f, 0f, 0f, 0.55f));
 
     // Зоны клика для навигации по экрану.
-    private final Rectangle backBounds = new Rectangle(0.9f, 0.65f, 2.5f, 0.75f);
+    private final Rectangle backBounds = new Rectangle(0.85f, 0.58f, 2.9f, 0.86f);
     private final Rectangle prevPageBounds = new Rectangle(11.0f, 0.65f, 1.2f, 0.75f);
     private final Rectangle nextPageBounds = new Rectangle(12.5f, 0.65f, 1.2f, 0.75f);
 
@@ -146,7 +147,8 @@ public class MenagerieScreen extends ScreenAdapter {
 
         // Рисуем кнопку возврата в главное меню.
         batch.draw(panelTexture, backBounds.x, backBounds.y, backBounds.width, backBounds.height);
-        batch.draw(backTexture, 1.0f, 0.78f, 2.3f, 0.5f);
+        batch.draw(backTexture, backBounds.x + 0.14f, backBounds.y + 0.18f,
+            backBounds.width - 0.28f, backBounds.height - 0.36f);
     }
 
     private void drawCards() {
@@ -246,7 +248,7 @@ public class MenagerieScreen extends ScreenAdapter {
         int end = Math.min(cards.size, start + CARDS_PER_PAGE);
 
         float startX = 1.1f;
-        float startY = 5.75f;
+        float startY = 5.35f;
         float cardWidth = 3.2f;
         float cardHeight = 1.45f;
         float gapX = 0.35f;
@@ -269,7 +271,15 @@ public class MenagerieScreen extends ScreenAdapter {
 
     private BitmapFont createFont(int size, Color color) {
         // Генерируем шрифт из TTF при создании экрана, чтобы не хранить bitmap-font ассеты вручную.
-        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal(FONT_PATH));
+        FileHandle fontFile = resolveFontFile();
+        if (fontFile == null) {
+            BitmapFont fallbackFont = new BitmapFont();
+            fallbackFont.setUseIntegerPositions(false);
+            fallbackFont.setColor(color);
+            return fallbackFont;
+        }
+
+        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(fontFile);
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
         parameter.size = size;
         parameter.color = color;
@@ -285,6 +295,20 @@ public class MenagerieScreen extends ScreenAdapter {
         font.setUseIntegerPositions(false);
         generator.dispose();
         return font;
+    }
+
+    private FileHandle resolveFontFile() {
+        FileHandle internalFont = Gdx.files.internal(FONT_PATH);
+        if (internalFont.exists()) {
+            return internalFont;
+        }
+
+        FileHandle windowsFont = Gdx.files.absolute("C:/Windows/Fonts/arial.ttf");
+        if (windowsFont.exists()) {
+            return windowsFont;
+        }
+
+        return null;
     }
 
     private void drawCenteredText(BitmapFont font, String text, Rectangle bounds) {

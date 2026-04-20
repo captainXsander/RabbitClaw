@@ -39,6 +39,9 @@ public class Claw {
 
     private Body physicsBody;
     private World world;
+    // В режиме FIND_ANIMAL разрешаем управление по X
+    // после захвата игрушки (подъём и поездка к лотку).
+    private final boolean extendedFindAnimalControl;
 
     private final Texture headTexture;
     private final Texture fingerTexture;
@@ -80,7 +83,10 @@ public class Claw {
     // Скорость клешни
     private float velocityX = 0f;
 
-    public Claw() {
+    public Claw(GameMode gameMode) {
+        // Флаг рассчитывается один раз в конструкторе,
+        // чтобы не проверять enum в каждом кадре по нескольким местам.
+        extendedFindAnimalControl = gameMode == GameMode.FIND_ANIMAL;
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
         fingerTexture = createRectTexture(18, 90, Color.WHITE);
         cableTexture = createRectTexture(6, 240, Color.LIGHT_GRAY);
@@ -180,6 +186,14 @@ public class Claw {
     }
 
     private void handleIdleInput(float delta) {
+        // В обычном состоянии просто переиспользуем
+        // общую обработку горизонтального ввода.
+        applyHorizontalInput(delta);
+    }
+
+    private void applyHorizontalInput(float delta) {
+        // Общая логика управления по X:
+        // используется и в IDLE, и в расширенных состояниях FIND_ANIMAL.
         float oldX = x;
 
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) x -= MOVE_SPEED_X * delta;
@@ -321,6 +335,12 @@ public class Claw {
     }
 
     private void updateMoveUp(float delta) {
+        // В режиме поиска зверей игрок может подруливать
+        // клешню даже во время подъёма захваченной игрушки.
+        if (canControlAfterCatch()) {
+            applyHorizontalInput(delta);
+        }
+
         y += MOVE_SPEED_Y * delta;
 
         // 🔥 ЛОЖНЫЙ ЗАХВАТ (выпадает почти сразу)
@@ -357,12 +377,21 @@ public class Claw {
         if (y >= HOME_Y) {
             y = HOME_Y;
             state = State.MOVE_TO_TRAY;
-            swingVelocity += 0.18f;
+            if (!canControlAfterCatch()) {
+                swingVelocity += 0.18f;
+            }
         }
     }
 
     private void updateMoveToTray(float delta, List<Toy> trayToys, WinZone winZone) {
         float oldX = getRealX();
+
+        if (extendedFindAnimalControl && capturedToy == null) {
+            state = State.RETURN_HOME;
+            stateTimer = 0f;
+            velocityX = 0f;
+            return;
+        }
 
         // 🔥 ФИЗИЧЕСКОЕ ВЫПАДЕНИЕ ВО ВРЕМЯ ДВИЖЕНИЯ
         if (capturedToy != null) {
@@ -388,21 +417,54 @@ public class Claw {
                 }
             }
         }
-        float dx = TRAY_DROP_X - getRealX();
+        if (canControlAfterCatch()) {
+            // FIND_ANIMAL: после подъёма игрушки клешня остаётся под контролем игрока.
+            applyHorizontalInput(delta);
 
-        if (Math.abs(dx) < 0.04f) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+                state = State.OPEN;
+                stateTimer = 0f;
+                return;
+            }
 
+            float newX = getRealX();
+            velocityX = (newX - oldX) / delta;
+            return;
+        } else {
+            // Базовые режимы: стандартный автопроезд к лотку.
+            float dx = TRAY_DROP_X - getRealX();
+
+            if (Math.abs(dx) < 0.04f) {
+
+                x = TRAY_DROP_X;
+
+                state = State.OPEN;
+                stateTimer = 0f;
+                return;
+            }
+
+            x += Math.signum(dx) * MOVE_SPEED_X * delta;
+        }
+
+        float dxToTray = TRAY_DROP_X - getRealX();
+        // Для всех режимов одинаково: как только дошли до зоны сброса,
+        // сразу открываем клешню над лотком.
+        if (Math.abs(dxToTray) < 0.04f) {
             x = TRAY_DROP_X;
-
             state = State.OPEN;
             stateTimer = 0f;
             return;
         }
 
-        x += Math.signum(dx) * MOVE_SPEED_X * delta;
-
         float newX = getRealX();
         velocityX = (newX - oldX) / delta;
+    }
+
+    private boolean canControlAfterCatch() {
+        // Расширенное управление доступно только:
+        // 1) в FIND_ANIMAL;
+        // 2) когда игрушка реально удерживается клешней.
+        return extendedFindAnimalControl && capturedToy != null;
     }
 
     private float getDropChance() {

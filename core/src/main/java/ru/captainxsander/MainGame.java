@@ -50,14 +50,24 @@ public class MainGame extends Game {
 
     public void startRescueGame() {
         // Запускаем режим спасения зверей с открытием карточек.
+        // Передаём this, чтобы игровой экран мог сам вернуть игрока в меню.
         clearMenuNavigation();
-        switchScreen(new GameScreen(GameMode.RESCUE));
+        switchScreen(new GameScreen(this, GameMode.RESCUE));
     }
 
     public void startNormalGame() {
         // Запускаем текущую обычную игру.
+        // Передаём this, чтобы сигнатура GameScreen была единой во всех режимах.
         clearMenuNavigation();
-        switchScreen(new GameScreen(GameMode.NORMAL));
+        switchScreen(new GameScreen(this, GameMode.NORMAL));
+    }
+
+    public void startFindAnimalGame() {
+        // Запускаем режим поиска зверей с ручным управлением после захвата.
+        // История меню очищается, чтобы после окончания раунда
+        // возврат происходил в главный поток навигации, как и в других режимах.
+        clearMenuNavigation();
+        switchScreen(new GameScreen(this, GameMode.FIND_ANIMAL));
     }
 
     private void showMenu(MenuId menuId) {
