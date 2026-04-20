@@ -22,6 +22,8 @@ public class FindAnimalFacts {
     private final Map<ToyType, String> toyTypeToAnimal = new HashMap<>();
     // Набор фактов по каждому идентификатору животного.
     private final Map<String, Array<String>> animalFacts = new HashMap<>();
+    // Человекочитаемые названия животных на русском для UI-сообщений.
+    private final Map<String, String> animalLabelsRu = new HashMap<>();
 
     public FindAnimalFacts() {
         loadFromJson();
@@ -58,7 +60,9 @@ public class FindAnimalFacts {
         Array<String> facts = animalFacts.get(animalId);
         String fact = facts.random();
 
-        return new FindAnimalTask(targetToyType, fact);
+        String animalLabelRu = animalLabelsRu.getOrDefault(animalId, animalId);
+
+        return new FindAnimalTask(targetToyType, animalId, animalLabelRu, fact);
     }
 
     private void loadFromJson() {
@@ -82,14 +86,26 @@ public class FindAnimalFacts {
             }
             animalFacts.put(animalEntry.name, facts);
         }
+
+        // animalLabelsRu: локализованные названия животных для надписей результата.
+        JsonValue labelsRuJson = root.get("animalLabelsRu");
+        if (labelsRuJson != null) {
+            for (JsonValue entry = labelsRuJson.child; entry != null; entry = entry.next) {
+                animalLabelsRu.put(entry.name, entry.asString());
+            }
+        }
     }
 
     public static final class FindAnimalTask {
         private final ToyType targetToyType;
+        private final String targetAnimalId;
+        private final String targetAnimalLabelRu;
         private final String fact;
 
-        private FindAnimalTask(ToyType targetToyType, String fact) {
+        private FindAnimalTask(ToyType targetToyType, String targetAnimalId, String targetAnimalLabelRu, String fact) {
             this.targetToyType = targetToyType;
+            this.targetAnimalId = targetAnimalId;
+            this.targetAnimalLabelRu = targetAnimalLabelRu;
             this.fact = fact;
         }
 
@@ -99,6 +115,14 @@ public class FindAnimalFacts {
 
         public String getFact() {
             return fact;
+        }
+
+        public String getTargetAnimalId() {
+            return targetAnimalId;
+        }
+
+        public String getTargetAnimalLabelRu() {
+            return targetAnimalLabelRu;
         }
     }
 }

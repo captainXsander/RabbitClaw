@@ -1,7 +1,6 @@
 package ru.captainxsander;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
@@ -31,6 +30,7 @@ public class GameScreen implements Screen {
     public static final float WORLD_HEIGHT = GameTuning.WORLD_HEIGHT;
 
     private static final String FONT_PATH = "fonts/arial.ttf";
+    private static final float FIND_ANIMAL_RESULT_SHOW_TIME = 2.5f;
 
     private final MainGame game;
     private final GameMode gameMode;
@@ -65,6 +65,7 @@ public class GameScreen implements Screen {
     private FindAnimalFacts.FindAnimalTask findAnimalTask;
     private boolean findAnimalRoundResolved;
     private String findAnimalResultText;
+    private float findAnimalExitTimer;
 
     public GameScreen(MainGame game, GameMode gameMode) {
         // Экран знает игру (для возврата в меню) и свой режим.
@@ -115,6 +116,7 @@ public class GameScreen implements Screen {
         // Сбрасываем состояние завершения, чтобы раунд начинался "с нуля".
         findAnimalRoundResolved = false;
         findAnimalResultText = null;
+        findAnimalExitTimer = 0f;
 
         // Отдельные шрифты: для текста факта и для статуса победы/поражения.
         factFont = createFont(26, new Color(0.98f, 0.92f, 0.84f, 1f));
@@ -153,12 +155,6 @@ public class GameScreen implements Screen {
     }
 
     private void update(float delta) {
-        // После завершения FIND_ANIMAL-раунда позволяем быстро выйти в меню.
-        if (isFindAnimalFinished() && Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-            game.showMainMenu();
-            return;
-        }
-
         claw.update(delta, toys, trayToys, winZone);
 
         // Фиксированный шаг Box2D.
@@ -173,7 +169,20 @@ public class GameScreen implements Screen {
 
         updateMenagerieUnlocks();
         updateFindAnimalRoundState();
+        updateFindAnimalRoundExitTimer(delta);
         debugOverlay.updateToggle();
+    }
+
+    private void updateFindAnimalRoundExitTimer(float delta) {
+        // После показа результата автоматически возвращаем игрока в предыдущее меню.
+        if (!isFindAnimalFinished()) {
+            return;
+        }
+
+        findAnimalExitTimer -= delta;
+        if (findAnimalExitTimer <= 0f) {
+            game.showPreviousMenu();
+        }
     }
 
     private void updateFindAnimalRoundState() {
@@ -206,11 +215,12 @@ public class GameScreen implements Screen {
         // Первая выигранная игрушка финализирует раунд.
         reportedWins.add(toy);
         findAnimalRoundResolved = true;
+        findAnimalExitTimer = FIND_ANIMAL_RESULT_SHOW_TIME;
 
         if (toy.getToyType() == findAnimalTask.getTargetToyType()) {
-            findAnimalResultText = "Победа! Вы нашли правильную игрушку.";
+            findAnimalResultText = "Молодец, это действительно " + findAnimalTask.getTargetAnimalLabelRu();
         } else {
-            findAnimalResultText = "Поражение: факт относится к другому животному.";
+            findAnimalResultText = "Было близко, но это " + findAnimalTask.getTargetAnimalLabelRu();
         }
     }
 
@@ -301,9 +311,10 @@ public class GameScreen implements Screen {
         float y = WORLD_HEIGHT - 0.22f;
         statusFont.draw(batch, glyphLayout, x, y);
 
-        // Подсказка показывается только после определения исхода.
+        // Показываем обратный таймер возврата в предыдущее меню.
         factFont.getData().setScale(0.012f);
-        String hint = "Нажмите ESC для выхода в меню";
+        int secondsLeft = Math.max(1, (int) Math.ceil(findAnimalExitTimer));
+        String hint = "Возврат в меню через " + secondsLeft + " сек.";
         glyphLayout.setText(factFont, hint);
         factFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, WORLD_HEIGHT - 0.62f);
     }
