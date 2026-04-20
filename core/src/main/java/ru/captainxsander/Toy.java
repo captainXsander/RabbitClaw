@@ -381,6 +381,27 @@ public class Toy {
             && body.getPosition().y < winZone.getInnerTop();
     }
 
+    /**
+     * Более мягкая проверка попадания в сам лоток (не только в узкую inner-зону).
+     * Нужна для FIND_ANIMAL, чтобы результат фиксировался стабильно даже когда
+     * игрушка застревает у стенки лотка и центр не попадает в inner-прямоугольник.
+     */
+    public boolean isInsideTrayBounds(WinZone winZone) {
+        float left = winZone.getX() - winZone.getWidth() * 0.5f;
+        float right = winZone.getX() + winZone.getWidth() * 0.5f;
+        float bottom = winZone.getY();
+        float top = winZone.getY() + winZone.getHeight();
+
+        float radius = GameTuning.TOY_RADIUS * 0.55f;
+        float x = body.getPosition().x;
+        float y = body.getPosition().y;
+
+        return x + radius > left
+            && x - radius < right
+            && y + radius > bottom
+            && y - radius < top;
+    }
+
     public float getCatchDifficulty() {
         return catchDifficulty;
     }

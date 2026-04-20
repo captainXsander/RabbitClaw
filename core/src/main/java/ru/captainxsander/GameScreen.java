@@ -14,6 +14,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -61,6 +62,7 @@ public class GameScreen implements Screen {
     private BitmapFont statusFont;
     private final GlyphLayout glyphLayout = new GlyphLayout();
     private final Rectangle factBounds = new Rectangle(0.75f, WORLD_HEIGHT - 1.3f, WORLD_WIDTH - 1.5f, 1.05f);
+    private final Rectangle resultBounds = new Rectangle(1.4f, WORLD_HEIGHT * 0.52f, WORLD_WIDTH - 2.8f, 1.2f);
 
     private FindAnimalFacts.FindAnimalTask findAnimalTask;
     private boolean findAnimalRoundResolved;
@@ -215,7 +217,9 @@ public class GameScreen implements Screen {
         // В FIND_ANIMAL считаем завершением:
         // 1) классическую победу (toy.isWon),
         // 2) либо факт попадания в внутреннюю область лотка.
-        boolean reachedTray = toy.isWon() || toy.isInsideWinZone(winZone);
+        boolean reachedTray = toy.isWon()
+            || toy.isInsideWinZone(winZone)
+            || toy.isInsideTrayBounds(winZone);
         if (!reachedTray) {
             return;
         }
@@ -305,26 +309,39 @@ public class GameScreen implements Screen {
         }
 
         // Факт всегда показывается вверху экрана с переносом строк.
-        factFont.getData().setScale(0.015f);
-        glyphLayout.setText(factFont, "Факт: " + findAnimalTask.getFact(), factFont.getColor(), factBounds.width, 1, true);
+        factFont.getData().setScale(0.011f);
+        glyphLayout.setText(
+            factFont,
+            "Факт: " + findAnimalTask.getFact(),
+            factFont.getColor(),
+            factBounds.width,
+            Align.center,
+            true
+        );
         factFont.draw(batch, glyphLayout, factBounds.x, factBounds.y + factBounds.height);
 
         if (!isFindAnimalFinished()) {
             return;
         }
 
-        statusFont.getData().setScale(0.017f);
-        glyphLayout.setText(statusFont, findAnimalResultText);
-        float x = (WORLD_WIDTH - glyphLayout.width) * 0.5f;
-        float y = WORLD_HEIGHT - 0.22f;
-        statusFont.draw(batch, glyphLayout, x, y);
+        // Сообщение о результате рисуем по центру экрана, чтобы не перекрывать факт.
+        statusFont.getData().setScale(0.015f);
+        glyphLayout.setText(
+            statusFont,
+            findAnimalResultText,
+            statusFont.getColor(),
+            resultBounds.width,
+            Align.center,
+            true
+        );
+        statusFont.draw(batch, glyphLayout, resultBounds.x, resultBounds.y + resultBounds.height);
 
         // Показываем обратный таймер возврата в предыдущее меню.
         factFont.getData().setScale(0.012f);
         int secondsLeft = Math.max(1, (int) Math.ceil(findAnimalExitTimer));
         String hint = "Возврат в меню через " + secondsLeft + " сек.";
         glyphLayout.setText(factFont, hint);
-        factFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, WORLD_HEIGHT - 0.62f);
+        factFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, resultBounds.y - 0.2f);
     }
 
     private boolean isFindAnimalFinished() {
