@@ -1,10 +1,13 @@
 package ru.captainxsander;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
@@ -32,6 +35,7 @@ public class GameScreen implements Screen {
 
     private static final String FONT_PATH = "fonts/arial.ttf";
     private static final float FIND_ANIMAL_RESULT_SHOW_TIME = 2.5f;
+    private static final int TOY_COUNT_PER_ROUND = 45;
 
     private final MainGame game;
     private final GameMode gameMode;
@@ -63,6 +67,14 @@ public class GameScreen implements Screen {
     private final GlyphLayout glyphLayout = new GlyphLayout();
     private final Rectangle factBounds = new Rectangle(0.75f, WORLD_HEIGHT - 1.3f, WORLD_WIDTH - 1.5f, 1.05f);
     private final Rectangle resultBounds = new Rectangle(1.4f, WORLD_HEIGHT * 0.52f, WORLD_WIDTH - 2.8f, 1.2f);
+
+    // Пауза доступна из любого режима с возвратом в главное меню.
+    private BitmapFont pauseFont;
+    private Texture pauseOverlayTexture;
+    private boolean pauseActive;
+    private final Rectangle pausePanelBounds = new Rectangle(2.4f, 2.05f, WORLD_WIDTH - 4.8f, 4.5f);
+    private final Rectangle resumeButtonBounds = new Rectangle(4.2f, 4.25f, WORLD_WIDTH - 8.4f, 0.95f);
+    private final Rectangle menuButtonBounds = new Rectangle(4.2f, 3.0f, WORLD_WIDTH - 8.4f, 0.95f);
 
     private FindAnimalFacts.FindAnimalTask findAnimalTask;
     private boolean findAnimalRoundResolved;
@@ -109,13 +121,24 @@ public class GameScreen implements Screen {
             setupFindAnimalRound();
         }
 
+        // Единый шрифт используем для оверлея паузы и действий внутри него.
+        pauseFont = createFont(28, new Color(0.98f, 0.92f, 0.82f, 1f));
+        pauseOverlayTexture = createSolidTexture(1, 1, Color.WHITE);
+
         createToys();
+        Gdx.input.setInputProcessor(new GameInputAdapter());
     }
 
     private void setupFindAnimalRound() {
         // На каждый запуск режима выбираем новую задачу из JSON.
         FindAnimalFacts facts = new FindAnimalFacts();
-        findAnimalTask = facts.createRandomTask(ToyType.FIND_ANIMAL_POOL);
+        ToyType[] findPool = menagerieProgress.getFindAnimalPool();
+        if (findPool.length == 0) {
+            // Защитный fallback: если режим открыт некорректно, не падаем с пустым пулом.
+            findPool = ToyType.ANIMAL_POOL;
+        }
+
+        findAnimalTask = facts.createRandomTask(findPool);
         // Сбрасываем состояние завершения, чтобы раунд начинался "с нуля".
         findAnimalRoundResolved = false;
         findAnimalResultText = null;
@@ -128,28 +151,55 @@ public class GameScreen implements Screen {
     }
 
     private void createToys() {
-        // В обычной игре оставляем знакомый набор игрушек,
-        // а в режиме спасения используем весь каталог зверинца.
-        // В "Поиске Зверей" используем только toys/animals.
         ToyType[] toyPool = getToyPoolForCurrentMode();
+        ToyType[] currentRescueAnimals = menagerieProgress.getCurrentRescueLevelAnimals();
+        ToyType[] completedRescueAnimals = menagerieProgress.getCompletedRescueAnimals();
 
-        for (int i = 0; i < 45; i++) {
-
+        for (int i = 0; i < TOY_COUNT_PER_ROUND; i++) {
             float x = 3.5f + (float) Math.random() * 6.5f;
             float y = 1.0f + (float) Math.random() * 2.5f;
 
-            ToyType toyType = toyPool[(int) (Math.random() * toyPool.length)];
+            ToyType toyType = pickToyTypeForSpawn(i, toyPool, currentRescueAnimals, completedRescueAnimals);
 
             float difficulty = 0.2f + (float) Math.random() * 0.5f;
             float restitution = 0.1f + (float) Math.random() * 0.3f;
 
             toys.add(new Toy(world, x, y, toyType, difficulty, restitution));
         }
+    }
 
-        // В режиме "Найти зверей" гарантируем наличие целевой игрушки в куче.
-        if (gameMode == GameMode.FIND_ANIMAL && findAnimalTask != null) {
-            toys.add(new Toy(world, 6.8f, 2.8f, findAnimalTask.getTargetToyType(), 0.25f, 0.15f));
+    private ToyType pickToyTypeForSpawn(
+        int spawnIndex,
+        ToyType[] modePool,
+        ToyType[] currentRescueAnimals,
+        ToyType[] completedRescueAnimals
+    ) {
+        if (gameMode == GameMode.RESCUE) {
+            // 1-й уровень: только текущие 5 зверей.
+            if (completedRescueAnimals.length == 0) {
+                return currentRescueAnimals[(int) (Math.random() * currentRescueAnimals.length)];
+            }
+
+            // 2+ уровни: 80% уже знакомые звери, 20% новые звери уровня.
+            float newPercent = menagerieProgress.getRescueNewAnimalPercent() / 100f;
+            boolean spawnNew = Math.random() < newPercent;
+            ToyType[] selectedPool = spawnNew ? currentRescueAnimals : completedRescueAnimals;
+
+            // Если один из пулов пуст (edge-case после смены версии), безопасно падаем в общий.
+            if (selectedPool.length == 0) {
+                selectedPool = modePool;
+            }
+
+            return selectedPool[(int) (Math.random() * selectedPool.length)];
         }
+
+        if (gameMode == GameMode.FIND_ANIMAL && findAnimalTask != null && spawnIndex == 0) {
+            // В FIND_ANIMAL гарантируем наличие целевой игрушки,
+            // но оставляем общее количество ровно 45.
+            return findAnimalTask.getTargetToyType();
+        }
+
+        return modePool[(int) (Math.random() * modePool.length)];
     }
 
     @Override
@@ -158,8 +208,6 @@ public class GameScreen implements Screen {
         draw();
 
         // ВАЖНО: переключаем экран только после завершения текущего кадра.
-        // Иначе MainGame.dispose() может освободить ресурсы прямо во время рендера,
-        // что на некоторых платформах (особенно Windows/OpenGL) приводит к native-crash.
         if (findAnimalExitRequested) {
             findAnimalExitRequested = false;
             game.showPreviousMenu();
@@ -167,6 +215,10 @@ public class GameScreen implements Screen {
     }
 
     private void update(float delta) {
+        if (pauseActive) {
+            return;
+        }
+
         claw.update(delta, toys, trayToys, winZone);
 
         // Фиксированный шаг Box2D.
@@ -219,22 +271,15 @@ public class GameScreen implements Screen {
     }
 
     private void resolveFindAnimalResultIfWon(Toy toy) {
-        // Берём в расчёт только новые игрушки.
         if (reportedWins.contains(toy)) {
             return;
         }
 
-        // В FIND_ANIMAL считаем завершением:
-        // 1) классическую победу (toy.isWon),
-        // 2) либо факт попадания в внутреннюю область лотка.
-        boolean reachedTray = toy.isWon()
-            || toy.isInsideWinZone(winZone)
-            || toy.isInsideTrayBounds(winZone);
+        boolean reachedTray = toy.isWon() || toy.isInsideWinZone(winZone) || toy.isInsideTrayBounds(winZone);
         if (!reachedTray) {
             return;
         }
 
-        // Первая выигранная игрушка финализирует раунд.
         reportedWins.add(toy);
         findAnimalRoundResolved = true;
         findAnimalExitTimer = FIND_ANIMAL_RESULT_SHOW_TIME;
@@ -247,7 +292,7 @@ public class GameScreen implements Screen {
     }
 
     private void updateMenagerieUnlocks() {
-        // Карточки открываются только в режиме спасения зверей.
+        // Прогресс зверинца и уровней обновляется только в RESCUE.
         if (gameMode != GameMode.RESCUE) {
             return;
         }
@@ -261,27 +306,33 @@ public class GameScreen implements Screen {
     }
 
     private ToyType[] getToyPoolForCurrentMode() {
-        // В rescue логика прежняя: доступны все типы из каталога.
         if (gameMode == GameMode.RESCUE) {
-            return ToyType.values();
+            ToyType[] currentLevelAnimals = menagerieProgress.getCurrentRescueLevelAnimals();
+            return currentLevelAnimals.length == 0 ? ToyType.ANIMAL_POOL : currentLevelAnimals;
         }
 
-        // В find-animal — только игрушки из assets/toys/animals.
         if (gameMode == GameMode.FIND_ANIMAL) {
-            return ToyType.FIND_ANIMAL_POOL;
+            ToyType[] unlockedFindPool = menagerieProgress.getFindAnimalPool();
+            return unlockedFindPool.length == 0 ? ToyType.ANIMAL_POOL : unlockedFindPool;
         }
 
-        return ToyType.NORMAL_POOL;
+        return menagerieProgress.getNormalModePool();
     }
 
     private void registerWonToy(Toy toy) {
-        // Открываем карточку только один раз на первую победу по игрушке.
         if (!toy.isWon() || reportedWins.contains(toy)) {
             return;
         }
 
         reportedWins.add(toy);
+
+        // В режиме спасения карточка зверинца открывается по старой логике.
         menagerieProgress.unlock(toy.getToyType());
+        menagerieProgress.markRescued(toy.getToyType());
+
+        // Как только собраны все 5 уникальных зверей уровня,
+        // они становятся доступны в NORMAL/FIND и открывается следующий уровень.
+        menagerieProgress.completeCurrentRescueLevelIfNeeded();
     }
 
     private void draw() {
@@ -308,6 +359,10 @@ public class GameScreen implements Screen {
             drawFindAnimalUi();
         }
 
+        if (pauseActive) {
+            drawPauseOverlay();
+        }
+
         batch.end();
 
         debugOverlay.render(camera, claw, winZone);
@@ -318,7 +373,6 @@ public class GameScreen implements Screen {
             return;
         }
 
-        // Факт всегда показывается вверху экрана с переносом строк.
         factFont.getData().setScale(0.011f);
         glyphLayout.setText(
             factFont,
@@ -334,7 +388,6 @@ public class GameScreen implements Screen {
             return;
         }
 
-        // Сообщение о результате рисуем по центру экрана, чтобы не перекрывать факт.
         statusFont.getData().setScale(0.015f);
         glyphLayout.setText(
             statusFont,
@@ -346,7 +399,6 @@ public class GameScreen implements Screen {
         );
         statusFont.draw(batch, glyphLayout, resultBounds.x, resultBounds.y + resultBounds.height);
 
-        // Показываем обратный таймер возврата в предыдущее меню.
         factFont.getData().setScale(0.012f);
         int secondsLeft = Math.max(1, (int) Math.ceil(findAnimalExitTimer));
         String hint = "Возврат в меню через " + secondsLeft + " сек.";
@@ -354,12 +406,55 @@ public class GameScreen implements Screen {
         factFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, resultBounds.y - 0.2f);
     }
 
+    private void drawPauseOverlay() {
+        if (pauseFont == null) {
+            return;
+        }
+
+        pauseFont.getData().setScale(0.013f);
+        glyphLayout.setText(pauseFont, "Пауза");
+
+        // Полупрозрачный оверлей рисуем тем же batch, чтобы не ломать пайплайн рендера.
+        batch.setColor(0f, 0f, 0f, 0.62f);
+        batch.draw(pauseOverlayTexture, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
+        batch.setColor(Color.WHITE);
+
+        batch.setColor(0.24f, 0.23f, 0.30f, 0.95f);
+        batch.draw(pauseOverlayTexture, pausePanelBounds.x, pausePanelBounds.y, pausePanelBounds.width, pausePanelBounds.height);
+        batch.setColor(Color.WHITE);
+
+        pauseFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, pausePanelBounds.y + pausePanelBounds.height - 0.6f);
+
+        drawPauseButton(resumeButtonBounds, "Продолжить (Esc / Enter)");
+        drawPauseButton(menuButtonBounds, "Выйти в главное меню (M)");
+    }
+
+    private void drawPauseButton(Rectangle bounds, String label) {
+        batch.setColor(0.42f, 0.40f, 0.52f, 0.98f);
+        batch.draw(pauseOverlayTexture, bounds.x, bounds.y, bounds.width, bounds.height);
+        batch.setColor(Color.WHITE);
+
+        pauseFont.getData().setScale(0.0105f);
+        glyphLayout.setText(pauseFont, label);
+        pauseFont.draw(batch, glyphLayout, bounds.x + (bounds.width - glyphLayout.width) * 0.5f,
+            bounds.y + (bounds.height + glyphLayout.height) * 0.5f);
+    }
+
     private boolean isFindAnimalFinished() {
         return gameMode == GameMode.FIND_ANIMAL && findAnimalRoundResolved;
     }
 
+
+    private Texture createSolidTexture(int width, int height, Color color) {
+        Pixmap pixmap = new Pixmap(width, height, Pixmap.Format.RGBA8888);
+        pixmap.setColor(color);
+        pixmap.fill();
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return texture;
+    }
+
     private BitmapFont createFont(int size, Color color) {
-        // Поддерживаем fallback на bitmap-font, если TTF внезапно недоступен.
         FileHandle internalFont = Gdx.files.internal(FONT_PATH);
         if (!internalFont.exists()) {
             BitmapFont fallback = new BitmapFont();
@@ -374,7 +469,6 @@ public class GameScreen implements Screen {
         parameter.color = color;
         parameter.minFilter = Texture.TextureFilter.Linear;
         parameter.magFilter = Texture.TextureFilter.Linear;
-        // Добавляем кириллицу и спецсимволы, чтобы факты на русском рендерились корректно.
         parameter.characters = FreeTypeFontGenerator.DEFAULT_CHARS
             + "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
             + "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
@@ -393,7 +487,13 @@ public class GameScreen implements Screen {
 
     @Override public void pause() {}
     @Override public void resume() {}
-    @Override public void hide() {}
+
+    @Override
+    public void hide() {
+        if (Gdx.input.getInputProcessor() != null) {
+            Gdx.input.setInputProcessor(null);
+        }
+    }
 
     @Override
     public void dispose() {
@@ -417,6 +517,58 @@ public class GameScreen implements Screen {
         }
         if (statusFont != null) {
             statusFont.dispose();
+        }
+        if (pauseFont != null) {
+            pauseFont.dispose();
+        }
+        if (pauseOverlayTexture != null) {
+            pauseOverlayTexture.dispose();
+        }
+    }
+
+    private final class GameInputAdapter extends InputAdapter {
+        @Override
+        public boolean keyDown(int keycode) {
+            if (pauseActive) {
+                if (keycode == Input.Keys.ESCAPE || keycode == Input.Keys.BACK || keycode == Input.Keys.ENTER || keycode == Input.Keys.SPACE) {
+                    pauseActive = false;
+                    return true;
+                }
+
+                if (keycode == Input.Keys.M) {
+                    game.showMainMenu();
+                    return true;
+                }
+
+                return true;
+            }
+
+            if (keycode == Input.Keys.ESCAPE || keycode == Input.Keys.BACK || keycode == Input.Keys.P) {
+                pauseActive = true;
+                return true;
+            }
+
+            return false;
+        }
+
+        @Override
+        public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+            if (!pauseActive) {
+                return false;
+            }
+
+            Vector2 worldTouch = viewport.unproject(new Vector2(screenX, screenY));
+            if (resumeButtonBounds.contains(worldTouch)) {
+                pauseActive = false;
+                return true;
+            }
+
+            if (menuButtonBounds.contains(worldTouch)) {
+                game.showMainMenu();
+                return true;
+            }
+
+            return true;
         }
     }
 }

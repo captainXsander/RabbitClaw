@@ -86,7 +86,7 @@ public class MainGame extends Game {
             case GAME_MODE:
                 return new GameModeMenuScreen(this);
             case SETTINGS:
-                return new PlaceholderScreen(this, "menu_settings_title.png");
+                return new SettingsScreen(this);
             case MENAGERIE:
                 return new MenagerieScreen(this);
             default:

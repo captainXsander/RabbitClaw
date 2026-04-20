@@ -15,6 +15,7 @@ public enum ToyType {
     BIRDY("toys/animals/birdy.png", "Birdy", "Birdy card text placeholder."),
     BIRD_SMALL("toys/default/bird_small.png", "Bird Small", "Bird Small card text placeholder."),
     BULL("toys/animals/bull.png", "Bull", "Bull card text placeholder."),
+    CAT_ANIMAL("toys/animals/cat_normal.png", "Cat", "Cat card text placeholder."),
     CAT_BORED("toys/cats/cat_bored.png", "Cat Bored", "Cat Bored card text placeholder."),
     CAT_CRYING("toys/cats/cat_crying.png", "Cat Crying", "Cat Crying card text placeholder."),
     CAT_EVIL("toys/cats/cat_evil.png", "Cat Evil", "Cat Evil card text placeholder."),
@@ -49,22 +50,17 @@ public enum ToyType {
     ZIRAFFE("toys/animals/ziraffe.png", "Ziraffe", "Ziraffe card text placeholder.");
 
     /**
-     * Пул игрушек для обычной игры.
-     * Он оставлен коротким, чтобы не менять текущий баланс базового режима.
+     * Базовые игрушки из пакета toys/default для первого запуска NORMAL.
      */
-    public static final ToyType[] NORMAL_POOL = {
-        HEART,
-        COALA,
-        RABBIT_BIG
-    };
+    public static final ToyType[] DEFAULT_POOL =
+        Arrays.stream(values())
+            .filter(toyType -> toyType.texturePath.startsWith("toys/default/"))
+            .toArray(ToyType[]::new);
 
     /**
-     * Пул игрушек для режима "Найти зверей".
-     * Включает только ассеты из пакета toys/animals.
+     * Полный набор зверей из пакета toys/animals для уровней RESCUE/FIND.
      */
-    public static final ToyType[] FIND_ANIMAL_POOL =
-        // Для режима поиска подбираем типы по пути текстуры,
-        // чтобы автоматически не захватывать default/cats ассеты.
+    public static final ToyType[] ANIMAL_POOL =
         Arrays.stream(values())
             .filter(toyType -> toyType.texturePath.startsWith("toys/animals/"))
             .toArray(ToyType[]::new);
@@ -79,33 +75,19 @@ public enum ToyType {
     private final String cardText;
 
     ToyType(String texturePath, String title, String cardText) {
-        // Сохраняем путь к картинке игрушки.
         this.texturePath = texturePath;
-
-        // Сохраняем короткий заголовок карточки.
         this.title = title;
-
-        // Сохраняем описание для обратной стороны карточки.
         this.cardText = cardText;
     }
 
-    /**
-     * Путь до картинки игрушки в assets.
-     */
     public String getTexturePath() {
         return texturePath;
     }
 
-    /**
-     * Короткий заголовок карточки.
-     */
     public String getTitle() {
         return title;
     }
 
-    /**
-     * Текст на обратной стороне карточки.
-     */
     public String getCardText() {
         return cardText;
     }

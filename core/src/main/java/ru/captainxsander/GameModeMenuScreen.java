@@ -4,13 +4,18 @@ class GameModeMenuScreen extends AbstractMenuScreen {
     GameModeMenuScreen(MainGame game) {
         // Заголовок и варианты запуска из подменю "Играть".
         super(game, "menu_mode_title.png");
-        // Запускаем существующий игровой экран.
+        MenagerieProgress progress = new MenagerieProgress();
+
+        // Запускаем базовый режим с дефолтами + открытыми через RESCUE зверями.
         addOption("menu_mode_normal.png", game::startNormalGame);
-        // Здесь открываем обычную игру, но в режиме спасения зверей.
+        // Режим поэтапного спасения зверей (уровни по 5 новых уникальных животных).
         addOption("menu_mode_rescue.png", game::startRescueGame);
-        // Новый режим: поиск конкретной игрушки с ручным доворотом клешни.
-        // Используем существующий ассет кнопки, который точно есть в assets.
-        addOption("find_animals.png", game::startFindAnimalGame);
+
+        // Режим поиска зверей становится доступен только после завершения 1-го уровня RESCUE.
+        if (progress.isFindAnimalModeUnlocked()) {
+            addOption("find_animals.png", game::startFindAnimalGame);
+        }
+
         // Явная кнопка возврата в предыдущее меню.
         addOption("menu_back.png", game::showPreviousMenu);
     }
