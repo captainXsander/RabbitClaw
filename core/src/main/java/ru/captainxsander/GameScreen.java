@@ -68,6 +68,7 @@ public class GameScreen implements Screen {
     private boolean findAnimalRoundResolved;
     private String findAnimalResultText;
     private float findAnimalExitTimer;
+    private boolean findAnimalExitRequested;
 
     public GameScreen(MainGame game, GameMode gameMode) {
         // Экран знает игру (для возврата в меню) и свой режим.
@@ -119,6 +120,7 @@ public class GameScreen implements Screen {
         findAnimalRoundResolved = false;
         findAnimalResultText = null;
         findAnimalExitTimer = 0f;
+        findAnimalExitRequested = false;
 
         // Отдельные шрифты: для текста факта и для статуса победы/поражения.
         factFont = createFont(26, new Color(0.98f, 0.92f, 0.84f, 1f));
@@ -154,6 +156,14 @@ public class GameScreen implements Screen {
     public void render(float delta) {
         update(delta);
         draw();
+
+        // ВАЖНО: переключаем экран только после завершения текущего кадра.
+        // Иначе MainGame.dispose() может освободить ресурсы прямо во время рендера,
+        // что на некоторых платформах (особенно Windows/OpenGL) приводит к native-crash.
+        if (findAnimalExitRequested) {
+            findAnimalExitRequested = false;
+            game.showPreviousMenu();
+        }
     }
 
     private void update(float delta) {
@@ -183,7 +193,7 @@ public class GameScreen implements Screen {
 
         findAnimalExitTimer -= delta;
         if (findAnimalExitTimer <= 0f) {
-            game.showPreviousMenu();
+            findAnimalExitRequested = true;
         }
     }
 
