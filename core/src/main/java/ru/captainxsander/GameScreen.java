@@ -207,8 +207,16 @@ public class GameScreen implements Screen {
     }
 
     private void resolveFindAnimalResultIfWon(Toy toy) {
-        // Берём в расчёт только новые и уже точно выигранные игрушки.
-        if (!toy.isWon() || reportedWins.contains(toy)) {
+        // Берём в расчёт только новые игрушки.
+        if (reportedWins.contains(toy)) {
+            return;
+        }
+
+        // В FIND_ANIMAL считаем завершением:
+        // 1) классическую победу (toy.isWon),
+        // 2) либо факт попадания в внутреннюю область лотка.
+        boolean reachedTray = toy.isWon() || toy.isInsideWinZone(winZone);
+        if (!reachedTray) {
             return;
         }
 

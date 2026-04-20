@@ -369,6 +369,18 @@ public class Toy {
         return inTray;
     }
 
+    /**
+     * Проверка, что центр игрушки находится внутри внутреннего контура лотка.
+     * Используется режимом FIND_ANIMAL, чтобы зафиксировать результат
+     * сразу при попадании игрушки в лоток, не дожидаясь полного "успокоения".
+     */
+    public boolean isInsideWinZone(WinZone winZone) {
+        return body.getPosition().x > winZone.getInnerLeft()
+            && body.getPosition().x < winZone.getInnerRight()
+            && body.getPosition().y > winZone.getInnerBottom()
+            && body.getPosition().y < winZone.getInnerTop();
+    }
+
     public float getCatchDifficulty() {
         return catchDifficulty;
     }
