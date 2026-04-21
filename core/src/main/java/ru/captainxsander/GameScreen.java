@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -75,6 +76,21 @@ public class GameScreen implements Screen {
     private final Rectangle pausePanelBounds = new Rectangle(2.4f, 2.05f, WORLD_WIDTH - 4.8f, 4.5f);
     private final Rectangle resumeButtonBounds = new Rectangle(4.2f, 4.25f, WORLD_WIDTH - 8.4f, 0.95f);
     private final Rectangle menuButtonBounds = new Rectangle(4.2f, 3.0f, WORLD_WIDTH - 8.4f, 0.95f);
+    // Сенсорные контролы размещаем у нижних краёв, чтобы не перекрывать центр игры.
+    private final Rectangle touchJoystickBounds = new Rectangle(0.35f, 0.25f, 2.5f, 2.5f);
+    private final Rectangle touchGrabButtonBounds = new Rectangle(WORLD_WIDTH - 2.85f, 0.35f, 2.4f, 1.2f);
+    private final Vector2 touchJoystickCenter = new Vector2(
+        touchJoystickBounds.x + touchJoystickBounds.width * 0.5f,
+        touchJoystickBounds.y + touchJoystickBounds.height * 0.5f
+    );
+    // Позиция "ручки" джойстика (визуал + источник оси).
+    private final Vector2 touchJoystickKnob = new Vector2(touchJoystickCenter);
+    // Активные pointer id для мультитача: джойстик и кнопка действия.
+    private int touchJoystickPointer = -1;
+    private int touchActionPointer = -1;
+    // Сырые состояния touch-управления, передаются в Claw каждый кадр.
+    private float touchHorizontalAxis = 0f;
+    private boolean touchActionPressed = false;
 
     private FindAnimalFacts.FindAnimalTask findAnimalTask;
     private boolean findAnimalRoundResolved;
@@ -126,6 +142,8 @@ public class GameScreen implements Screen {
         pauseOverlayTexture = createSolidTexture(1, 1, Color.WHITE);
 
         createToys();
+        // Перехватываем системную кнопку BACK, чтобы она открывала нашу паузу.
+        Gdx.input.setCatchKey(Input.Keys.BACK, true);
         Gdx.input.setInputProcessor(new GameInputAdapter());
     }
 
@@ -216,9 +234,15 @@ public class GameScreen implements Screen {
 
     private void update(float delta) {
         if (pauseActive) {
+            // В паузе принудительно обнуляем мобильный ввод, чтобы не было "залипания".
+            claw.setTouchHorizontalAxis(0f);
+            claw.setTouchActionPressed(false);
             return;
         }
 
+        // Пробрасываем актуальные значения touch-ввода в игровую логику клешни.
+        claw.setTouchHorizontalAxis(touchHorizontalAxis);
+        claw.setTouchActionPressed(touchActionPressed);
         claw.update(delta, toys, trayToys, winZone);
 
         // Фиксированный шаг Box2D.
@@ -361,6 +385,9 @@ public class GameScreen implements Screen {
 
         if (pauseActive) {
             drawPauseOverlay();
+        } else {
+            // Контролы рисуем поверх мира, но только вне состояния паузы.
+            drawTouchControls();
         }
 
         batch.end();
@@ -440,6 +467,79 @@ public class GameScreen implements Screen {
             bounds.y + (bounds.height + glyphLayout.height) * 0.5f);
     }
 
+    private void drawTouchControls() {
+        // На desktop/web этот UI не показываем.
+        if (!isTouchControlsVisible()) {
+            return;
+        }
+
+        drawTouchJoystick();
+        drawTouchActionButton();
+    }
+
+    private void drawTouchJoystick() {
+        // Визуально "гасим" джойстик, если по правилам режима он временно недоступен.
+        boolean enabled = claw != null && claw.isHorizontalControlAllowed();
+        float alpha = enabled ? 0.35f : 0.18f;
+        float knobAlpha = enabled ? 0.65f : 0.28f;
+
+        batch.setColor(0.08f, 0.10f, 0.12f, alpha);
+        batch.draw(pauseOverlayTexture, touchJoystickBounds.x, touchJoystickBounds.y, touchJoystickBounds.width, touchJoystickBounds.height);
+
+        float knobSize = 0.88f;
+        batch.setColor(0.85f, 0.90f, 0.95f, knobAlpha);
+        batch.draw(
+            pauseOverlayTexture,
+            touchJoystickKnob.x - knobSize * 0.5f,
+            touchJoystickKnob.y - knobSize * 0.5f,
+            knobSize,
+            knobSize
+        );
+
+        if (pauseFont != null) {
+            pauseFont.getData().setScale(0.0095f);
+            pauseFont.setColor(0.95f, 0.95f, 0.98f, enabled ? 0.9f : 0.45f);
+            glyphLayout.setText(pauseFont, "Джойстик");
+            pauseFont.draw(
+                batch,
+                glyphLayout,
+                touchJoystickBounds.x + (touchJoystickBounds.width - glyphLayout.width) * 0.5f,
+                touchJoystickBounds.y + touchJoystickBounds.height + 0.22f
+            );
+            pauseFont.setColor(Color.WHITE);
+        }
+        batch.setColor(Color.WHITE);
+    }
+
+    private void drawTouchActionButton() {
+        // Кнопка тоже может быть временно недоступна (например, пока цикл автодвижения).
+        boolean enabled = claw != null && claw.isActionControlAllowed();
+        // В FIND_ANIMAL после захвата меняем подпись на "Отпустить".
+        String label = claw != null && claw.shouldShowReleaseAction() ? "Отпустить" : "Захват";
+        float alpha = enabled ? 0.82f : 0.45f;
+
+        batch.setColor(0.26f, 0.50f, 0.86f, alpha);
+        batch.draw(
+            pauseOverlayTexture,
+            touchGrabButtonBounds.x,
+            touchGrabButtonBounds.y,
+            touchGrabButtonBounds.width,
+            touchGrabButtonBounds.height
+        );
+        batch.setColor(Color.WHITE);
+
+        if (pauseFont != null) {
+            pauseFont.getData().setScale(0.0108f);
+            glyphLayout.setText(pauseFont, label);
+            pauseFont.draw(
+                batch,
+                glyphLayout,
+                touchGrabButtonBounds.x + (touchGrabButtonBounds.width - glyphLayout.width) * 0.5f,
+                touchGrabButtonBounds.y + (touchGrabButtonBounds.height + glyphLayout.height) * 0.5f
+            );
+        }
+    }
+
     private boolean isFindAnimalFinished() {
         return gameMode == GameMode.FIND_ANIMAL && findAnimalRoundResolved;
     }
@@ -490,6 +590,8 @@ public class GameScreen implements Screen {
 
     @Override
     public void hide() {
+        // Возвращаем стандартное поведение BACK при выходе с игрового экрана.
+        Gdx.input.setCatchKey(Input.Keys.BACK, false);
         if (Gdx.input.getInputProcessor() != null) {
             Gdx.input.setInputProcessor(null);
         }
@@ -553,11 +655,12 @@ public class GameScreen implements Screen {
 
         @Override
         public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+            // Переводим экранные координаты в мировые для hit-test по UI-прямоугольникам.
+            Vector2 worldTouch = viewport.unproject(new Vector2(screenX, screenY));
             if (!pauseActive) {
-                return false;
+                return handleTouchGameplayDown(worldTouch, pointer);
             }
 
-            Vector2 worldTouch = viewport.unproject(new Vector2(screenX, screenY));
             if (resumeButtonBounds.contains(worldTouch)) {
                 pauseActive = false;
                 return true;
@@ -570,5 +673,102 @@ public class GameScreen implements Screen {
 
             return true;
         }
+
+        @Override
+        public boolean touchDragged(int screenX, int screenY, int pointer) {
+            // Джойстик работает только вне паузы и только на Android.
+            if (pauseActive || !isTouchControlsVisible()) {
+                return false;
+            }
+
+            // Перетаскивание обрабатывает только pointer, который "взял" джойстик.
+            if (pointer != touchJoystickPointer) {
+                return false;
+            }
+
+            updateJoystickFromTouch(viewport.unproject(new Vector2(screenX, screenY)));
+            return true;
+        }
+
+        @Override
+        public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+            // Отпустили палец джойстика — возвращаем ручку в центр и обнуляем ось.
+            if (pointer == touchJoystickPointer) {
+                releaseTouchJoystick();
+                return true;
+            }
+
+            // Отпустили палец кнопки — сбрасываем action.
+            if (pointer == touchActionPointer) {
+                touchActionPointer = -1;
+                touchActionPressed = false;
+                return true;
+            }
+
+            return false;
+        }
+
+        private boolean handleTouchGameplayDown(Vector2 worldTouch, int pointer) {
+            if (!isTouchControlsVisible()) {
+                return false;
+            }
+
+            // Привязка pointer к джойстику только если джойстик сейчас разрешён.
+            if (touchJoystickPointer == -1
+                && claw != null
+                && claw.isHorizontalControlAllowed()
+                && touchJoystickBounds.contains(worldTouch)) {
+                touchJoystickPointer = pointer;
+                updateJoystickFromTouch(worldTouch);
+                return true;
+            }
+
+            // Привязка pointer к кнопке действия только если она сейчас разрешена.
+            if (touchActionPointer == -1
+                && claw != null
+                && claw.isActionControlAllowed()
+                && touchGrabButtonBounds.contains(worldTouch)) {
+                touchActionPointer = pointer;
+                touchActionPressed = true;
+                return true;
+            }
+
+            return false;
+        }
+    }
+
+    private boolean isTouchControlsVisible() {
+        // Сенсорный UI нужен только на Android-сборке.
+        return Gdx.app.getType() == Application.ApplicationType.Android;
+    }
+
+    private void updateJoystickFromTouch(Vector2 worldTouch) {
+        // Вычисляем смещение ручки от центра.
+        float radius = touchJoystickBounds.width * 0.5f;
+        float dx = worldTouch.x - touchJoystickCenter.x;
+        float dy = worldTouch.y - touchJoystickCenter.y;
+
+        // Ограничиваем смещение радиусом джойстика.
+        float distance = (float) Math.sqrt(dx * dx + dy * dy);
+        if (distance > radius && distance > 0f) {
+            float scale = radius / distance;
+            dx *= scale;
+            dy *= scale;
+        }
+
+        // Переводим смещение в ось [-1..1] только по X.
+        touchJoystickKnob.set(touchJoystickCenter.x + dx, touchJoystickCenter.y + dy);
+        touchHorizontalAxis = clamp(dx / radius, -1f, 1f);
+    }
+
+    private void releaseTouchJoystick() {
+        // Возврат в нейтральное положение.
+        touchJoystickPointer = -1;
+        touchHorizontalAxis = 0f;
+        touchJoystickKnob.set(touchJoystickCenter);
+    }
+
+    private float clamp(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

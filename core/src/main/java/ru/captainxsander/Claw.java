@@ -82,6 +82,12 @@ public class Claw {
     private float dropCheckTimer = 0f;
     // Скорость клешни
     private float velocityX = 0f;
+    // Тач-ввод с мобильного UI (ось джойстика -1..1).
+    private float touchHorizontalAxis = 0f;
+    // Текущее состояние кнопки действия на сенсорном UI.
+    private boolean touchActionPressed = false;
+    // Предыдущее состояние кнопки действия для расчёта "just pressed".
+    private boolean previousTouchActionPressed = false;
 
     public Claw(GameMode gameMode) {
         // Флаг рассчитывается один раз в конструкторе,
@@ -117,6 +123,9 @@ public class Claw {
     }
 
     public void update(float delta, List<Toy> toys, List<Toy> trayToys, WinZone winZone) {
+        // Унифицируем событие "нажали действие": клавиатура + touch.
+        boolean actionJustPressed = isActionJustPressed();
+
         // 👉 ВСЕГДА синхронизируем физическое тело с логикой
         if (physicsBody != null) {
             physicsBody.setTransform(getRealX(), y - 0.7f, 0f);
@@ -126,7 +135,7 @@ public class Claw {
         if (state == State.IDLE) {
             handleIdleInput(delta);
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+            if (actionJustPressed) {
                 hasMovedDown = false;
                 capturedToy = null;
                 pressDepth = 0f;
@@ -142,9 +151,7 @@ public class Claw {
                     physicsBody.setTransform(getRealX(), y - 0.7f, 0f);
                 }
 
-                boolean noInput =
-                    !Gdx.input.isKeyPressed(Input.Keys.LEFT) &&
-                        !Gdx.input.isKeyPressed(Input.Keys.RIGHT);
+                boolean noInput = !hasHorizontalInput();
 
                 if (noInput && Math.abs(swing) < 0.05f && Math.abs(swingVelocity) < 0.05f) {
                     swing = 0f;
@@ -156,8 +163,8 @@ public class Claw {
         switch (state) {
             case MOVE_DOWN -> updateMoveDown(delta);
             case CLOSE -> updateClose(delta, toys, trayToys);
-            case MOVE_UP -> updateMoveUp(delta);
-            case MOVE_TO_TRAY -> updateMoveToTray(delta, trayToys, winZone);
+            case MOVE_UP -> updateMoveUp(delta, actionJustPressed);
+            case MOVE_TO_TRAY -> updateMoveToTray(delta, trayToys, winZone, actionJustPressed);
             case OPEN -> updateOpen(delta, trayToys, winZone);
             case RETURN_HOME -> updateReturnHome(delta);
             case IDLE -> {
@@ -183,6 +190,8 @@ public class Claw {
             );
         }
         updateSwing(delta);
+        // Фиксируем кадр для следующего "just pressed" на мобильной кнопке.
+        previousTouchActionPressed = touchActionPressed;
     }
 
     private void handleIdleInput(float delta) {
@@ -195,9 +204,10 @@ public class Claw {
         // Общая логика управления по X:
         // используется и в IDLE, и в расширенных состояниях FIND_ANIMAL.
         float oldX = x;
+        // Смешиваем клавиатурную ось и мобильный джойстик.
+        float horizontalAxis = getHorizontalAxis();
 
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) x -= MOVE_SPEED_X * delta;
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) x += MOVE_SPEED_X * delta;
+        x += horizontalAxis * MOVE_SPEED_X * delta;
 
         x = clamp(x, 2.0f, 12.0f);
 
@@ -334,11 +344,17 @@ public class Claw {
         }
     }
 
-    private void updateMoveUp(float delta) {
+    private void updateMoveUp(float delta, boolean actionJustPressed) {
         // В режиме поиска зверей игрок может подруливать
         // клешню даже во время подъёма захваченной игрушки.
         if (canControlAfterCatch()) {
             applyHorizontalInput(delta);
+            // FIND_ANIMAL: разрешаем отпустить игрушку сразу после захвата.
+            if (actionJustPressed) {
+                state = State.OPEN;
+                stateTimer = 0f;
+                return;
+            }
         }
 
         y += MOVE_SPEED_Y * delta;
@@ -383,7 +399,7 @@ public class Claw {
         }
     }
 
-    private void updateMoveToTray(float delta, List<Toy> trayToys, WinZone winZone) {
+    private void updateMoveToTray(float delta, List<Toy> trayToys, WinZone winZone, boolean actionJustPressed) {
         float oldX = getRealX();
 
         if (extendedFindAnimalControl && capturedToy == null) {
@@ -421,7 +437,7 @@ public class Claw {
             // FIND_ANIMAL: после подъёма игрушки клешня остаётся под контролем игрока.
             applyHorizontalInput(delta);
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+            if (actionJustPressed) {
                 state = State.OPEN;
                 stateTimer = 0f;
                 return;
@@ -754,6 +770,31 @@ public class Claw {
         return x + swingOffsetX;
     }
 
+    public void setTouchHorizontalAxis(float touchHorizontalAxis) {
+        // Подстраховка от выходов за диапазон из UI.
+        this.touchHorizontalAxis = clamp(touchHorizontalAxis, -1f, 1f);
+    }
+
+    public void setTouchActionPressed(boolean touchActionPressed) {
+        // Состояние выставляется из GameScreen при обработке touch.
+        this.touchActionPressed = touchActionPressed;
+    }
+
+    public boolean isHorizontalControlAllowed() {
+        // В обычных режимах — только в IDLE; в FIND_ANIMAL — и после захвата.
+        return state == State.IDLE || canControlAfterCatch();
+    }
+
+    public boolean isActionControlAllowed() {
+        // Кнопка действия доступна в тех же состояниях, что и горизонталь.
+        return state == State.IDLE || canControlAfterCatch();
+    }
+
+    public boolean shouldShowReleaseAction() {
+        // Для UI: если удерживаем игрушку в FIND_ANIMAL, показываем "Отпустить".
+        return canControlAfterCatch();
+    }
+
     public void setWorld(World world) {
         this.world = world;
     }
@@ -848,6 +889,26 @@ public class Claw {
         }
 
         return false;
+    }
+
+    private boolean isActionJustPressed() {
+        // Кнопка SPACE (desktop) или фронт на touch-кнопке (android).
+        return Gdx.input.isKeyJustPressed(Input.Keys.SPACE)
+            || (touchActionPressed && !previousTouchActionPressed);
+    }
+
+    private boolean hasHorizontalInput() {
+        // Минимальный порог, чтобы отсечь шум плавающей точки.
+        return Math.abs(getHorizontalAxis()) > 0.001f;
+    }
+
+    private float getHorizontalAxis() {
+        // Считываем клавиатуру как ось -1..1.
+        float keyboardAxis = 0f;
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) keyboardAxis -= 1f;
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) keyboardAxis += 1f;
+        // Складываем с touch и ограничиваем диапазон.
+        return clamp(keyboardAxis + touchHorizontalAxis, -1f, 1f);
     }
 
 }
