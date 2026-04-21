@@ -15,6 +15,13 @@ import java.util.List;
 import static ru.captainxsander.GameTuning.*;
 
 public class Claw {
+    // Android-профиль: только для тач-управления. Desktop-значения не меняем.
+    private static final float ANDROID_SWING_INPUT_BASE_MULT = 0.58f;
+    private static final float ANDROID_SWING_ACCEL_MULT = 0.45f;
+    private static final float ANDROID_SWING_DIRECTION_CHANGE_MULT = 0.42f;
+    private static final float ANDROID_SWING_DAMPING = 0.972f;
+    private static final float ANDROID_SWING_MAX = 0.42f;
+    private static final float ANDROID_SWING_OFFSET_MULT = 0.58f;
 
     private enum State {
         IDLE, MOVE_DOWN, CLOSE, MOVE_UP, MOVE_TO_TRAY, OPEN, RETURN_HOME
@@ -218,10 +225,21 @@ public class Claw {
         float cableLen = Math.max(0.2f, 9f - y);
         float lengthFactor = cableLen / 6f;
 
+        // Для Android + touch чуть снижаем импульсы, чтобы убрать
+        // чрезмерную раскачку и сохранить desktop-поведение как есть.
+        float baseSwingMult = SWING_INPUT_BASE;
+        float accelSwingMult = SWING_ACCEL_MULT;
+        float directionSwingMult = SWING_DIRECTION_CHANGE_MULT;
+        if (shouldUseAndroidSwingProfile()) {
+            baseSwingMult *= ANDROID_SWING_INPUT_BASE_MULT;
+            accelSwingMult *= ANDROID_SWING_ACCEL_MULT;
+            directionSwingMult *= ANDROID_SWING_DIRECTION_CHANGE_MULT;
+        }
+
         // =========================
         // 🔥 0. СЛАБЫЙ БАЗОВЫЙ ИМПУЛЬС (очень важен!)
         // =========================
-        swingVelocity += dx * SWING_INPUT_BASE * lengthFactor;
+        swingVelocity += dx * baseSwingMult * lengthFactor;
 
         // =========================
         // 🔥 1. РЫВОК
@@ -229,7 +247,7 @@ public class Claw {
         float accel = (inputVelocity - lastInputVelocity);
 
         if (Math.abs(accel) > 2.0f) { // ↓ БЫЛО 6 → стало 2
-            swingVelocity += accel * SWING_ACCEL_MULT * lengthFactor;
+            swingVelocity += accel * accelSwingMult * lengthFactor;
         }
 
         // =========================
@@ -240,7 +258,7 @@ public class Claw {
 
             float phaseBoost = (float) Math.cos(swing);
 
-            swingVelocity += inputVelocity * SWING_DIRECTION_CHANGE_MULT * lengthFactor * phaseBoost;
+            swingVelocity += inputVelocity * directionSwingMult * lengthFactor * phaseBoost;
         }
 
         lastInputVelocity = inputVelocity;
@@ -256,6 +274,11 @@ public class Claw {
         boolean blocked = hasMovedDown && isBlockedByToy();
 
         if (touching) {
+            // На Android при контакте с кучей дополнительно гасим маятник,
+            // чтобы удар не разгонял амплитуду ещё сильнее.
+            if (shouldUseAndroidSwingProfile()) {
+                swingVelocity *= 0.90f;
+            }
 
             if (pressDepth == 0f) {
                 y -= CLAW_INITIAL_PRESS_IMPULSE;
@@ -433,6 +456,13 @@ public class Claw {
                 }
             }
         }
+        // На Android в авто-проезде к лотку слегка гасим маятник каждый кадр,
+        // чтобы клешня не "болталась" и не замедлялась визуально перед лотком.
+        if (isAndroidRuntime() && !canControlAfterCatch()) {
+            swing *= 0.92f;
+            swingVelocity *= 0.84f;
+        }
+
         if (canControlAfterCatch()) {
             // FIND_ANIMAL: после подъёма игрушки клешня остаётся под контролем игрока.
             applyHorizontalInput(delta);
@@ -543,8 +573,12 @@ public class Claw {
         float cableLen = Math.max(0.2f, 9f - y);
 
         // 🔥 физика маятника
-        swingVelocity += (-swing * GameTuning.SWING_SPRING) * delta;
-        swingVelocity *= GameTuning.SWING_DAMPING;
+        // На Android чуть повышаем "возврат к вертикали", чтобы быстрее убирать хвост колебаний.
+        float spring = isAndroidRuntime() ? GameTuning.SWING_SPRING * 1.18f : GameTuning.SWING_SPRING;
+        swingVelocity += (-swing * spring) * delta;
+        // На Android используем более сильное затухание ТОЛЬКО для touch-профиля.
+        float damping = shouldUseAndroidSwingProfile() ? ANDROID_SWING_DAMPING : GameTuning.SWING_DAMPING;
+        swingVelocity *= damping;
 
         swingVelocity = clamp(swingVelocity, -SWING_MAX_VELOCITY, SWING_MAX_VELOCITY);
 
@@ -553,10 +587,11 @@ public class Claw {
         // 🔥 Амплитуда раскачки
         float sin = (float) Math.sin(swing);
         float boostedSin = sin * (1f + 2.0f * Math.abs(swing));
+        float swingOffsetMult = isAndroidRuntime() ? ANDROID_SWING_OFFSET_MULT : 1f;
 
         swingOffsetX =
-            boostedSin * cableLen * 5f
-                + swingVelocity * 0.12f * cableLen;
+            (boostedSin * cableLen * 5f
+                + swingVelocity * 0.12f * cableLen) * swingOffsetMult;
 
         // 🔥 голова догоняет
         float diff = swing - headSwing;
@@ -572,7 +607,8 @@ public class Claw {
             swingVelocity = 0f;
         }
 
-        swing = clamp(swing, -GameTuning.SWING_MAX, GameTuning.SWING_MAX);
+        float swingMax = isAndroidRuntime() ? ANDROID_SWING_MAX : GameTuning.SWING_MAX;
+        swing = clamp(swing, -swingMax, swingMax);
     }
 
     private Toy findTouchingToy(List<Toy> source) {
@@ -909,6 +945,17 @@ public class Claw {
         if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) keyboardAxis += 1f;
         // Складываем с touch и ограничиваем диапазон.
         return clamp(keyboardAxis + touchHorizontalAxis, -1f, 1f);
+    }
+
+    private boolean shouldUseAndroidSwingProfile() {
+        // Desktop полностью сохраняет старое поведение.
+        // На Android держим единый профиль всегда, чтобы и после отпускания джойстика
+        // затухание оставалось быстрым, без возврата к "десктопному" длинному хвосту.
+        return isAndroidRuntime();
+    }
+
+    private boolean isAndroidRuntime() {
+        return Gdx.app != null && Gdx.app.getType() == com.badlogic.gdx.Application.ApplicationType.Android;
     }
 
 }

@@ -102,6 +102,8 @@ public class GameScreen implements Screen {
     private int touchActionPointer = -1;
     // Сырые состояния touch-управления, передаются в Claw каждый кадр.
     private float touchHorizontalAxis = 0f;
+    // Целевая ось от джойстика: фильтруем её, чтобы убрать рывки на Android.
+    private float touchHorizontalAxisTarget = 0f;
     private boolean touchActionPressed = false;
     private Texture touchCircleTexture;
 
@@ -255,6 +257,12 @@ public class GameScreen implements Screen {
         }
 
         // Пробрасываем актуальные значения touch-ввода в игровую логику клешни.
+        // На Android дополнительно сглаживаем ось, чтобы джойстик не создавал
+        // резкие скачки скорости и избыточную раскачку.
+        if (isTouchControlsVisible()) {
+            float smoothing = clamp(delta * 14f, 0f, 1f);
+            touchHorizontalAxis += (touchHorizontalAxisTarget - touchHorizontalAxis) * smoothing;
+        }
         claw.setTouchHorizontalAxis(touchHorizontalAxis);
         claw.setTouchActionPressed(touchActionPressed);
         claw.update(delta, toys, trayToys, winZone);
@@ -827,13 +835,19 @@ public class GameScreen implements Screen {
 
         // Переводим смещение в ось [-1..1] только по X.
         touchJoystickKnob.set(touchJoystickCenter.x + dx, touchJoystickCenter.y + dy);
-        touchHorizontalAxis = clamp(dx / radius, -1f, 1f);
+        float axis = clamp(dx / radius, -1f, 1f);
+        // Небольшая "мёртвая зона", чтобы микродрожание пальца не вызывало рывков.
+        if (Math.abs(axis) < 0.08f) {
+            axis = 0f;
+        }
+        touchHorizontalAxisTarget = axis;
     }
 
     private void releaseTouchJoystick() {
         // Возврат в нейтральное положение.
         touchJoystickPointer = -1;
         touchHorizontalAxis = 0f;
+        touchHorizontalAxisTarget = 0f;
         touchJoystickKnob.set(touchJoystickCenter);
     }
 

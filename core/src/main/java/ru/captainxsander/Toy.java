@@ -1,5 +1,6 @@
 package ru.captainxsander;
 
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -122,10 +123,16 @@ public class Toy {
 
             // Некоторое время игрушка ещё "висит" в клешне.
             if (releaseDelay > 0) {
-                body.setLinearVelocity(
-                    body.getLinearVelocity().x * 0.9f,
-                    0
-                );
+                // На Android не "замораживаем" вертикаль после разжима клешни:
+                // иначе игрушка визуально падает слишком медленно.
+                if (isAndroidRuntime()) {
+                    body.setLinearVelocity(body.getLinearVelocity().x * 0.92f, body.getLinearVelocity().y);
+                } else {
+                    body.setLinearVelocity(
+                        body.getLinearVelocity().x * 0.9f,
+                        0
+                    );
+                }
                 return;
             }
 
@@ -137,7 +144,10 @@ public class Toy {
 
             // Включаем нормальную физику лотка.
             justReleased = false;
-            body.setGravityScale(GameTuning.TOY_TRAY_GRAVITY_SCALE);
+            // Для Android поднимаем gravityScale, чтобы падение/оседание в лотке
+            // не выглядело "замедленным" по сравнению с desktop.
+            float trayGravityScale = isAndroidRuntime() ? 0.55f : GameTuning.TOY_TRAY_GRAVITY_SCALE;
+            body.setGravityScale(trayGravityScale);
         }
 
         // Если игрушка уже в клешне, замораживаем её скорость.
@@ -274,14 +284,24 @@ public class Toy {
 
         justReleased = true;
 
-        // Задержки нужны только для визуального эффекта.
-        releaseDelay = 0.08f + (float) Math.random() * 0.12f;
-        slidePhase = 0.12f + (float) Math.random() * 0.1f;
+        // На Android делаем падение в лоток быстрее:
+        // меньше стартовая задержка и короче фаза соскальзывания.
+        if (isAndroidRuntime()) {
+            // Момент после разжатия на Android должен быть сразу "живым":
+            // убираем искусственную паузу/слайд, чтобы игрушка сразу падала.
+            releaseDelay = 0f;
+            slidePhase = 0f;
+        } else {
+            // Desktop оставляем без изменений.
+            releaseDelay = 0.08f + (float) Math.random() * 0.12f;
+            slidePhase = 0.12f + (float) Math.random() * 0.1f;
+        }
 
         body.setType(BodyDef.BodyType.DynamicBody);
 
-        // В начале падения гравитация слабее.
-        body.setGravityScale(0.6f);
+        // На Android ускоряем начальное падение в лоток,
+        // чтобы игрушка визуально не "зависала".
+        body.setGravityScale(isAndroidRuntime() ? 1.15f : 0.6f);
 
         for (Fixture fixture : body.getFixtureList()) {
             fixture.setRestitution(trayRestitution);
@@ -313,8 +333,13 @@ public class Toy {
             Math.min(GameTuning.RELEASE_MAX_VX, vx));
 
         // Задаём падение вниз.
-        vy = GameTuning.RELEASE_BASE_VY
-            - (float) Math.random() * GameTuning.RELEASE_RANDOM_VY;
+        if (isAndroidRuntime()) {
+            // Более уверенное стартовое падение на Android.
+            vy = -1.20f - (float) Math.random() * 0.30f;
+        } else {
+            vy = GameTuning.RELEASE_BASE_VY
+                - (float) Math.random() * GameTuning.RELEASE_RANDOM_VY;
+        }
 
         // Скорость задаётся один раз, дальше работает физика.
         body.setLinearVelocity(vx, vy);
@@ -322,6 +347,10 @@ public class Toy {
         body.setAngularVelocity(
             ((float) Math.random() - 0.5f) * 1.2f
         );
+    }
+
+    private boolean isAndroidRuntime() {
+        return Gdx.app != null && Gdx.app.getType() == Application.ApplicationType.Android;
     }
 
     public void render(SpriteBatch batch) {
