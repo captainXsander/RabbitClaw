@@ -76,12 +76,24 @@ public class GameScreen implements Screen {
     private final Rectangle pausePanelBounds = new Rectangle(2.4f, 2.05f, WORLD_WIDTH - 4.8f, 4.5f);
     private final Rectangle resumeButtonBounds = new Rectangle(4.2f, 4.25f, WORLD_WIDTH - 8.4f, 0.95f);
     private final Rectangle menuButtonBounds = new Rectangle(4.2f, 3.0f, WORLD_WIDTH - 8.4f, 0.95f);
-    // Сенсорные контролы размещаем у нижних краёв, чтобы не перекрывать центр игры.
-    private final Rectangle touchJoystickBounds = new Rectangle(0.35f, 0.25f, 2.5f, 2.5f);
-    private final Rectangle touchGrabButtonBounds = new Rectangle(WORLD_WIDTH - 2.85f, 0.35f, 2.4f, 1.2f);
-    private final Vector2 touchJoystickCenter = new Vector2(
-        touchJoystickBounds.x + touchJoystickBounds.width * 0.5f,
-        touchJoystickBounds.y + touchJoystickBounds.height * 0.5f
+    // Сенсорные контролы размещаем по бокам и делаем круглыми/полупрозрачными.
+    private static final float TOUCH_JOYSTICK_RADIUS = 0.82f;
+    private static final float TOUCH_JOYSTICK_KNOB_RADIUS = 0.34f;
+    private static final float TOUCH_ACTION_RADIUS = 0.78f;
+    private final Vector2 touchJoystickCenter = new Vector2(1.50f, 1.05f);
+    private final Vector2 touchActionCenter = new Vector2(WORLD_WIDTH - 1.42f, 1.04f);
+    // Круги также храним как прямоугольники-ограничители для hit-test.
+    private final Rectangle touchJoystickBounds = new Rectangle(
+        touchJoystickCenter.x - TOUCH_JOYSTICK_RADIUS,
+        touchJoystickCenter.y - TOUCH_JOYSTICK_RADIUS,
+        TOUCH_JOYSTICK_RADIUS * 2f,
+        TOUCH_JOYSTICK_RADIUS * 2f
+    );
+    private final Rectangle touchGrabButtonBounds = new Rectangle(
+        touchActionCenter.x - TOUCH_ACTION_RADIUS,
+        touchActionCenter.y - TOUCH_ACTION_RADIUS,
+        TOUCH_ACTION_RADIUS * 2f,
+        TOUCH_ACTION_RADIUS * 2f
     );
     // Позиция "ручки" джойстика (визуал + источник оси).
     private final Vector2 touchJoystickKnob = new Vector2(touchJoystickCenter);
@@ -91,6 +103,7 @@ public class GameScreen implements Screen {
     // Сырые состояния touch-управления, передаются в Claw каждый кадр.
     private float touchHorizontalAxis = 0f;
     private boolean touchActionPressed = false;
+    private Texture touchCircleTexture;
 
     private FindAnimalFacts.FindAnimalTask findAnimalTask;
     private boolean findAnimalRoundResolved;
@@ -140,6 +153,7 @@ public class GameScreen implements Screen {
         // Единый шрифт используем для оверлея паузы и действий внутри него.
         pauseFont = createFont(28, new Color(0.98f, 0.92f, 0.82f, 1f));
         pauseOverlayTexture = createSolidTexture(1, 1, Color.WHITE);
+        touchCircleTexture = createCircleTexture(192);
 
         createToys();
         // Перехватываем системную кнопку BACK, чтобы она открывала нашу паузу.
@@ -480,32 +494,59 @@ public class GameScreen implements Screen {
     private void drawTouchJoystick() {
         // Визуально "гасим" джойстик, если по правилам режима он временно недоступен.
         boolean enabled = claw != null && claw.isHorizontalControlAllowed();
-        float alpha = enabled ? 0.35f : 0.18f;
-        float knobAlpha = enabled ? 0.65f : 0.28f;
+        float plateAlpha = enabled ? 0.33f : 0.16f;
+        float ringAlpha = enabled ? 0.56f : 0.27f;
+        float knobAlpha = enabled ? 0.62f : 0.30f;
 
-        batch.setColor(0.08f, 0.10f, 0.12f, alpha);
-        batch.draw(pauseOverlayTexture, touchJoystickBounds.x, touchJoystickBounds.y, touchJoystickBounds.width, touchJoystickBounds.height);
-
-        float knobSize = 0.88f;
-        batch.setColor(0.85f, 0.90f, 0.95f, knobAlpha);
+        // Основание джойстика: тёмный полупрозрачный круг.
+        float baseSize = TOUCH_JOYSTICK_RADIUS * 2f;
+        batch.setColor(0.09f, 0.10f, 0.13f, plateAlpha);
         batch.draw(
-            pauseOverlayTexture,
-            touchJoystickKnob.x - knobSize * 0.5f,
-            touchJoystickKnob.y - knobSize * 0.5f,
+            touchCircleTexture,
+            touchJoystickCenter.x - TOUCH_JOYSTICK_RADIUS,
+            touchJoystickCenter.y - TOUCH_JOYSTICK_RADIUS,
+            baseSize,
+            baseSize
+        );
+
+        // Внешнее "кольцо": рисуем второй, чуть меньший круг цветом контура.
+        float ringSize = (TOUCH_JOYSTICK_RADIUS - 0.05f) * 2f;
+        batch.setColor(0.92f, 0.94f, 0.98f, ringAlpha);
+        batch.draw(
+            touchCircleTexture,
+            touchJoystickCenter.x - ringSize * 0.5f,
+            touchJoystickCenter.y - ringSize * 0.5f,
+            ringSize,
+            ringSize
+        );
+
+        // Внутренность снова затемняем, чтобы сформировать визуальное кольцо.
+        float ringInnerSize = (TOUCH_JOYSTICK_RADIUS - 0.09f) * 2f;
+        batch.setColor(0.12f, 0.14f, 0.17f, enabled ? 0.50f : 0.24f);
+        batch.draw(
+            touchCircleTexture,
+            touchJoystickCenter.x - ringInnerSize * 0.5f,
+            touchJoystickCenter.y - ringInnerSize * 0.5f,
+            ringInnerSize,
+            ringInnerSize
+        );
+
+        // Ручка джойстика.
+        float knobSize = TOUCH_JOYSTICK_KNOB_RADIUS * 2f;
+        batch.setColor(0.92f, 0.95f, 1.0f, knobAlpha);
+        batch.draw(
+            touchCircleTexture,
+            touchJoystickKnob.x - TOUCH_JOYSTICK_KNOB_RADIUS,
+            touchJoystickKnob.y - TOUCH_JOYSTICK_KNOB_RADIUS,
             knobSize,
             knobSize
         );
-
+        // Мини-иконка направления: невысокий шум, но хорошо читается на тёмном фоне.
         if (pauseFont != null) {
-            pauseFont.getData().setScale(0.0095f);
-            pauseFont.setColor(0.95f, 0.95f, 0.98f, enabled ? 0.9f : 0.45f);
-            glyphLayout.setText(pauseFont, "Джойстик");
-            pauseFont.draw(
-                batch,
-                glyphLayout,
-                touchJoystickBounds.x + (touchJoystickBounds.width - glyphLayout.width) * 0.5f,
-                touchJoystickBounds.y + touchJoystickBounds.height + 0.22f
-            );
+            pauseFont.getData().setScale(0.011f);
+            pauseFont.setColor(1f, 1f, 1f, enabled ? 0.82f : 0.42f);
+            glyphLayout.setText(pauseFont, "◀ ▶");
+            pauseFont.draw(batch, glyphLayout, touchJoystickCenter.x - glyphLayout.width * 0.5f, touchJoystickCenter.y + 0.05f);
             pauseFont.setColor(Color.WHITE);
         }
         batch.setColor(Color.WHITE);
@@ -516,26 +557,41 @@ public class GameScreen implements Screen {
         boolean enabled = claw != null && claw.isActionControlAllowed();
         // В FIND_ANIMAL после захвата меняем подпись на "Отпустить".
         String label = claw != null && claw.shouldShowReleaseAction() ? "Отпустить" : "Захват";
-        float alpha = enabled ? 0.82f : 0.45f;
+        float outerAlpha = enabled ? 0.70f : 0.34f;
+        float innerAlpha = enabled ? 0.44f : 0.22f;
 
-        batch.setColor(0.26f, 0.50f, 0.86f, alpha);
+        // Внешний круг кнопки.
+        float outerSize = TOUCH_ACTION_RADIUS * 2f;
+        batch.setColor(0.96f, 0.78f, 0.18f, outerAlpha);
         batch.draw(
-            pauseOverlayTexture,
-            touchGrabButtonBounds.x,
-            touchGrabButtonBounds.y,
-            touchGrabButtonBounds.width,
-            touchGrabButtonBounds.height
+            touchCircleTexture,
+            touchActionCenter.x - TOUCH_ACTION_RADIUS,
+            touchActionCenter.y - TOUCH_ACTION_RADIUS,
+            outerSize,
+            outerSize
+        );
+
+        // Внутренний затемнённый круг, чтобы кнопка была аккуратной и не "кричащей".
+        float innerRadius = TOUCH_ACTION_RADIUS - 0.08f;
+        float innerSize = innerRadius * 2f;
+        batch.setColor(0.12f, 0.13f, 0.16f, innerAlpha);
+        batch.draw(
+            touchCircleTexture,
+            touchActionCenter.x - innerRadius,
+            touchActionCenter.y - innerRadius,
+            innerSize,
+            innerSize
         );
         batch.setColor(Color.WHITE);
 
         if (pauseFont != null) {
-            pauseFont.getData().setScale(0.0108f);
+            pauseFont.getData().setScale(0.0102f);
             glyphLayout.setText(pauseFont, label);
             pauseFont.draw(
                 batch,
                 glyphLayout,
-                touchGrabButtonBounds.x + (touchGrabButtonBounds.width - glyphLayout.width) * 0.5f,
-                touchGrabButtonBounds.y + (touchGrabButtonBounds.height + glyphLayout.height) * 0.5f
+                touchActionCenter.x - glyphLayout.width * 0.5f,
+                touchActionCenter.y + glyphLayout.height * 0.32f
             );
         }
     }
@@ -550,6 +606,16 @@ public class GameScreen implements Screen {
         pixmap.setColor(color);
         pixmap.fill();
         Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return texture;
+    }
+
+    private Texture createCircleTexture(int diameter) {
+        Pixmap pixmap = new Pixmap(diameter, diameter, Pixmap.Format.RGBA8888);
+        pixmap.setColor(1f, 1f, 1f, 1f);
+        pixmap.fillCircle(diameter / 2, diameter / 2, diameter / 2);
+        Texture texture = new Texture(pixmap);
+        texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         pixmap.dispose();
         return texture;
     }
@@ -625,6 +691,9 @@ public class GameScreen implements Screen {
         }
         if (pauseOverlayTexture != null) {
             pauseOverlayTexture.dispose();
+        }
+        if (touchCircleTexture != null) {
+            touchCircleTexture.dispose();
         }
     }
 
@@ -717,7 +786,7 @@ public class GameScreen implements Screen {
             if (touchJoystickPointer == -1
                 && claw != null
                 && claw.isHorizontalControlAllowed()
-                && touchJoystickBounds.contains(worldTouch)) {
+                && isPointInsideCircle(worldTouch, touchJoystickCenter, TOUCH_JOYSTICK_RADIUS)) {
                 touchJoystickPointer = pointer;
                 updateJoystickFromTouch(worldTouch);
                 return true;
@@ -727,7 +796,7 @@ public class GameScreen implements Screen {
             if (touchActionPointer == -1
                 && claw != null
                 && claw.isActionControlAllowed()
-                && touchGrabButtonBounds.contains(worldTouch)) {
+                && isPointInsideCircle(worldTouch, touchActionCenter, TOUCH_ACTION_RADIUS)) {
                 touchActionPointer = pointer;
                 touchActionPressed = true;
                 return true;
@@ -744,7 +813,7 @@ public class GameScreen implements Screen {
 
     private void updateJoystickFromTouch(Vector2 worldTouch) {
         // Вычисляем смещение ручки от центра.
-        float radius = touchJoystickBounds.width * 0.5f;
+        float radius = TOUCH_JOYSTICK_RADIUS;
         float dx = worldTouch.x - touchJoystickCenter.x;
         float dy = worldTouch.y - touchJoystickCenter.y;
 
@@ -770,5 +839,11 @@ public class GameScreen implements Screen {
 
     private float clamp(float value, float min, float max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    private boolean isPointInsideCircle(Vector2 point, Vector2 center, float radius) {
+        float dx = point.x - center.x;
+        float dy = point.y - center.y;
+        return dx * dx + dy * dy <= radius * radius;
     }
 }
