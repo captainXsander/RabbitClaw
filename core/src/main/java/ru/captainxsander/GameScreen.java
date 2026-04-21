@@ -494,9 +494,9 @@ public class GameScreen implements Screen {
     private void drawTouchJoystick() {
         // Визуально "гасим" джойстик, если по правилам режима он временно недоступен.
         boolean enabled = claw != null && claw.isHorizontalControlAllowed();
-        float plateAlpha = enabled ? 0.33f : 0.16f;
-        float ringAlpha = enabled ? 0.56f : 0.27f;
-        float knobAlpha = enabled ? 0.62f : 0.30f;
+        float plateAlpha = enabled ? 0.20f : 0.10f;
+        float ringAlpha = enabled ? 0.34f : 0.18f;
+        float knobAlpha = enabled ? 0.42f : 0.22f;
 
         // Основание джойстика: тёмный полупрозрачный круг.
         float baseSize = TOUCH_JOYSTICK_RADIUS * 2f;
@@ -522,7 +522,7 @@ public class GameScreen implements Screen {
 
         // Внутренность снова затемняем, чтобы сформировать визуальное кольцо.
         float ringInnerSize = (TOUCH_JOYSTICK_RADIUS - 0.09f) * 2f;
-        batch.setColor(0.12f, 0.14f, 0.17f, enabled ? 0.50f : 0.24f);
+        batch.setColor(0.12f, 0.14f, 0.17f, enabled ? 0.30f : 0.16f);
         batch.draw(
             touchCircleTexture,
             touchJoystickCenter.x - ringInnerSize * 0.5f,
@@ -544,7 +544,7 @@ public class GameScreen implements Screen {
         // Мини-иконка направления: невысокий шум, но хорошо читается на тёмном фоне.
         if (pauseFont != null) {
             pauseFont.getData().setScale(0.011f);
-            pauseFont.setColor(1f, 1f, 1f, enabled ? 0.82f : 0.42f);
+            pauseFont.setColor(1f, 1f, 1f, enabled ? 0.62f : 0.34f);
             glyphLayout.setText(pauseFont, "◀ ▶");
             pauseFont.draw(batch, glyphLayout, touchJoystickCenter.x - glyphLayout.width * 0.5f, touchJoystickCenter.y + 0.05f);
             pauseFont.setColor(Color.WHITE);
@@ -557,8 +557,8 @@ public class GameScreen implements Screen {
         boolean enabled = claw != null && claw.isActionControlAllowed();
         // В FIND_ANIMAL после захвата меняем подпись на "Отпустить".
         String label = claw != null && claw.shouldShowReleaseAction() ? "Отпустить" : "Захват";
-        float outerAlpha = enabled ? 0.70f : 0.34f;
-        float innerAlpha = enabled ? 0.44f : 0.22f;
+        float outerAlpha = enabled ? 0.46f : 0.26f;
+        float innerAlpha = enabled ? 0.28f : 0.16f;
 
         // Внешний круг кнопки.
         float outerSize = TOUCH_ACTION_RADIUS * 2f;
