@@ -11,8 +11,10 @@ public class AndroidLauncher extends AndroidApplication {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Android-конфигурация запуска libGDX-приложения.
         AndroidApplicationConfiguration configuration = new AndroidApplicationConfiguration();
         configuration.useImmersiveMode = true; // Recommended, but not required.
+        // На Android запускаем общий core-класс игры, а не desktop launcher.
         initialize(new MainGame(), configuration);
     }
 }

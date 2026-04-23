@@ -15,6 +15,13 @@ import java.util.List;
 import static ru.captainxsander.GameTuning.*;
 
 public class Claw {
+    // Android-профиль: только для тач-управления. Desktop-значения не меняем.
+    private static final float ANDROID_SWING_INPUT_BASE_MULT = 0.58f;
+    private static final float ANDROID_SWING_ACCEL_MULT = 0.45f;
+    private static final float ANDROID_SWING_DIRECTION_CHANGE_MULT = 0.42f;
+    private static final float ANDROID_SWING_DAMPING = 0.972f;
+    private static final float ANDROID_SWING_MAX = 0.42f;
+    private static final float ANDROID_SWING_OFFSET_MULT = 0.58f;
 
     private enum State {
         IDLE, MOVE_DOWN, CLOSE, MOVE_UP, MOVE_TO_TRAY, OPEN, RETURN_HOME
@@ -82,6 +89,12 @@ public class Claw {
     private float dropCheckTimer = 0f;
     // Скорость клешни
     private float velocityX = 0f;
+    // Тач-ввод с мобильного UI (ось джойстика -1..1).
+    private float touchHorizontalAxis = 0f;
+    // Текущее состояние кнопки действия на сенсорном UI.
+    private boolean touchActionPressed = false;
+    // Предыдущее состояние кнопки действия для расчёта "just pressed".
+    private boolean previousTouchActionPressed = false;
 
     public Claw(GameMode gameMode) {
         // Флаг рассчитывается один раз в конструкторе,
@@ -117,6 +130,9 @@ public class Claw {
     }
 
     public void update(float delta, List<Toy> toys, List<Toy> trayToys, WinZone winZone) {
+        // Унифицируем событие "нажали действие": клавиатура + touch.
+        boolean actionJustPressed = isActionJustPressed();
+
         // 👉 ВСЕГДА синхронизируем физическое тело с логикой
         if (physicsBody != null) {
             physicsBody.setTransform(getRealX(), y - 0.7f, 0f);
@@ -126,7 +142,7 @@ public class Claw {
         if (state == State.IDLE) {
             handleIdleInput(delta);
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+            if (actionJustPressed) {
                 hasMovedDown = false;
                 capturedToy = null;
                 pressDepth = 0f;
@@ -142,9 +158,7 @@ public class Claw {
                     physicsBody.setTransform(getRealX(), y - 0.7f, 0f);
                 }
 
-                boolean noInput =
-                    !Gdx.input.isKeyPressed(Input.Keys.LEFT) &&
-                        !Gdx.input.isKeyPressed(Input.Keys.RIGHT);
+                boolean noInput = !hasHorizontalInput();
 
                 if (noInput && Math.abs(swing) < 0.05f && Math.abs(swingVelocity) < 0.05f) {
                     swing = 0f;
@@ -156,8 +170,8 @@ public class Claw {
         switch (state) {
             case MOVE_DOWN -> updateMoveDown(delta);
             case CLOSE -> updateClose(delta, toys, trayToys);
-            case MOVE_UP -> updateMoveUp(delta);
-            case MOVE_TO_TRAY -> updateMoveToTray(delta, trayToys, winZone);
+            case MOVE_UP -> updateMoveUp(delta, actionJustPressed);
+            case MOVE_TO_TRAY -> updateMoveToTray(delta, trayToys, winZone, actionJustPressed);
             case OPEN -> updateOpen(delta, trayToys, winZone);
             case RETURN_HOME -> updateReturnHome(delta);
             case IDLE -> {
@@ -183,6 +197,8 @@ public class Claw {
             );
         }
         updateSwing(delta);
+        // Фиксируем кадр для следующего "just pressed" на мобильной кнопке.
+        previousTouchActionPressed = touchActionPressed;
     }
 
     private void handleIdleInput(float delta) {
@@ -195,9 +211,10 @@ public class Claw {
         // Общая логика управления по X:
         // используется и в IDLE, и в расширенных состояниях FIND_ANIMAL.
         float oldX = x;
+        // Смешиваем клавиатурную ось и мобильный джойстик.
+        float horizontalAxis = getHorizontalAxis();
 
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) x -= MOVE_SPEED_X * delta;
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) x += MOVE_SPEED_X * delta;
+        x += horizontalAxis * MOVE_SPEED_X * delta;
 
         x = clamp(x, 2.0f, 12.0f);
 
@@ -208,10 +225,21 @@ public class Claw {
         float cableLen = Math.max(0.2f, 9f - y);
         float lengthFactor = cableLen / 6f;
 
+        // Для Android + touch чуть снижаем импульсы, чтобы убрать
+        // чрезмерную раскачку и сохранить desktop-поведение как есть.
+        float baseSwingMult = SWING_INPUT_BASE;
+        float accelSwingMult = SWING_ACCEL_MULT;
+        float directionSwingMult = SWING_DIRECTION_CHANGE_MULT;
+        if (shouldUseAndroidSwingProfile()) {
+            baseSwingMult *= ANDROID_SWING_INPUT_BASE_MULT;
+            accelSwingMult *= ANDROID_SWING_ACCEL_MULT;
+            directionSwingMult *= ANDROID_SWING_DIRECTION_CHANGE_MULT;
+        }
+
         // =========================
         // 🔥 0. СЛАБЫЙ БАЗОВЫЙ ИМПУЛЬС (очень важен!)
         // =========================
-        swingVelocity += dx * SWING_INPUT_BASE * lengthFactor;
+        swingVelocity += dx * baseSwingMult * lengthFactor;
 
         // =========================
         // 🔥 1. РЫВОК
@@ -219,7 +247,7 @@ public class Claw {
         float accel = (inputVelocity - lastInputVelocity);
 
         if (Math.abs(accel) > 2.0f) { // ↓ БЫЛО 6 → стало 2
-            swingVelocity += accel * SWING_ACCEL_MULT * lengthFactor;
+            swingVelocity += accel * accelSwingMult * lengthFactor;
         }
 
         // =========================
@@ -230,7 +258,7 @@ public class Claw {
 
             float phaseBoost = (float) Math.cos(swing);
 
-            swingVelocity += inputVelocity * SWING_DIRECTION_CHANGE_MULT * lengthFactor * phaseBoost;
+            swingVelocity += inputVelocity * directionSwingMult * lengthFactor * phaseBoost;
         }
 
         lastInputVelocity = inputVelocity;
@@ -246,6 +274,11 @@ public class Claw {
         boolean blocked = hasMovedDown && isBlockedByToy();
 
         if (touching) {
+            // На Android при контакте с кучей дополнительно гасим маятник,
+            // чтобы удар не разгонял амплитуду ещё сильнее.
+            if (shouldUseAndroidSwingProfile()) {
+                swingVelocity *= 0.90f;
+            }
 
             if (pressDepth == 0f) {
                 y -= CLAW_INITIAL_PRESS_IMPULSE;
@@ -334,11 +367,17 @@ public class Claw {
         }
     }
 
-    private void updateMoveUp(float delta) {
+    private void updateMoveUp(float delta, boolean actionJustPressed) {
         // В режиме поиска зверей игрок может подруливать
         // клешню даже во время подъёма захваченной игрушки.
         if (canControlAfterCatch()) {
             applyHorizontalInput(delta);
+            // FIND_ANIMAL: разрешаем отпустить игрушку сразу после захвата.
+            if (actionJustPressed) {
+                state = State.OPEN;
+                stateTimer = 0f;
+                return;
+            }
         }
 
         y += MOVE_SPEED_Y * delta;
@@ -383,7 +422,7 @@ public class Claw {
         }
     }
 
-    private void updateMoveToTray(float delta, List<Toy> trayToys, WinZone winZone) {
+    private void updateMoveToTray(float delta, List<Toy> trayToys, WinZone winZone, boolean actionJustPressed) {
         float oldX = getRealX();
 
         if (extendedFindAnimalControl && capturedToy == null) {
@@ -417,11 +456,18 @@ public class Claw {
                 }
             }
         }
+        // На Android в авто-проезде к лотку слегка гасим маятник каждый кадр,
+        // чтобы клешня не "болталась" и не замедлялась визуально перед лотком.
+        if (isAndroidRuntime() && !canControlAfterCatch()) {
+            swing *= 0.92f;
+            swingVelocity *= 0.84f;
+        }
+
         if (canControlAfterCatch()) {
             // FIND_ANIMAL: после подъёма игрушки клешня остаётся под контролем игрока.
             applyHorizontalInput(delta);
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+            if (actionJustPressed) {
                 state = State.OPEN;
                 stateTimer = 0f;
                 return;
@@ -527,8 +573,12 @@ public class Claw {
         float cableLen = Math.max(0.2f, 9f - y);
 
         // 🔥 физика маятника
-        swingVelocity += (-swing * GameTuning.SWING_SPRING) * delta;
-        swingVelocity *= GameTuning.SWING_DAMPING;
+        // На Android чуть повышаем "возврат к вертикали", чтобы быстрее убирать хвост колебаний.
+        float spring = isAndroidRuntime() ? GameTuning.SWING_SPRING * 1.18f : GameTuning.SWING_SPRING;
+        swingVelocity += (-swing * spring) * delta;
+        // На Android используем более сильное затухание ТОЛЬКО для touch-профиля.
+        float damping = shouldUseAndroidSwingProfile() ? ANDROID_SWING_DAMPING : GameTuning.SWING_DAMPING;
+        swingVelocity *= damping;
 
         swingVelocity = clamp(swingVelocity, -SWING_MAX_VELOCITY, SWING_MAX_VELOCITY);
 
@@ -537,10 +587,11 @@ public class Claw {
         // 🔥 Амплитуда раскачки
         float sin = (float) Math.sin(swing);
         float boostedSin = sin * (1f + 2.0f * Math.abs(swing));
+        float swingOffsetMult = isAndroidRuntime() ? ANDROID_SWING_OFFSET_MULT : 1f;
 
         swingOffsetX =
-            boostedSin * cableLen * 5f
-                + swingVelocity * 0.12f * cableLen;
+            (boostedSin * cableLen * 5f
+                + swingVelocity * 0.12f * cableLen) * swingOffsetMult;
 
         // 🔥 голова догоняет
         float diff = swing - headSwing;
@@ -556,7 +607,8 @@ public class Claw {
             swingVelocity = 0f;
         }
 
-        swing = clamp(swing, -GameTuning.SWING_MAX, GameTuning.SWING_MAX);
+        float swingMax = isAndroidRuntime() ? ANDROID_SWING_MAX : GameTuning.SWING_MAX;
+        swing = clamp(swing, -swingMax, swingMax);
     }
 
     private Toy findTouchingToy(List<Toy> source) {
@@ -754,6 +806,31 @@ public class Claw {
         return x + swingOffsetX;
     }
 
+    public void setTouchHorizontalAxis(float touchHorizontalAxis) {
+        // Подстраховка от выходов за диапазон из UI.
+        this.touchHorizontalAxis = clamp(touchHorizontalAxis, -1f, 1f);
+    }
+
+    public void setTouchActionPressed(boolean touchActionPressed) {
+        // Состояние выставляется из GameScreen при обработке touch.
+        this.touchActionPressed = touchActionPressed;
+    }
+
+    public boolean isHorizontalControlAllowed() {
+        // В обычных режимах — только в IDLE; в FIND_ANIMAL — и после захвата.
+        return state == State.IDLE || canControlAfterCatch();
+    }
+
+    public boolean isActionControlAllowed() {
+        // Кнопка действия доступна в тех же состояниях, что и горизонталь.
+        return state == State.IDLE || canControlAfterCatch();
+    }
+
+    public boolean shouldShowReleaseAction() {
+        // Для UI: если удерживаем игрушку в FIND_ANIMAL, показываем "Отпустить".
+        return canControlAfterCatch();
+    }
+
     public void setWorld(World world) {
         this.world = world;
     }
@@ -848,6 +925,37 @@ public class Claw {
         }
 
         return false;
+    }
+
+    private boolean isActionJustPressed() {
+        // Кнопка SPACE (desktop) или фронт на touch-кнопке (android).
+        return Gdx.input.isKeyJustPressed(Input.Keys.SPACE)
+            || (touchActionPressed && !previousTouchActionPressed);
+    }
+
+    private boolean hasHorizontalInput() {
+        // Минимальный порог, чтобы отсечь шум плавающей точки.
+        return Math.abs(getHorizontalAxis()) > 0.001f;
+    }
+
+    private float getHorizontalAxis() {
+        // Считываем клавиатуру как ось -1..1.
+        float keyboardAxis = 0f;
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) keyboardAxis -= 1f;
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) keyboardAxis += 1f;
+        // Складываем с touch и ограничиваем диапазон.
+        return clamp(keyboardAxis + touchHorizontalAxis, -1f, 1f);
+    }
+
+    private boolean shouldUseAndroidSwingProfile() {
+        // Desktop полностью сохраняет старое поведение.
+        // На Android держим единый профиль всегда, чтобы и после отпускания джойстика
+        // затухание оставалось быстрым, без возврата к "десктопному" длинному хвосту.
+        return isAndroidRuntime();
+    }
+
+    private boolean isAndroidRuntime() {
+        return Gdx.app != null && Gdx.app.getType() == com.badlogic.gdx.Application.ApplicationType.Android;
     }
 
 }
