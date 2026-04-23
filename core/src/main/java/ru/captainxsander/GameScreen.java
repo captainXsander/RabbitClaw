@@ -321,8 +321,7 @@ public class GameScreen implements Screen {
             return;
         }
 
-        boolean reachedTray = toy.isWon() || toy.isInsideWinZone(winZone) || toy.isInsideTrayBounds(winZone);
-        if (!reachedTray) {
+        if (!hasToyReachedTray(toy)) {
             return;
         }
 
@@ -365,8 +364,12 @@ public class GameScreen implements Screen {
         return menagerieProgress.getNormalModePool();
     }
 
+    private boolean hasToyReachedTray(Toy toy) {
+        return toy.isWon() || toy.isInsideWinZone(winZone) || toy.isInsideTrayBounds(winZone);
+    }
+
     private void registerWonToy(Toy toy) {
-        if (!toy.isWon() || reportedWins.contains(toy)) {
+        if (reportedWins.contains(toy) || !hasToyReachedTray(toy)) {
             return;
         }
 
