@@ -34,7 +34,7 @@ public class GameScreen implements Screen {
     public static final float WORLD_WIDTH = GameTuning.WORLD_WIDTH;
     public static final float WORLD_HEIGHT = GameTuning.WORLD_HEIGHT;
 
-    private static final String FONT_PATH = "fonts/arial.ttf";
+    public static final String FONT_PATH = "fonts/arial.ttf";
     private static final float FIND_ANIMAL_RESULT_SHOW_TIME = 2.5f;
     private static final int TOY_COUNT_PER_ROUND = 45;
 
@@ -66,7 +66,7 @@ public class GameScreen implements Screen {
     private BitmapFont factFont;
     private BitmapFont statusFont;
     private final GlyphLayout glyphLayout = new GlyphLayout();
-    private final Rectangle factBounds = new Rectangle(0.75f, WORLD_HEIGHT - 1.3f, WORLD_WIDTH - 1.5f, 1.05f);
+    private final Rectangle factBounds = new Rectangle(0.75f, WORLD_HEIGHT - 2.0f, WORLD_WIDTH - 1.5f, 1.05f);
     private final Rectangle resultBounds = new Rectangle(1.4f, WORLD_HEIGHT * 0.52f, WORLD_WIDTH - 2.8f, 1.2f);
 
     // Пауза доступна из любого режима с возвратом в главное меню.
@@ -107,6 +107,8 @@ public class GameScreen implements Screen {
     private boolean touchActionPressed = false;
     private Texture touchCircleTexture;
     private Texture pixelTexture;
+    private Texture rabbitLeftTexture;
+    private Texture rabbitRightTexture;
 
     private FindAnimalFacts.FindAnimalTask findAnimalTask;
     private boolean findAnimalRoundResolved;
@@ -158,6 +160,8 @@ public class GameScreen implements Screen {
         pauseOverlayTexture = createSolidTexture(1, 1, Color.WHITE);
         pixelTexture = pauseOverlayTexture;
         touchCircleTexture = createCircleTexture(192);
+        rabbitLeftTexture = new Texture(Gdx.files.internal("toys/default/rabbit_big.png"));
+        rabbitRightTexture = new Texture(Gdx.files.internal("toys/animals/rabbit_large.png"));
 
         createToys();
         // Перехватываем системную кнопку BACK, чтобы она открывала нашу паузу.
@@ -553,15 +557,30 @@ public class GameScreen implements Screen {
         pauseFont.getData().setScale(0.013f);
         glyphLayout.setText(pauseFont, "Пауза");
 
-        // Полупрозрачный оверлей рисуем тем же batch, чтобы не ломать пайплайн рендера.
-        batch.setColor(0f, 0f, 0f, 0.62f);
+        // Делаем паузу в том же стиле, что и меню/игра.
+        batch.setColor(0.05f, 0.06f, 0.13f, 0.84f);
         batch.draw(pauseOverlayTexture, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
+        batch.setColor(0.28f, 0.24f, 0.50f, 0.35f);
+        batch.draw(pauseOverlayTexture, 0.65f, 0.72f, WORLD_WIDTH - 1.3f, WORLD_HEIGHT - 1.45f);
+        batch.setColor(0.56f, 0.47f, 0.74f, 0.20f);
+        batch.draw(pauseOverlayTexture, 0.8f, 0.7f, WORLD_WIDTH - 1.6f, 1.7f);
+        batch.setColor(1f, 1f, 1f, 0.08f);
+        batch.draw(rabbitLeftTexture, 0.35f, 0.40f, 1.25f, 1.25f);
+        batch.draw(rabbitRightTexture, WORLD_WIDTH - 1.75f, 0.42f, 1.22f, 1.22f);
         batch.setColor(Color.WHITE);
 
         batch.setColor(0.24f, 0.23f, 0.30f, 0.95f);
         batch.draw(pauseOverlayTexture, pausePanelBounds.x, pausePanelBounds.y, pausePanelBounds.width, pausePanelBounds.height);
         batch.setColor(Color.WHITE);
 
+        pauseFont.getData().setScale(0.011f);
+        glyphLayout.setText(pauseFont, "RabbitClaw");
+        pauseFont.setColor(0.98f, 0.92f, 0.80f, 0.30f);
+        pauseFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, pausePanelBounds.y + pausePanelBounds.height + 0.25f);
+        pauseFont.setColor(0.98f, 0.92f, 0.82f, 1f);
+
+        pauseFont.getData().setScale(0.013f);
+        glyphLayout.setText(pauseFont, "Пауза");
         pauseFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, pausePanelBounds.y + pausePanelBounds.height - 0.6f);
 
         drawPauseButton(resumeButtonBounds, "Продолжить (Esc / Enter)");
@@ -799,6 +818,12 @@ public class GameScreen implements Screen {
         }
         if (touchCircleTexture != null) {
             touchCircleTexture.dispose();
+        }
+        if (rabbitLeftTexture != null) {
+            rabbitLeftTexture.dispose();
+        }
+        if (rabbitRightTexture != null) {
+            rabbitRightTexture.dispose();
         }
     }
 

@@ -4,16 +4,22 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.ScreenAdapter;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+
+import static ru.captainxsander.GameScreen.FONT_PATH;
 
 abstract class AbstractMenuScreen extends ScreenAdapter {
     // Логические размеры UI, чтобы меню выглядело одинаково на разных экранах.
@@ -36,6 +42,13 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
     private final Texture panelTexture = createSolidTexture(1, 1, new Color(1f, 1f, 1f, 0.12f));
     // Подсветка выбранного пункта меню.
     private final Texture highlightTexture = createSolidTexture(1, 1, new Color(0.98f, 0.84f, 0.25f, 0.3f));
+    // Однопиксельная текстура для фоновых декоративных слоёв.
+    private final Texture pixelTexture = createSolidTexture(1, 1, Color.WHITE);
+    private final Texture circleTexture = createCircleTexture(192);
+    private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/default/rabbit_big.png"));
+    private final Texture rabbitRightTexture = new Texture(Gdx.files.internal("toys/animals/rabbit_large.png"));
+    private final BitmapFont brandFont = createFont(34, new Color(0.98f, 0.92f, 0.80f, 1f));
+    private final GlyphLayout brandLayout = new GlyphLayout();
     // Заголовок меню хранится отдельной текстурой.
     private final Texture titleTexture;
 
@@ -83,6 +96,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         drawBackground();
         // Рисуем заголовок меню.
         batch.draw(titleTexture, centerX - titleWidth / 2f, titleY, titleWidth, titleHeight);
+        drawBrandTitleIfNeeded(centerX);
 
         for (int i = 0; i < options.size; i++) {
             MenuOption option = options.get(i);
@@ -104,10 +118,68 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
     }
 
     protected void drawBackground() {
+        batch.setColor(0.05f, 0.06f, 0.13f, 1f);
+        batch.draw(pixelTexture, 0f, 0f, UI_WIDTH, UI_HEIGHT);
+
+        batch.setColor(0.28f, 0.24f, 0.50f, 0.95f);
+        batch.draw(pixelTexture, 0.65f, 0.72f, UI_WIDTH - 1.3f, UI_HEIGHT - 1.45f);
+        batch.setColor(0.56f, 0.47f, 0.74f, 0.22f);
+        batch.draw(pixelTexture, 0.8f, 0.7f, UI_WIDTH - 1.6f, 1.7f);
+
+        batch.setColor(0.99f, 0.93f, 0.72f, 0.90f);
+        batch.draw(circleTexture, 1.7f, 6.1f, 0.72f, 0.72f);
+        batch.setColor(0.30f, 0.26f, 0.52f, 1f);
+        batch.draw(circleTexture, 1.92f, 6.2f, 0.58f, 0.58f);
+
+        drawStar(3.0f, 6.8f, 0.06f);
+        drawStar(5.1f, 7.1f, 0.05f);
+        drawStar(8.4f, 6.9f, 0.06f);
+        drawStar(10.9f, 7.0f, 0.05f);
+        drawStar(13.1f, 6.75f, 0.06f);
+
         // Основная полупрозрачная панель меню.
+        batch.setColor(Color.WHITE);
         batch.draw(panelTexture, 0.8f, 0.8f, 14.4f, 7.4f);
         // Тонкая светлая линия под шапкой для визуального разделения.
         batch.draw(highlightTexture, 1.1f, 6.95f, 13.8f, 0.08f);
+
+        // Декоративные зайчики по краям.
+        batch.setColor(1f, 1f, 1f, 0.22f);
+        batch.draw(rabbitLeftTexture, 0.35f, 0.40f, 1.25f, 1.25f);
+        batch.draw(rabbitRightTexture, UI_WIDTH - 1.75f, 0.42f, 1.22f, 1.22f);
+        batch.setColor(Color.WHITE);
+    }
+
+    protected String getBrandTitleText() {
+        return null;
+    }
+
+    protected float getBrandTitleY() {
+        return 8.12f;
+    }
+
+    protected float getBrandTitleScale() {
+        return 0.018f;
+    }
+
+    private void drawBrandTitleIfNeeded(float centerX) {
+        String brandTitle = getBrandTitleText();
+        if (brandTitle == null || brandTitle.isEmpty()) {
+            return;
+        }
+        brandFont.getData().setScale(getBrandTitleScale());
+        brandLayout.setText(brandFont, brandTitle);
+        float x = centerX - brandLayout.width * 0.5f;
+        float y = getBrandTitleY();
+        brandFont.setColor(0.08f, 0.06f, 0.16f, 0.74f);
+        brandFont.draw(batch, brandLayout, x + 0.02f, y - 0.02f);
+        brandFont.setColor(1f, 0.95f, 0.82f, 1f);
+        brandFont.draw(batch, brandLayout, x, y);
+    }
+
+    private void drawStar(float x, float y, float size) {
+        batch.setColor(0.99f, 0.91f, 0.68f, 0.92f);
+        batch.draw(circleTexture, x, y, size, size);
     }
 
     @Override
@@ -130,6 +202,11 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         titleTexture.dispose();
         panelTexture.dispose();
         highlightTexture.dispose();
+        pixelTexture.dispose();
+        circleTexture.dispose();
+        rabbitLeftTexture.dispose();
+        rabbitRightTexture.dispose();
+        brandFont.dispose();
         batch.dispose();
         for (MenuOption option : options) {
             // У каждой кнопки своя текстура.
@@ -206,6 +283,38 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         Texture texture = new Texture(pixmap);
         pixmap.dispose();
         return texture;
+    }
+
+    private Texture createCircleTexture(int diameter) {
+        Pixmap pixmap = new Pixmap(diameter, diameter, Pixmap.Format.RGBA8888);
+        pixmap.setColor(0f, 0f, 0f, 0f);
+        pixmap.fill();
+        pixmap.setColor(1f, 1f, 1f, 1f);
+        pixmap.fillCircle(diameter / 2, diameter / 2, diameter / 2);
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return texture;
+    }
+
+    private BitmapFont createFont(int size, Color color) {
+        FileHandle fontFile = Gdx.files.internal(FONT_PATH);
+        if (!fontFile.exists()) {
+            BitmapFont fallback = new BitmapFont();
+            fallback.setColor(color);
+            return fallback;
+        }
+
+        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(fontFile);
+        FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        parameter.size = size;
+        parameter.color = color;
+        parameter.characters = FreeTypeFontGenerator.DEFAULT_CHARS
+            + "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+            + "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
+            + "№«»—…";
+        BitmapFont font = generator.generateFont(parameter);
+        generator.dispose();
+        return font;
     }
 
     private final class MenuInputAdapter extends InputAdapter {
