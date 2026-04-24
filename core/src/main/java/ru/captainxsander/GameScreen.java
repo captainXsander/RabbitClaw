@@ -7,13 +7,16 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2D;
@@ -71,6 +74,7 @@ public class GameScreen implements Screen {
 
     // Пауза доступна из любого режима с возвратом в главное меню.
     private BitmapFont pauseFont;
+    private BitmapFont titleFont;
     private Texture pauseOverlayTexture;
     private boolean pauseActive;
     private final Rectangle pausePanelBounds = new Rectangle(2.4f, 2.05f, WORLD_WIDTH - 4.8f, 4.5f);
@@ -107,6 +111,10 @@ public class GameScreen implements Screen {
     private boolean touchActionPressed = false;
     private Texture touchCircleTexture;
     private Texture pixelTexture;
+    private FrameBuffer backdropLayerBuffer;
+    private FrameBuffer foregroundLayerBuffer;
+    private TextureRegion backdropLayerRegion;
+    private TextureRegion foregroundLayerRegion;
 
     private FindAnimalFacts.FindAnimalTask findAnimalTask;
     private boolean findAnimalRoundResolved;
@@ -155,9 +163,11 @@ public class GameScreen implements Screen {
 
         // Единый шрифт используем для оверлея паузы и действий внутри него.
         pauseFont = createFont(28, new Color(0.98f, 0.92f, 0.82f, 1f));
+        titleFont = createFont(52, new Color(0.98f, 0.91f, 0.78f, 1f), true);
         pauseOverlayTexture = createSolidTexture(1, 1, Color.WHITE);
         pixelTexture = pauseOverlayTexture;
         touchCircleTexture = createCircleTexture(192);
+        cacheMachineLayers();
 
         createToys();
         // Перехватываем системную кнопку BACK, чтобы она открывала нашу паузу.
@@ -422,6 +432,18 @@ public class GameScreen implements Screen {
     }
 
     private void drawMachineBackdrop() {
+        if (backdropLayerRegion != null) {
+            batch.setColor(Color.WHITE);
+            batch.draw(backdropLayerRegion, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
+            drawMachineTitle();
+            return;
+        }
+
+        drawMachineBackdropPrimitives();
+        drawMachineTitle();
+    }
+
+    private void drawMachineBackdropPrimitives() {
         // Глубокий ночной фон.
         batch.setColor(0.05f, 0.06f, 0.13f, 1f);
         batch.draw(pixelTexture, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
@@ -459,21 +481,93 @@ public class GameScreen implements Screen {
     }
 
     private void drawMachineForeground() {
-        // Нижняя панель автомата.
+        if (foregroundLayerRegion != null) {
+            batch.setColor(Color.WHITE);
+            batch.draw(foregroundLayerRegion, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
+            return;
+        }
+
+        drawMachineForegroundPrimitives();
+    }
+
+    private void drawMachineForegroundPrimitives() {
+        // Нижняя кромка автомата: не заезжаем в зону физического пола.
         batch.setColor(0.25f, 0.24f, 0.46f, 0.97f);
-        batch.draw(pixelTexture, 0f, 0f, WORLD_WIDTH, 0.85f);
+        batch.draw(pixelTexture, 0f, 0f, WORLD_WIDTH, 0.24f);
         batch.setColor(0.43f, 0.40f, 0.70f, 0.95f);
-        batch.draw(pixelTexture, 0f, 0.80f, WORLD_WIDTH, 0.07f);
+        batch.draw(pixelTexture, 0f, 0.22f, WORLD_WIDTH, 0.03f);
+        batch.setColor(0.70f, 0.66f, 0.95f, 0.35f);
+        batch.draw(pixelTexture, 0f, 0.68f, WORLD_WIDTH, 0.03f);
 
         // Контейнер выигрыша справа внизу.
         float trayX = winZone.getX() - winZone.getWidth() * 0.5f;
         float trayY = winZone.getY();
         float trayW = winZone.getWidth();
         float trayH = winZone.getHeight();
-        batch.setColor(0.88f, 0.90f, 1f, 0.24f);
+        batch.setColor(0.88f, 0.90f, 1f, 0.16f);
         batch.draw(pixelTexture, trayX, trayY, trayW, trayH);
-        drawNeonFrame(trayX, trayY, trayW, trayH, 0.05f, new Color(0.80f, 0.82f, 0.96f, 0.62f));
+        // Толщина рамки совпадает с физической стенкой лотка (0.08f).
+        drawNeonFrame(trayX, trayY, trayW, trayH, 0.08f, new Color(0.80f, 0.82f, 0.96f, 0.62f));
+        batch.setColor(0.86f, 0.90f, 1f, 0.10f);
+        batch.draw(pixelTexture, trayX + 0.04f, trayY + trayH * 0.52f, trayW - 0.08f, trayH * 0.40f);
         batch.setColor(Color.WHITE);
+    }
+
+    private void drawMachineTitle() {
+        if (titleFont == null) {
+            return;
+        }
+
+        String title = "RabbitClaw";
+        glyphLayout.setText(titleFont, title);
+        float titleX = (WORLD_WIDTH - glyphLayout.width) * 0.5f;
+        float titleY = WORLD_HEIGHT * 0.675f;
+        float sharpX = (float) Math.round(titleX);
+        float sharpY = (float) Math.round(titleY);
+
+        // Рисуем по целым координатам и без масштабирования => надпись резче.
+        titleFont.setColor(0.08f, 0.06f, 0.16f, 0.72f);
+        titleFont.draw(batch, glyphLayout, sharpX + 1f / 90f, sharpY - 1f / 90f);
+        titleFont.setColor(0.98f, 0.92f, 0.78f, 1f);
+        titleFont.draw(batch, glyphLayout, sharpX, sharpY);
+    }
+
+    private void cacheMachineLayers() {
+        backdropLayerBuffer = rebuildLayerBuffer(backdropLayerBuffer, true);
+        foregroundLayerBuffer = rebuildLayerBuffer(foregroundLayerBuffer, false);
+
+        backdropLayerRegion = backdropLayerBuffer != null ? new TextureRegion(backdropLayerBuffer.getColorBufferTexture()) : null;
+        foregroundLayerRegion = foregroundLayerBuffer != null ? new TextureRegion(foregroundLayerBuffer.getColorBufferTexture()) : null;
+
+        if (backdropLayerRegion != null) {
+            backdropLayerRegion.flip(false, true);
+        }
+        if (foregroundLayerRegion != null) {
+            foregroundLayerRegion.flip(false, true);
+        }
+    }
+
+    private FrameBuffer rebuildLayerBuffer(FrameBuffer oldBuffer, boolean backdrop) {
+        if (oldBuffer != null) {
+            oldBuffer.dispose();
+        }
+
+        FrameBuffer buffer = new FrameBuffer(Pixmap.Format.RGBA8888, 1600, 900, false);
+        buffer.begin();
+        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        if (backdrop) {
+            drawMachineBackdropPrimitives();
+        } else {
+            drawMachineForegroundPrimitives();
+        }
+        batch.end();
+        buffer.end();
+
+        return buffer;
     }
 
     private void drawNeonFrame(float x, float y, float width, float height, float thickness, Color color) {
@@ -701,10 +795,14 @@ public class GameScreen implements Screen {
     }
 
     private BitmapFont createFont(int size, Color color) {
+        return createFont(size, color, false);
+    }
+
+    private BitmapFont createFont(int size, Color color, boolean sharp) {
         FileHandle internalFont = Gdx.files.internal(FONT_PATH);
         if (!internalFont.exists()) {
             BitmapFont fallback = new BitmapFont();
-            fallback.setUseIntegerPositions(false);
+            fallback.setUseIntegerPositions(sharp);
             fallback.setColor(color);
             return fallback;
         }
@@ -713,15 +811,15 @@ public class GameScreen implements Screen {
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
         parameter.size = size;
         parameter.color = color;
-        parameter.minFilter = Texture.TextureFilter.Linear;
-        parameter.magFilter = Texture.TextureFilter.Linear;
+        parameter.minFilter = sharp ? Texture.TextureFilter.Nearest : Texture.TextureFilter.Linear;
+        parameter.magFilter = sharp ? Texture.TextureFilter.Nearest : Texture.TextureFilter.Linear;
         parameter.characters = FreeTypeFontGenerator.DEFAULT_CHARS
             + "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
             + "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
             + "№«»—…";
 
         BitmapFont font = generator.generateFont(parameter);
-        font.setUseIntegerPositions(false);
+        font.setUseIntegerPositions(sharp);
         generator.dispose();
         return font;
     }
@@ -769,11 +867,20 @@ public class GameScreen implements Screen {
         if (pauseFont != null) {
             pauseFont.dispose();
         }
+        if (titleFont != null) {
+            titleFont.dispose();
+        }
         if (pauseOverlayTexture != null) {
             pauseOverlayTexture.dispose();
         }
         if (touchCircleTexture != null) {
             touchCircleTexture.dispose();
+        }
+        if (backdropLayerBuffer != null) {
+            backdropLayerBuffer.dispose();
+        }
+        if (foregroundLayerBuffer != null) {
+            foregroundLayerBuffer.dispose();
         }
     }
 
