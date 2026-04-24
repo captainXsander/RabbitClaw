@@ -35,6 +35,8 @@ public class SettingsScreen extends ScreenAdapter {
     private final SpriteBatch batch = new SpriteBatch();
 
     private final Texture titleTexture = new Texture(Gdx.files.internal("menu_settings_title.png"));
+    private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/default/rabbit_big.png"));
+    private final Texture rabbitRightTexture = new Texture(Gdx.files.internal("toys/animals/rabbit_large.png"));
     private final Texture panelTexture = createSolidTexture(1, 1, new Color(1f, 1f, 1f, 0.12f));
     private final Texture highlightTexture = createSolidTexture(1, 1, new Color(0.98f, 0.84f, 0.25f, 0.26f));
 
@@ -65,7 +67,7 @@ public class SettingsScreen extends ScreenAdapter {
 
     @Override
     public void render(float delta) {
-        ScreenUtils.clear(0.07f, 0.06f, 0.09f, 1f);
+        ScreenUtils.clear(0.05f, 0.06f, 0.13f, 1f);
         viewport.apply();
         batch.setProjectionMatrix(camera.combined);
 
@@ -79,8 +81,15 @@ public class SettingsScreen extends ScreenAdapter {
     }
 
     private void drawBackground() {
+        batch.draw(panelTexture, 0.65f, 0.72f, UI_WIDTH - 1.3f, UI_HEIGHT - 1.45f);
+        batch.draw(highlightTexture, 0.8f, 0.7f, UI_WIDTH - 1.6f, 1.7f);
         batch.draw(panelTexture, 0.8f, 0.8f, 14.4f, 7.4f);
         batch.draw(highlightTexture, 1.1f, 6.95f, 13.8f, 0.08f);
+
+        batch.setColor(1f, 1f, 1f, 0.20f);
+        batch.draw(rabbitLeftTexture, 0.45f, 0.55f, 1.35f, 1.35f);
+        batch.draw(rabbitRightTexture, UI_WIDTH - 1.95f, 0.48f, 1.45f, 1.45f);
+        batch.setColor(Color.WHITE);
 
         float titleWidth = 8.8f;
         float titleHeight = titleWidth * titleTexture.getHeight() / titleTexture.getWidth();
@@ -216,6 +225,8 @@ public class SettingsScreen extends ScreenAdapter {
     @Override
     public void dispose() {
         titleTexture.dispose();
+        rabbitLeftTexture.dispose();
+        rabbitRightTexture.dispose();
         panelTexture.dispose();
         highlightTexture.dispose();
         titleFont.dispose();

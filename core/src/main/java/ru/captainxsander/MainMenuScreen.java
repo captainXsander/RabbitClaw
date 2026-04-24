@@ -22,4 +22,9 @@ class MainMenuScreen extends AbstractMenuScreen {
         Gdx.app.exit();
         return true;
     }
+
+    @Override
+    protected String getBrandTitleText() {
+        return "RabbitClaw";
+    }
 }

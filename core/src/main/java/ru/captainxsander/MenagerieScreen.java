@@ -65,6 +65,8 @@ public class MenagerieScreen extends ScreenAdapter {
     // Готовые текстуры интерфейса.
     private final Texture titleTexture = new Texture(Gdx.files.internal("menu_menagerie_title.png"));
     private final Texture backTexture = new Texture(Gdx.files.internal("menu_back.png"));
+    private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/default/rabbit_big.png"));
+    private final Texture rabbitRightTexture = new Texture(Gdx.files.internal("toys/animals/rabbit_large.png"));
 
     // Полупрозрачные подложки и подсветки для UI.
     private final Texture panelTexture = createSolidTexture(1, 1, new Color(1f, 1f, 1f, 0.12f));
@@ -113,7 +115,7 @@ public class MenagerieScreen extends ScreenAdapter {
     @Override
     public void render(float delta) {
         // Каждый кадр очищаем экран и рисуем текущую страницу зверинца.
-        ScreenUtils.clear(0.07f, 0.06f, 0.09f, 1f);
+        ScreenUtils.clear(0.05f, 0.06f, 0.13f, 1f);
         viewport.apply();
         batch.setProjectionMatrix(camera.combined);
 
@@ -132,11 +134,19 @@ public class MenagerieScreen extends ScreenAdapter {
     }
 
     private void drawBackground() {
+        batch.draw(panelTexture, 0.65f, 0.72f, UI_WIDTH - 1.3f, UI_HEIGHT - 1.45f);
+        batch.draw(highlightTexture, 0.8f, 0.7f, UI_WIDTH - 1.6f, 1.7f);
+
         // Основная полупрозрачная панель зверинца.
         batch.draw(panelTexture, 0.55f, 0.45f, 14.9f, 8.0f);
 
         // Узкая светлая линия отделяет шапку экрана от сетки карточек.
         batch.draw(highlightTexture, 0.8f, 6.95f, 14.4f, 0.08f);
+
+        batch.setColor(1f, 1f, 1f, 0.18f);
+        batch.draw(rabbitLeftTexture, 0.35f, 0.40f, 1.35f, 1.35f);
+        batch.draw(rabbitRightTexture, UI_WIDTH - 1.95f, 0.38f, 1.45f, 1.45f);
+        batch.setColor(Color.WHITE);
     }
 
     private void drawHeader() {
@@ -371,6 +381,8 @@ public class MenagerieScreen extends ScreenAdapter {
         // Освобождаем текстуры и все сгенерированные шрифты.
         titleTexture.dispose();
         backTexture.dispose();
+        rabbitLeftTexture.dispose();
+        rabbitRightTexture.dispose();
         panelTexture.dispose();
         highlightTexture.dispose();
         hiddenCardTexture.dispose();
