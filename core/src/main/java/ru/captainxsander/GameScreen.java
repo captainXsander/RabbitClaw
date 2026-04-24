@@ -71,7 +71,6 @@ public class GameScreen implements Screen {
 
     // Пауза доступна из любого режима с возвратом в главное меню.
     private BitmapFont pauseFont;
-    private BitmapFont titleFont;
     private Texture pauseOverlayTexture;
     private boolean pauseActive;
     private final Rectangle pausePanelBounds = new Rectangle(2.4f, 2.05f, WORLD_WIDTH - 4.8f, 4.5f);
@@ -107,7 +106,6 @@ public class GameScreen implements Screen {
     private float touchHorizontalAxisTarget = 0f;
     private boolean touchActionPressed = false;
     private Texture touchCircleTexture;
-    private Texture pixelTexture;
 
     private FindAnimalFacts.FindAnimalTask findAnimalTask;
     private boolean findAnimalRoundResolved;
@@ -156,9 +154,7 @@ public class GameScreen implements Screen {
 
         // Единый шрифт используем для оверлея паузы и действий внутри него.
         pauseFont = createFont(28, new Color(0.98f, 0.92f, 0.82f, 1f));
-        titleFont = createFont(52, new Color(0.98f, 0.91f, 0.78f, 1f), true);
         pauseOverlayTexture = createSolidTexture(1, 1, Color.WHITE);
-        pixelTexture = pauseOverlayTexture;
         touchCircleTexture = createCircleTexture(192);
 
         createToys();
@@ -395,7 +391,9 @@ public class GameScreen implements Screen {
         batch.setProjectionMatrix(camera.combined);
 
         batch.begin();
-        drawMachineBackdrop();
+        floor.render(batch);
+        winZone.render(batch);
+        bounds.render(batch);
 
         for (Toy toy : toys) {
             toy.render(batch);
@@ -405,7 +403,6 @@ public class GameScreen implements Screen {
         }
 
         claw.render(batch);
-        drawMachineForeground();
 
         if (gameMode == GameMode.FIND_ANIMAL) {
             drawFindAnimalUi();
@@ -421,107 +418,6 @@ public class GameScreen implements Screen {
         batch.end();
 
         debugOverlay.render(camera, claw, winZone);
-    }
-
-    private void drawMachineBackdrop() {
-        drawMachineBackdropPrimitives();
-        drawMachineTitle();
-    }
-
-    private void drawMachineBackdropPrimitives() {
-        // Глубокий ночной фон.
-        batch.setColor(0.05f, 0.06f, 0.13f, 1f);
-        batch.draw(pixelTexture, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
-
-        // Внутренняя подсвеченная "камера автомата".
-        batch.setColor(0.28f, 0.24f, 0.50f, 0.94f);
-        batch.draw(pixelTexture, 0.65f, 0.72f, WORLD_WIDTH - 1.3f, WORLD_HEIGHT - 1.45f);
-
-        // Мягкая дымка у нижней части.
-        batch.setColor(0.56f, 0.47f, 0.74f, 0.30f);
-        batch.draw(pixelTexture, 0.8f, 0.7f, WORLD_WIDTH - 1.6f, 1.9f);
-
-        // Небольшой "месяц" и звёзды как в референсе.
-        batch.setColor(0.99f, 0.93f, 0.72f, 0.9f);
-        batch.draw(touchCircleTexture, 2.0f, 5.2f, 0.85f, 0.85f);
-        batch.setColor(0.30f, 0.26f, 0.52f, 1f);
-        batch.draw(touchCircleTexture, 2.25f, 5.35f, 0.72f, 0.72f);
-
-        drawStar(3.8f, 6.0f, 0.08f);
-        drawStar(5.5f, 6.35f, 0.06f);
-        drawStar(7.3f, 5.95f, 0.07f);
-        drawStar(9.8f, 6.2f, 0.08f);
-        drawStar(11.5f, 5.9f, 0.06f);
-        drawStar(12.7f, 6.3f, 0.07f);
-
-        // Блики стекла.
-        batch.setColor(1f, 1f, 1f, 0.07f);
-        batch.draw(pixelTexture, 1.8f, 1.2f, 0.8f, 6.8f);
-        batch.draw(pixelTexture, 10.9f, 1.1f, 0.65f, 6.7f);
-
-        // Рамка камеры.
-        drawNeonFrame(0.35f, 0.38f, WORLD_WIDTH - 0.7f, WORLD_HEIGHT - 0.76f, 0.16f, new Color(0.84f, 0.70f, 0.98f, 0.95f));
-        drawNeonFrame(0.55f, 0.58f, WORLD_WIDTH - 1.1f, WORLD_HEIGHT - 1.16f, 0.10f, new Color(0.30f, 0.30f, 0.55f, 0.95f));
-        batch.setColor(Color.WHITE);
-    }
-
-    private void drawMachineForeground() {
-        drawMachineForegroundPrimitives();
-    }
-
-    private void drawMachineForegroundPrimitives() {
-        // Нижняя кромка автомата: не заезжаем в зону физического пола.
-        batch.setColor(0.25f, 0.24f, 0.46f, 0.97f);
-        batch.draw(pixelTexture, 0f, 0f, WORLD_WIDTH, 0.24f);
-        batch.setColor(0.43f, 0.40f, 0.70f, 0.95f);
-        batch.draw(pixelTexture, 0f, 0.22f, WORLD_WIDTH, 0.03f);
-        batch.setColor(0.70f, 0.66f, 0.95f, 0.35f);
-        batch.draw(pixelTexture, 0f, 0.68f, WORLD_WIDTH, 0.03f);
-
-        // Контейнер выигрыша справа внизу.
-        float trayX = winZone.getX() - winZone.getWidth() * 0.5f;
-        float trayY = winZone.getY();
-        float trayW = winZone.getWidth();
-        float trayH = winZone.getHeight();
-        batch.setColor(0.88f, 0.90f, 1f, 0.16f);
-        batch.draw(pixelTexture, trayX, trayY, trayW, trayH);
-        // Толщина рамки совпадает с физической стенкой лотка (0.08f).
-        drawNeonFrame(trayX, trayY, trayW, trayH, 0.08f, new Color(0.80f, 0.82f, 0.96f, 0.62f));
-        batch.setColor(0.86f, 0.90f, 1f, 0.10f);
-        batch.draw(pixelTexture, trayX + 0.04f, trayY + trayH * 0.52f, trayW - 0.08f, trayH * 0.40f);
-        batch.setColor(Color.WHITE);
-    }
-
-    private void drawMachineTitle() {
-        if (titleFont == null) {
-            return;
-        }
-
-        String title = "RabbitClaw";
-        glyphLayout.setText(titleFont, title);
-        float titleX = (WORLD_WIDTH - glyphLayout.width) * 0.5f;
-        float titleY = WORLD_HEIGHT * 0.675f;
-        float sharpX = (float) Math.round(titleX);
-        float sharpY = (float) Math.round(titleY);
-
-        // Рисуем по целым координатам и без масштабирования => надпись резче.
-        titleFont.setColor(0.08f, 0.06f, 0.16f, 0.72f);
-        titleFont.draw(batch, glyphLayout, sharpX + 1f / 90f, sharpY - 1f / 90f);
-        titleFont.setColor(0.98f, 0.92f, 0.78f, 1f);
-        titleFont.draw(batch, glyphLayout, sharpX, sharpY);
-    }
-
-    private void drawNeonFrame(float x, float y, float width, float height, float thickness, Color color) {
-        batch.setColor(color);
-        batch.draw(pixelTexture, x, y, width, thickness);
-        batch.draw(pixelTexture, x, y + height - thickness, width, thickness);
-        batch.draw(pixelTexture, x, y, thickness, height);
-        batch.draw(pixelTexture, x + width - thickness, y, thickness, height);
-    }
-
-    private void drawStar(float x, float y, float size) {
-        batch.setColor(0.99f, 0.91f, 0.68f, 0.92f);
-        batch.draw(touchCircleTexture, x, y, size, size);
     }
 
     private void drawFindAnimalUi() {
@@ -736,14 +632,10 @@ public class GameScreen implements Screen {
     }
 
     private BitmapFont createFont(int size, Color color) {
-        return createFont(size, color, false);
-    }
-
-    private BitmapFont createFont(int size, Color color, boolean sharp) {
         FileHandle internalFont = Gdx.files.internal(FONT_PATH);
         if (!internalFont.exists()) {
             BitmapFont fallback = new BitmapFont();
-            fallback.setUseIntegerPositions(sharp);
+            fallback.setUseIntegerPositions(false);
             fallback.setColor(color);
             return fallback;
         }
@@ -752,15 +644,15 @@ public class GameScreen implements Screen {
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
         parameter.size = size;
         parameter.color = color;
-        parameter.minFilter = sharp ? Texture.TextureFilter.Nearest : Texture.TextureFilter.Linear;
-        parameter.magFilter = sharp ? Texture.TextureFilter.Nearest : Texture.TextureFilter.Linear;
+        parameter.minFilter = Texture.TextureFilter.Linear;
+        parameter.magFilter = Texture.TextureFilter.Linear;
         parameter.characters = FreeTypeFontGenerator.DEFAULT_CHARS
             + "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
             + "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
             + "№«»—…";
 
         BitmapFont font = generator.generateFont(parameter);
-        font.setUseIntegerPositions(sharp);
+        font.setUseIntegerPositions(false);
         generator.dispose();
         return font;
     }
@@ -807,9 +699,6 @@ public class GameScreen implements Screen {
         }
         if (pauseFont != null) {
             pauseFont.dispose();
-        }
-        if (titleFont != null) {
-            titleFont.dispose();
         }
         if (pauseOverlayTexture != null) {
             pauseOverlayTexture.dispose();
