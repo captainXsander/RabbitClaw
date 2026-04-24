@@ -30,6 +30,6 @@ class MainMenuScreen extends AbstractMenuScreen {
 
     @Override
     protected float getBrandTitleScale() {
-        return 0.016f;
+        return 0.020f;
     }
 }

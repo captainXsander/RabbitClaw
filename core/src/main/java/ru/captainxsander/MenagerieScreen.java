@@ -65,8 +65,10 @@ public class MenagerieScreen extends ScreenAdapter {
     // Готовые текстуры интерфейса.
     private final Texture titleTexture = new Texture(Gdx.files.internal("menu_menagerie_title.png"));
     private final Texture backTexture = new Texture(Gdx.files.internal("menu_back.png"));
-    private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/rabbit.png"));
+    private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/default/rabbit_big.png"));
     private final Texture rabbitRightTexture = new Texture(Gdx.files.internal("toys/animals/rabbit_large.png"));
+    private final Texture pixelTexture = createSolidTexture(1, 1, Color.WHITE);
+    private final Texture circleTexture = createCircleTexture(192);
 
     // Полупрозрачные подложки и подсветки для UI.
     private final Texture panelTexture = createSolidTexture(1, 1, new Color(1f, 1f, 1f, 0.12f));
@@ -134,6 +136,24 @@ public class MenagerieScreen extends ScreenAdapter {
     }
 
     private void drawBackground() {
+        batch.setColor(0.05f, 0.06f, 0.13f, 1f);
+        batch.draw(pixelTexture, 0f, 0f, UI_WIDTH, UI_HEIGHT);
+        batch.setColor(0.28f, 0.24f, 0.50f, 0.95f);
+        batch.draw(pixelTexture, 0.65f, 0.72f, UI_WIDTH - 1.3f, UI_HEIGHT - 1.45f);
+        batch.setColor(0.56f, 0.47f, 0.74f, 0.22f);
+        batch.draw(pixelTexture, 0.8f, 0.7f, UI_WIDTH - 1.6f, 1.7f);
+
+        batch.setColor(0.99f, 0.93f, 0.72f, 0.90f);
+        batch.draw(circleTexture, 1.7f, 6.1f, 0.72f, 0.72f);
+        batch.setColor(0.30f, 0.26f, 0.52f, 1f);
+        batch.draw(circleTexture, 1.92f, 6.2f, 0.58f, 0.58f);
+        drawStar(3.0f, 6.8f, 0.06f);
+        drawStar(5.1f, 7.1f, 0.05f);
+        drawStar(8.4f, 6.9f, 0.06f);
+        drawStar(10.9f, 7.0f, 0.05f);
+        drawStar(13.1f, 6.75f, 0.06f);
+
+        batch.setColor(Color.WHITE);
         batch.draw(panelTexture, 0.65f, 0.72f, UI_WIDTH - 1.3f, UI_HEIGHT - 1.45f);
         batch.draw(highlightTexture, 0.8f, 0.7f, UI_WIDTH - 1.6f, 1.7f);
 
@@ -144,8 +164,14 @@ public class MenagerieScreen extends ScreenAdapter {
         batch.draw(highlightTexture, 0.8f, 6.95f, 14.4f, 0.08f);
 
         batch.setColor(1f, 1f, 1f, 0.18f);
-        batch.draw(rabbitLeftTexture, 0.35f, 0.40f, 1.35f, 1.35f);
-        batch.draw(rabbitRightTexture, UI_WIDTH - 1.95f, 0.38f, 1.45f, 1.45f);
+        batch.draw(rabbitLeftTexture, 0.35f, 0.40f, 1.25f, 1.25f);
+        batch.draw(rabbitRightTexture, UI_WIDTH - 1.75f, 0.42f, 1.22f, 1.22f);
+        batch.setColor(Color.WHITE);
+    }
+
+    private void drawStar(float x, float y, float size) {
+        batch.setColor(0.99f, 0.91f, 0.68f, 0.92f);
+        batch.draw(circleTexture, x, y, size, size);
         batch.setColor(Color.WHITE);
     }
 
@@ -383,6 +409,8 @@ public class MenagerieScreen extends ScreenAdapter {
         backTexture.dispose();
         rabbitLeftTexture.dispose();
         rabbitRightTexture.dispose();
+        pixelTexture.dispose();
+        circleTexture.dispose();
         panelTexture.dispose();
         highlightTexture.dispose();
         hiddenCardTexture.dispose();
@@ -404,6 +432,17 @@ public class MenagerieScreen extends ScreenAdapter {
         Pixmap pixmap = new Pixmap(width, height, Pixmap.Format.RGBA8888);
         pixmap.setColor(color);
         pixmap.fill();
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return texture;
+    }
+
+    private Texture createCircleTexture(int diameter) {
+        Pixmap pixmap = new Pixmap(diameter, diameter, Pixmap.Format.RGBA8888);
+        pixmap.setColor(0f, 0f, 0f, 0f);
+        pixmap.fill();
+        pixmap.setColor(1f, 1f, 1f, 1f);
+        pixmap.fillCircle(diameter / 2, diameter / 2, diameter / 2);
         Texture texture = new Texture(pixmap);
         pixmap.dispose();
         return texture;

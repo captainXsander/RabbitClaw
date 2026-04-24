@@ -43,7 +43,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
     // Однопиксельная текстура для фоновых декоративных слоёв.
     private final Texture pixelTexture = createSolidTexture(1, 1, Color.WHITE);
     private final Texture circleTexture = createCircleTexture(192);
-    private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/rabbit.png"));
+    private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/default/rabbit_big.png"));
     private final Texture rabbitRightTexture = new Texture(Gdx.files.internal("toys/animals/rabbit_large.png"));
     private final BitmapFont brandFont = createFont(34, new Color(0.98f, 0.92f, 0.80f, 1f));
     private final GlyphLayout brandLayout = new GlyphLayout();
@@ -143,8 +143,8 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
 
         // Декоративные зайчики по краям.
         batch.setColor(1f, 1f, 1f, 0.22f);
-        batch.draw(rabbitLeftTexture, 0.25f, 0.35f, 1.55f, 1.55f);
-        batch.draw(rabbitRightTexture, UI_WIDTH - 1.95f, 0.48f, 1.45f, 1.45f);
+        batch.draw(rabbitLeftTexture, 0.35f, 0.40f, 1.25f, 1.25f);
+        batch.draw(rabbitRightTexture, UI_WIDTH - 1.75f, 0.42f, 1.22f, 1.22f);
         batch.setColor(Color.WHITE);
     }
 
@@ -153,11 +153,11 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
     }
 
     protected float getBrandTitleY() {
-        return 7.62f;
+        return 8.12f;
     }
 
     protected float getBrandTitleScale() {
-        return 0.014f;
+        return 0.018f;
     }
 
     private void drawBrandTitleIfNeeded(float centerX) {
@@ -171,7 +171,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         float y = getBrandTitleY();
         brandFont.setColor(0.08f, 0.06f, 0.16f, 0.74f);
         brandFont.draw(batch, brandLayout, x + 0.02f, y - 0.02f);
-        brandFont.setColor(0.98f, 0.92f, 0.80f, 1f);
+        brandFont.setColor(1f, 0.95f, 0.82f, 1f);
         brandFont.draw(batch, brandLayout, x, y);
     }
 
@@ -346,4 +346,3 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         }
     }
 }
-    private static final String FONT_PATH = "fonts/arial.ttf";
