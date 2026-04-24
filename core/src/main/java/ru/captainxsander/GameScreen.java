@@ -71,7 +71,6 @@ public class GameScreen implements Screen {
 
     // Пауза доступна из любого режима с возвратом в главное меню.
     private BitmapFont pauseFont;
-    private BitmapFont titleFont;
     private Texture pauseOverlayTexture;
     private boolean pauseActive;
     private final Rectangle pausePanelBounds = new Rectangle(2.4f, 2.05f, WORLD_WIDTH - 4.8f, 4.5f);
@@ -156,7 +155,6 @@ public class GameScreen implements Screen {
 
         // Единый шрифт используем для оверлея паузы и действий внутри него.
         pauseFont = createFont(28, new Color(0.98f, 0.92f, 0.82f, 1f));
-        titleFont = createFont(52, new Color(0.98f, 0.91f, 0.78f, 1f), true);
         pauseOverlayTexture = createSolidTexture(1, 1, Color.WHITE);
         pixelTexture = pauseOverlayTexture;
         touchCircleTexture = createCircleTexture(192);
@@ -477,21 +475,23 @@ public class GameScreen implements Screen {
     }
 
     private void drawMachineTitle() {
-        if (titleFont == null) {
+        if (pauseFont == null) {
             return;
         }
 
+        pauseFont.getData().setScale(0.0135f);
         String title = "RabbitClaw";
-        glyphLayout.setText(titleFont, title);
+        glyphLayout.setText(pauseFont, title);
         float titleX = (WORLD_WIDTH - glyphLayout.width) * 0.5f;
         float titleY = WORLD_HEIGHT * 0.675f;
         float sharpX = (float) Math.round(titleX);
         float sharpY = (float) Math.round(titleY);
 
-        titleFont.setColor(0.08f, 0.06f, 0.16f, 0.72f);
-        titleFont.draw(batch, glyphLayout, sharpX + 1f / 90f, sharpY - 1f / 90f);
-        titleFont.setColor(0.98f, 0.92f, 0.78f, 1f);
-        titleFont.draw(batch, glyphLayout, sharpX, sharpY);
+        pauseFont.setColor(0.08f, 0.06f, 0.16f, 0.72f);
+        pauseFont.draw(batch, glyphLayout, sharpX + 1f / 90f, sharpY - 1f / 90f);
+        pauseFont.setColor(0.98f, 0.92f, 0.78f, 1f);
+        pauseFont.draw(batch, glyphLayout, sharpX, sharpY);
+        pauseFont.setColor(0.98f, 0.92f, 0.82f, 1f);
     }
 
     private void drawNeonFrame(float x, float y, float width, float height, float thickness, Color color) {
@@ -710,6 +710,9 @@ public class GameScreen implements Screen {
 
     private Texture createCircleTexture(int diameter) {
         Pixmap pixmap = new Pixmap(diameter, diameter, Pixmap.Format.RGBA8888);
+        // Явно очищаем фон, чтобы не получить случайные "квадраты" на некоторых GPU/драйверах.
+        pixmap.setColor(0f, 0f, 0f, 0f);
+        pixmap.fill();
         pixmap.setColor(1f, 1f, 1f, 1f);
         pixmap.fillCircle(diameter / 2, diameter / 2, diameter / 2);
         Texture texture = new Texture(pixmap);
@@ -790,9 +793,6 @@ public class GameScreen implements Screen {
         }
         if (pauseFont != null) {
             pauseFont.dispose();
-        }
-        if (titleFont != null) {
-            titleFont.dispose();
         }
         if (pauseOverlayTexture != null) {
             pauseOverlayTexture.dispose();
