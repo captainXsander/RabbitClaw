@@ -7,16 +7,13 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
-import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2D;
@@ -111,10 +108,6 @@ public class GameScreen implements Screen {
     private boolean touchActionPressed = false;
     private Texture touchCircleTexture;
     private Texture pixelTexture;
-    private FrameBuffer backdropLayerBuffer;
-    private FrameBuffer foregroundLayerBuffer;
-    private TextureRegion backdropLayerRegion;
-    private TextureRegion foregroundLayerRegion;
 
     private FindAnimalFacts.FindAnimalTask findAnimalTask;
     private boolean findAnimalRoundResolved;
@@ -167,7 +160,6 @@ public class GameScreen implements Screen {
         pauseOverlayTexture = createSolidTexture(1, 1, Color.WHITE);
         pixelTexture = pauseOverlayTexture;
         touchCircleTexture = createCircleTexture(192);
-        cacheMachineLayers();
 
         createToys();
         // Перехватываем системную кнопку BACK, чтобы она открывала нашу паузу.
@@ -432,13 +424,6 @@ public class GameScreen implements Screen {
     }
 
     private void drawMachineBackdrop() {
-        if (backdropLayerRegion != null) {
-            batch.setColor(Color.WHITE);
-            batch.draw(backdropLayerRegion, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
-            drawMachineTitle();
-            return;
-        }
-
         drawMachineBackdropPrimitives();
         drawMachineTitle();
     }
@@ -481,12 +466,6 @@ public class GameScreen implements Screen {
     }
 
     private void drawMachineForeground() {
-        if (foregroundLayerRegion != null) {
-            batch.setColor(Color.WHITE);
-            batch.draw(foregroundLayerRegion, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
-            return;
-        }
-
         drawMachineForegroundPrimitives();
     }
 
@@ -530,44 +509,6 @@ public class GameScreen implements Screen {
         titleFont.draw(batch, glyphLayout, sharpX + 1f / 90f, sharpY - 1f / 90f);
         titleFont.setColor(0.98f, 0.92f, 0.78f, 1f);
         titleFont.draw(batch, glyphLayout, sharpX, sharpY);
-    }
-
-    private void cacheMachineLayers() {
-        backdropLayerBuffer = rebuildLayerBuffer(backdropLayerBuffer, true);
-        foregroundLayerBuffer = rebuildLayerBuffer(foregroundLayerBuffer, false);
-
-        backdropLayerRegion = backdropLayerBuffer != null ? new TextureRegion(backdropLayerBuffer.getColorBufferTexture()) : null;
-        foregroundLayerRegion = foregroundLayerBuffer != null ? new TextureRegion(foregroundLayerBuffer.getColorBufferTexture()) : null;
-
-        if (backdropLayerRegion != null) {
-            backdropLayerRegion.flip(false, true);
-        }
-        if (foregroundLayerRegion != null) {
-            foregroundLayerRegion.flip(false, true);
-        }
-    }
-
-    private FrameBuffer rebuildLayerBuffer(FrameBuffer oldBuffer, boolean backdrop) {
-        if (oldBuffer != null) {
-            oldBuffer.dispose();
-        }
-
-        FrameBuffer buffer = new FrameBuffer(Pixmap.Format.RGBA8888, 1600, 900, false);
-        buffer.begin();
-        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        if (backdrop) {
-            drawMachineBackdropPrimitives();
-        } else {
-            drawMachineForegroundPrimitives();
-        }
-        batch.end();
-        buffer.end();
-
-        return buffer;
     }
 
     private void drawNeonFrame(float x, float y, float width, float height, float thickness, Color color) {
@@ -875,12 +816,6 @@ public class GameScreen implements Screen {
         }
         if (touchCircleTexture != null) {
             touchCircleTexture.dispose();
-        }
-        if (backdropLayerBuffer != null) {
-            backdropLayerBuffer.dispose();
-        }
-        if (foregroundLayerBuffer != null) {
-            foregroundLayerBuffer.dispose();
         }
     }
 
