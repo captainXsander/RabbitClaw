@@ -155,7 +155,6 @@ public class MenagerieScreen extends ScreenAdapter {
 
         batch.setColor(Color.WHITE);
         batch.draw(panelTexture, 0.65f, 0.72f, UI_WIDTH - 1.3f, UI_HEIGHT - 1.45f);
-        batch.draw(highlightTexture, 0.8f, 0.7f, UI_WIDTH - 1.6f, 1.7f);
 
         // Основная полупрозрачная панель зверинца.
         batch.draw(panelTexture, 0.55f, 0.45f, 14.9f, 8.0f);

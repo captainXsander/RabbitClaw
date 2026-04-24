@@ -125,7 +125,6 @@ abstract class AbstractDetailMenuScreen extends ScreenAdapter {
 
         batch.setColor(Color.WHITE);
         batch.draw(panelTexture, 0.65f, 0.72f, UI_WIDTH - 1.3f, UI_HEIGHT - 1.45f);
-        batch.draw(highlightTexture, 0.8f, 0.7f, UI_WIDTH - 1.6f, 1.7f);
         batch.draw(panelTexture, 0.8f, 0.8f, 14.4f, 7.4f);
         batch.draw(highlightTexture, 1.1f, 6.95f, 13.8f, 0.08f);
 
@@ -226,8 +225,7 @@ abstract class AbstractDetailMenuScreen extends ScreenAdapter {
         @Override
         public boolean keyDown(int keycode) {
             if (keycode == Input.Keys.ESCAPE || keycode == Input.Keys.BACK) {
-                game.showPreviousMenu();
-                return true;
+                return onBackRequested();
             }
 
             if (keycode == Input.Keys.UP || keycode == Input.Keys.W) {
@@ -255,4 +253,10 @@ abstract class AbstractDetailMenuScreen extends ScreenAdapter {
     protected boolean onExtraKeyDown(int keycode) {
         return false;
     }
+
+    protected boolean onBackRequested() {
+        game.showPreviousMenu();
+        return true;
+    }
 }
+

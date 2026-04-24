@@ -18,7 +18,7 @@ class FindAnimalModeSetupScreen extends AbstractDetailMenuScreen {
         drawParagraph(
             "По факту в верхней части экрана найдите нужного зверя в куче, захватите и доставьте в лоток."
                 + " После результата режим автоматически вернёт вас в меню.",
-            new Rectangle(1.3f, 5.1f, 13.4f, 1.3f)
+            new Rectangle(2.5f, 5.1f, 11.0f, 1.0f)
         );
 
         drawButton(playBounds, "Играть", selectedIndex == 0);
