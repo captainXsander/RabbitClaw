@@ -43,7 +43,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
     // Однопиксельная текстура для фоновых декоративных слоёв.
     private final Texture pixelTexture = createSolidTexture(1, 1, Color.WHITE);
     private final Texture circleTexture = createCircleTexture(192);
-    private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/default/rabbit_big.png"));
+    private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/rabbit.png"));
     private final Texture rabbitRightTexture = new Texture(Gdx.files.internal("toys/animals/rabbit_large.png"));
     private final BitmapFont brandFont = createFont(34, new Color(0.98f, 0.92f, 0.80f, 1f));
     private final GlyphLayout brandLayout = new GlyphLayout();
@@ -143,7 +143,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
 
         // Декоративные зайчики по краям.
         batch.setColor(1f, 1f, 1f, 0.22f);
-        batch.draw(rabbitLeftTexture, 0.45f, 0.55f, 1.35f, 1.35f);
+        batch.draw(rabbitLeftTexture, 0.25f, 0.35f, 1.55f, 1.55f);
         batch.draw(rabbitRightTexture, UI_WIDTH - 1.95f, 0.48f, 1.45f, 1.45f);
         batch.setColor(Color.WHITE);
     }
@@ -152,15 +152,23 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         return null;
     }
 
+    protected float getBrandTitleY() {
+        return 7.62f;
+    }
+
+    protected float getBrandTitleScale() {
+        return 0.014f;
+    }
+
     private void drawBrandTitleIfNeeded(float centerX) {
         String brandTitle = getBrandTitleText();
         if (brandTitle == null || brandTitle.isEmpty()) {
             return;
         }
-        brandFont.getData().setScale(0.0105f);
+        brandFont.getData().setScale(getBrandTitleScale());
         brandLayout.setText(brandFont, brandTitle);
         float x = centerX - brandLayout.width * 0.5f;
-        float y = 8.0f;
+        float y = getBrandTitleY();
         brandFont.setColor(0.08f, 0.06f, 0.16f, 0.74f);
         brandFont.draw(batch, brandLayout, x + 0.02f, y - 0.02f);
         brandFont.setColor(0.98f, 0.92f, 0.80f, 1f);

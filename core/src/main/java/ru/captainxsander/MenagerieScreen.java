@@ -65,7 +65,7 @@ public class MenagerieScreen extends ScreenAdapter {
     // Готовые текстуры интерфейса.
     private final Texture titleTexture = new Texture(Gdx.files.internal("menu_menagerie_title.png"));
     private final Texture backTexture = new Texture(Gdx.files.internal("menu_back.png"));
-    private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/default/rabbit_big.png"));
+    private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/rabbit.png"));
     private final Texture rabbitRightTexture = new Texture(Gdx.files.internal("toys/animals/rabbit_large.png"));
 
     // Полупрозрачные подложки и подсветки для UI.

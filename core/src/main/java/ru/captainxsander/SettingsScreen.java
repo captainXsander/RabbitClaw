@@ -35,7 +35,7 @@ public class SettingsScreen extends ScreenAdapter {
     private final SpriteBatch batch = new SpriteBatch();
 
     private final Texture titleTexture = new Texture(Gdx.files.internal("menu_settings_title.png"));
-    private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/default/rabbit_big.png"));
+    private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/rabbit.png"));
     private final Texture rabbitRightTexture = new Texture(Gdx.files.internal("toys/animals/rabbit_large.png"));
     private final Texture panelTexture = createSolidTexture(1, 1, new Color(1f, 1f, 1f, 0.12f));
     private final Texture highlightTexture = createSolidTexture(1, 1, new Color(0.98f, 0.84f, 0.25f, 0.26f));
