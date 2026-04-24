@@ -106,6 +106,7 @@ public class GameScreen implements Screen {
     private float touchHorizontalAxisTarget = 0f;
     private boolean touchActionPressed = false;
     private Texture touchCircleTexture;
+    private Texture pixelTexture;
 
     private FindAnimalFacts.FindAnimalTask findAnimalTask;
     private boolean findAnimalRoundResolved;
@@ -155,6 +156,7 @@ public class GameScreen implements Screen {
         // Единый шрифт используем для оверлея паузы и действий внутри него.
         pauseFont = createFont(28, new Color(0.98f, 0.92f, 0.82f, 1f));
         pauseOverlayTexture = createSolidTexture(1, 1, Color.WHITE);
+        pixelTexture = pauseOverlayTexture;
         touchCircleTexture = createCircleTexture(192);
 
         createToys();
@@ -391,9 +393,7 @@ public class GameScreen implements Screen {
         batch.setProjectionMatrix(camera.combined);
 
         batch.begin();
-        floor.render(batch);
-        winZone.render(batch);
-        bounds.render(batch);
+        drawMachineBackdrop();
 
         for (Toy toy : toys) {
             toy.render(batch);
@@ -403,6 +403,7 @@ public class GameScreen implements Screen {
         }
 
         claw.render(batch);
+        drawMachineForeground();
 
         if (gameMode == GameMode.FIND_ANIMAL) {
             drawFindAnimalUi();
@@ -418,6 +419,74 @@ public class GameScreen implements Screen {
         batch.end();
 
         debugOverlay.render(camera, claw, winZone);
+    }
+
+    private void drawMachineBackdrop() {
+        // Глубокий ночной фон.
+        batch.setColor(0.05f, 0.06f, 0.13f, 1f);
+        batch.draw(pixelTexture, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
+
+        // Внутренняя подсвеченная "камера автомата".
+        batch.setColor(0.28f, 0.24f, 0.50f, 0.94f);
+        batch.draw(pixelTexture, 0.65f, 0.72f, WORLD_WIDTH - 1.3f, WORLD_HEIGHT - 1.45f);
+
+        // Мягкая дымка у нижней части.
+        batch.setColor(0.56f, 0.47f, 0.74f, 0.30f);
+        batch.draw(pixelTexture, 0.8f, 0.7f, WORLD_WIDTH - 1.6f, 1.9f);
+
+        // Небольшой "месяц" и звёзды как в референсе.
+        batch.setColor(0.99f, 0.93f, 0.72f, 0.9f);
+        batch.draw(touchCircleTexture, 2.0f, 5.2f, 0.85f, 0.85f);
+        batch.setColor(0.30f, 0.26f, 0.52f, 1f);
+        batch.draw(touchCircleTexture, 2.25f, 5.35f, 0.72f, 0.72f);
+
+        drawStar(3.8f, 6.0f, 0.08f);
+        drawStar(5.5f, 6.35f, 0.06f);
+        drawStar(7.3f, 5.95f, 0.07f);
+        drawStar(9.8f, 6.2f, 0.08f);
+        drawStar(11.5f, 5.9f, 0.06f);
+        drawStar(12.7f, 6.3f, 0.07f);
+
+        // Блики стекла.
+        batch.setColor(1f, 1f, 1f, 0.07f);
+        batch.draw(pixelTexture, 1.8f, 1.2f, 0.8f, 6.8f);
+        batch.draw(pixelTexture, 10.9f, 1.1f, 0.65f, 6.7f);
+
+        // Рамка камеры.
+        drawNeonFrame(0.35f, 0.38f, WORLD_WIDTH - 0.7f, WORLD_HEIGHT - 0.76f, 0.16f, new Color(0.84f, 0.70f, 0.98f, 0.95f));
+        drawNeonFrame(0.55f, 0.58f, WORLD_WIDTH - 1.1f, WORLD_HEIGHT - 1.16f, 0.10f, new Color(0.30f, 0.30f, 0.55f, 0.95f));
+        batch.setColor(Color.WHITE);
+    }
+
+    private void drawMachineForeground() {
+        // Нижняя панель автомата.
+        batch.setColor(0.25f, 0.24f, 0.46f, 0.97f);
+        batch.draw(pixelTexture, 0f, 0f, WORLD_WIDTH, 0.85f);
+        batch.setColor(0.43f, 0.40f, 0.70f, 0.95f);
+        batch.draw(pixelTexture, 0f, 0.80f, WORLD_WIDTH, 0.07f);
+
+        // Контейнер выигрыша справа внизу.
+        float trayX = winZone.getX() - winZone.getWidth() * 0.5f;
+        float trayY = winZone.getY();
+        float trayW = winZone.getWidth();
+        float trayH = winZone.getHeight();
+        batch.setColor(0.88f, 0.90f, 1f, 0.24f);
+        batch.draw(pixelTexture, trayX, trayY, trayW, trayH);
+        drawNeonFrame(trayX, trayY, trayW, trayH, 0.05f, new Color(0.80f, 0.82f, 0.96f, 0.62f));
+        batch.setColor(Color.WHITE);
+    }
+
+    private void drawNeonFrame(float x, float y, float width, float height, float thickness, Color color) {
+        batch.setColor(color);
+        batch.draw(pixelTexture, x, y, width, thickness);
+        batch.draw(pixelTexture, x, y + height - thickness, width, thickness);
+        batch.draw(pixelTexture, x, y, thickness, height);
+        batch.draw(pixelTexture, x + width - thickness, y, thickness, height);
+    }
+
+    private void drawStar(float x, float y, float size) {
+        batch.setColor(0.99f, 0.91f, 0.68f, 0.92f);
+        batch.draw(touchCircleTexture, x, y, size, size);
     }
 
     private void drawFindAnimalUi() {
