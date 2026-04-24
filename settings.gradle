@@ -1,7 +1,13 @@
-plugins {
-  // Applies the foojay-resolver plugin to allow automatic download of JDKs.
-  id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+pluginManagement {
+  repositories {
+    gradlePluginPortal()
+    mavenCentral()
+  }
 }
+
+// NOTE: foojay resolver plugin is optional. In restricted environments
+// plugin resolution may fail and break any Gradle command.
+// Keep settings buildable without external plugin resolution.
 // A list of which subprojects to load as part of the same larger project.
 // You can remove Strings from the list and reload the Gradle project
 // if you want to temporarily disable a subproject.
