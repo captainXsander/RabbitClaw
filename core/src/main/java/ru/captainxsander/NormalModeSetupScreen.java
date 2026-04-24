@@ -5,23 +5,24 @@ import com.badlogic.gdx.math.Rectangle;
 import java.util.Arrays;
 
 class NormalModeSetupScreen extends AbstractDetailMenuScreen {
-    private static final int ITEMS_PER_PAGE = 8;
+    private static final int ITEMS_PER_PAGE = 5;
+    private static final float MODE_TEXT_SCALE = 0.0102f;
 
     private final MenagerieProgress progress = new MenagerieProgress();
     private final ToyType[] availablePool;
 
-    private final Rectangle toysPanelBounds = new Rectangle(1.2f, 1.35f, 8.9f, 4.55f);
-    private final Rectangle settingsPanelBounds = new Rectangle(10.25f, 1.35f, 4.55f, 4.55f);
-    private final Rectangle prevPageBounds = new Rectangle(1.45f, 1.55f, 1.0f, 0.55f);
-    private final Rectangle nextPageBounds = new Rectangle(8.85f, 1.55f, 1.0f, 0.55f);
+    private final Rectangle toysPanelBounds = new Rectangle(1.6f, 2.05f, 6.9f, 3.55f);
+    private final Rectangle settingsPanelBounds = new Rectangle(9.15f, 2.05f, 5.25f, 3.55f);
+    private final Rectangle prevPageBounds = new Rectangle(1.8f, 1.25f, 0.95f, 0.52f);
+    private final Rectangle nextPageBounds = new Rectangle(7.35f, 1.25f, 0.95f, 0.52f);
 
     private final Rectangle[] toyBounds = new Rectangle[ITEMS_PER_PAGE];
-    private final Rectangle slipPresetBounds = new Rectangle(10.5f, 4.65f, 4.05f, 0.62f);
-    private final Rectangle dropBasePresetBounds = new Rectangle(10.5f, 3.9f, 4.05f, 0.62f);
-    private final Rectangle dropMinPresetBounds = new Rectangle(10.5f, 3.15f, 4.05f, 0.62f);
-    private final Rectangle fakePresetBounds = new Rectangle(10.5f, 2.4f, 4.05f, 0.62f);
-    private final Rectangle playBounds = new Rectangle(10.25f, 1.45f, 2.2f, 0.65f);
-    private final Rectangle backBounds = new Rectangle(12.6f, 1.45f, 2.2f, 0.65f);
+    private final Rectangle slipPresetBounds = new Rectangle(9.45f, 4.7f, 4.65f, 0.55f);
+    private final Rectangle dropBasePresetBounds = new Rectangle(9.45f, 4.05f, 4.65f, 0.55f);
+    private final Rectangle dropMinPresetBounds = new Rectangle(9.45f, 3.4f, 4.65f, 0.55f);
+    private final Rectangle fakePresetBounds = new Rectangle(9.45f, 2.75f, 4.65f, 0.55f);
+    private final Rectangle playBounds = new Rectangle(9.45f, 1.25f, 2.2f, 0.55f);
+    private final Rectangle backBounds = new Rectangle(11.9f, 1.25f, 2.2f, 0.55f);
 
     private int page;
 
@@ -30,7 +31,7 @@ class NormalModeSetupScreen extends AbstractDetailMenuScreen {
         availablePool = progress.getNormalModePool();
 
         for (int i = 0; i < ITEMS_PER_PAGE; i++) {
-            toyBounds[i] = new Rectangle(1.45f, 5.1f - i * 0.45f, 8.4f, 0.4f);
+            toyBounds[i] = new Rectangle(1.85f, 5.05f - i * 0.58f, 6.35f, 0.5f);
             actionBounds.add(toyBounds[i]);
         }
 
@@ -49,16 +50,16 @@ class NormalModeSetupScreen extends AbstractDetailMenuScreen {
     protected void drawContent() {
         drawMenuTitle("Режим: Обычная игра");
         drawParagraph(
-            "Выберите игрушки для раунда и настройте сложность. В раунде 45 игрушек, выбранные типы"
+            "Выберите зверей для раунда и настройте сложность. В раунде 45 игрушек, выбранные типы"
                 + " распределяются равномерно.",
-            new Rectangle(2.45f, 6.1f, 11.2f, 0.8f)
+            new Rectangle(2.4f, 6.05f, 11.2f, 0.85f)
         );
 
         drawButton(toysPanelBounds, "", false);
         drawButton(settingsPanelBounds, "", false);
 
-        drawCenteredText(bodyFont, "Игрушки для раунда", new Rectangle(1.45f, 5.45f, 8.4f, 0.4f), 0.0104f, 1);
-        drawCenteredText(bodyFont, "Сложность", new Rectangle(10.5f, 5.45f, 4.05f, 0.4f), 0.0104f, 1);
+        drawCenteredText(bodyFont, "Звери для раунда", new Rectangle(1.9f, 5.38f, 6.2f, 0.35f), MODE_TEXT_SCALE, 1);
+        drawCenteredText(bodyFont, "Сложность", new Rectangle(9.5f, 5.38f, 4.6f, 0.35f), MODE_TEXT_SCALE, 1);
 
         drawToyList();
         drawDifficultySection();
@@ -79,29 +80,32 @@ class NormalModeSetupScreen extends AbstractDetailMenuScreen {
 
             ToyType toyType = availablePool[toyIndex];
             boolean checked = Arrays.asList(game.getNormalSelectedToyTypes(availablePool)).contains(toyType);
-            String label = (checked ? "☑ " : "☐ ") + toyType.getTitle();
+            String label = (checked ? "☑ " : "☐ ") + getToyLabelRu(toyType);
             drawButton(toyBounds[i], label, selectedIndex == i);
         }
 
         drawButton(prevPageBounds, "<", selectedIndex == ITEMS_PER_PAGE && page > 0);
         drawButton(nextPageBounds, ">", selectedIndex == ITEMS_PER_PAGE + 1 && page < totalPages - 1);
         drawCenteredText(bodyFont, (page + 1) + "/" + totalPages,
-            new Rectangle(5.05f, 1.58f, 1.4f, 0.5f), 0.0102f, 1);
+            new Rectangle(4.5f, 1.25f, 1.0f, 0.5f), MODE_TEXT_SCALE, 1);
     }
 
     private void drawDifficultySection() {
-        drawButton(slipPresetBounds, "Шанс срыва: " + getLevelLabel(game.getNormalBaseSlipChance(), 0.16, 0.26),
+        drawButton(slipPresetBounds, "Срыв при подъёме: " + getLevelLabel(game.getNormalBaseSlipChance(), 0.16, 0.26),
             selectedIndex == ITEMS_PER_PAGE + 2);
-        drawButton(dropBasePresetBounds, "Шанс выпадения в пути: " + getLevelLabel(game.getNormalClawDropBaseChance(), 0.18, 0.28),
+        drawButton(dropBasePresetBounds, "Выпадение в пути: " + getLevelLabel(game.getNormalClawDropBaseChance(), 0.18, 0.28),
             selectedIndex == ITEMS_PER_PAGE + 3);
-        drawButton(dropMinPresetBounds, "Мин. шанс выпадения: " + getLevelLabel(game.getNormalClawDropMinChance(), 0.06, 0.10),
+        drawButton(dropMinPresetBounds, "Мин. выпадение: " + getLevelLabel(game.getNormalClawDropMinChance(), 0.06, 0.10),
             selectedIndex == ITEMS_PER_PAGE + 4);
         drawButton(fakePresetBounds, "Ложный захват: " + getLevelLabel(game.getNormalBaseFakeGrabChance(), 0.14, 0.24),
             selectedIndex == ITEMS_PER_PAGE + 5);
 
-        drawParagraph(
-            "Нажмите на параметр, чтобы переключить уровень: Низкий → Средний → Высокий.",
-            new Rectangle(10.35f, 1.95f, 4.25f, 0.55f)
+        drawCenteredText(
+            bodyFont,
+            "Нажмите на параметр для смены уровня",
+            new Rectangle(9.35f, 2.12f, 4.9f, 0.35f),
+            MODE_TEXT_SCALE,
+            1
         );
     }
 
@@ -179,5 +183,41 @@ class NormalModeSetupScreen extends AbstractDetailMenuScreen {
             return high;
         }
         return low;
+    }
+
+    private String getToyLabelRu(ToyType toyType) {
+        String title = toyType.getTitle();
+        return title
+            .replace("Bear", "Медведь")
+            .replace("Bird Small", "Птичка")
+            .replace("Birdy", "Птица")
+            .replace("Bull", "Бык")
+            .replace("Cat", "Кот")
+            .replace("Coala", "Коала")
+            .replace("Cow", "Корова")
+            .replace("Crabe", "Краб")
+            .replace("Croc", "Крокодил")
+            .replace("Cute", "Малыш")
+            .replace("Deer", "Олень")
+            .replace("Dog", "Собака")
+            .replace("Elephant", "Слон")
+            .replace("Foxy", "Лиса")
+            .replace("Heart", "Сердце")
+            .replace("Monkey", "Обезьяна")
+            .replace("Morge", "Морж")
+            .replace("Mouse", "Мышь")
+            .replace("Pig", "Свинка")
+            .replace("Pigi", "Поросёнок")
+            .replace("Pingui Snow", "Снежный пингвин")
+            .replace("Pingui", "Пингвин")
+            .replace("Rabbit Big", "Большой кролик")
+            .replace("Rabbit Large", "Крупный кролик")
+            .replace("Rabbit", "Кролик")
+            .replace("Racoon", "Енот")
+            .replace("Snake", "Змея")
+            .replace("Snow Bear", "Белый медведь")
+            .replace("Squirell", "Белка")
+            .replace("Whale", "Кит")
+            .replace("Ziraffe", "Жираф");
     }
 }

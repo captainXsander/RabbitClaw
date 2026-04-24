@@ -3,14 +3,14 @@ package ru.captainxsander;
 import com.badlogic.gdx.math.Rectangle;
 
 class SettingsScreen extends AbstractDetailMenuScreen {
-    private final Rectangle soundBounds = new Rectangle(3.0f, 3.9f, 10.0f, 0.85f);
-    private final Rectangle musicMinusBounds = new Rectangle(3.0f, 2.75f, 1.2f, 0.85f);
-    private final Rectangle musicBounds = new Rectangle(4.3f, 2.75f, 7.4f, 0.85f);
-    private final Rectangle musicPlusBounds = new Rectangle(11.8f, 2.75f, 1.2f, 0.85f);
-    private final Rectangle effectsMinusBounds = new Rectangle(3.0f, 1.6f, 1.2f, 0.85f);
-    private final Rectangle effectsBounds = new Rectangle(4.3f, 1.6f, 7.4f, 0.85f);
-    private final Rectangle effectsPlusBounds = new Rectangle(11.8f, 1.6f, 1.2f, 0.85f);
-    private final Rectangle backBounds = new Rectangle(3.0f, 0.5f, 10.0f, 0.85f);
+    private final Rectangle soundBounds = new Rectangle(3.0f, 4.25f, 10.0f, 0.85f);
+    private final Rectangle musicMinusBounds = new Rectangle(3.0f, 3.15f, 1.2f, 0.85f);
+    private final Rectangle musicBounds = new Rectangle(4.3f, 3.15f, 7.4f, 0.85f);
+    private final Rectangle musicPlusBounds = new Rectangle(11.8f, 3.15f, 1.2f, 0.85f);
+    private final Rectangle effectsMinusBounds = new Rectangle(3.0f, 2.05f, 1.2f, 0.85f);
+    private final Rectangle effectsBounds = new Rectangle(4.3f, 2.05f, 7.4f, 0.85f);
+    private final Rectangle effectsPlusBounds = new Rectangle(11.8f, 2.05f, 1.2f, 0.85f);
+    private final Rectangle backBounds = new Rectangle(3.0f, 0.95f, 10.0f, 0.85f);
 
     SettingsScreen(MainGame game) {
         super(game);
@@ -27,7 +27,7 @@ class SettingsScreen extends AbstractDetailMenuScreen {
         drawMenuTitle("Настройки");
         drawParagraph(
             "Общие настройки звука интерфейса. Реализация влияния на аудиосистему будет добавлена отдельно.",
-            new Rectangle(2.5f, 5.55f, 11.0f, 0.9f)
+            new Rectangle(2.4f, 5.75f, 11.2f, 0.85f)
         );
 
         drawButton(soundBounds,

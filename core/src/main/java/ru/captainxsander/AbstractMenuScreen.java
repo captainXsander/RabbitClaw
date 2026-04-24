@@ -137,9 +137,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         drawStar(10.9f, 7.0f, 0.05f);
         drawStar(13.1f, 6.75f, 0.06f);
 
-        // Основная полупрозрачная панель меню.
         batch.setColor(Color.WHITE);
-        batch.draw(panelTexture, 0.8f, 0.8f, 14.4f, 7.4f);
         // Тонкая светлая линия под шапкой для визуального разделения.
         batch.draw(highlightTexture, 1.1f, 6.95f, 13.8f, 0.08f);
 

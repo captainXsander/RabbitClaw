@@ -124,8 +124,6 @@ abstract class AbstractDetailMenuScreen extends ScreenAdapter {
         drawStar(13.1f, 6.75f, 0.06f);
 
         batch.setColor(Color.WHITE);
-        batch.draw(panelTexture, 0.65f, 0.72f, UI_WIDTH - 1.3f, UI_HEIGHT - 1.45f);
-        batch.draw(panelTexture, 0.8f, 0.8f, 14.4f, 7.4f);
         batch.draw(highlightTexture, 1.1f, 6.95f, 13.8f, 0.08f);
 
         batch.setColor(1f, 1f, 1f, 0.20f);
