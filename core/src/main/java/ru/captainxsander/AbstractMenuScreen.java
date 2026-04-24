@@ -19,6 +19,8 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import static ru.captainxsander.GameScreen.FONT_PATH;
+
 abstract class AbstractMenuScreen extends ScreenAdapter {
     // Логические размеры UI, чтобы меню выглядело одинаково на разных экранах.
     protected static final float UI_WIDTH = 16f;

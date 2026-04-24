@@ -34,7 +34,7 @@ public class GameScreen implements Screen {
     public static final float WORLD_WIDTH = GameTuning.WORLD_WIDTH;
     public static final float WORLD_HEIGHT = GameTuning.WORLD_HEIGHT;
 
-    private static final String FONT_PATH = "fonts/arial.ttf";
+    public static final String FONT_PATH = "fonts/arial.ttf";
     private static final float FIND_ANIMAL_RESULT_SHOW_TIME = 2.5f;
     private static final int TOY_COUNT_PER_ROUND = 45;
 
