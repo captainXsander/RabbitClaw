@@ -215,7 +215,10 @@ public final class GameTuning {
     public static final float CAT_MOTION_MAX_X = WORLD_WIDTH - 2.1f;
     public static final float CAT_MOTION_MIN_SPEED = 1.44f;
     public static final float CAT_MOTION_MAX_SPEED = 3.75f;
-    public static final float CAT_MOTION_MAX_VERTICAL_SPEED = 1.20f;
+    // Ограничиваем падение отдельно от подъёма:
+    // при симметричном clamp коты визуально "топчутся" и почти не набирают высоту.
+    public static final float CAT_MOTION_MAX_FALL_SPEED = 1.20f;
+    public static final float CAT_MOTION_MAX_RISE_SPEED = 6.00f;
     public static final float CAT_MOTION_GROUND_Y = 1.42f;
     public static final float CAT_MOTION_GROUND_MAX_VY = 0.25f;
     // Скорость "подтягивания" текущей скорости к целевой (1/сек).

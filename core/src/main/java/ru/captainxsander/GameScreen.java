@@ -51,7 +51,8 @@ public class GameScreen implements Screen {
     private static final float CAT_MOTION_MAX_X = GameTuning.CAT_MOTION_MAX_X;
     private static final float CAT_MOTION_MIN_SPEED = GameTuning.CAT_MOTION_MIN_SPEED;
     private static final float CAT_MOTION_MAX_SPEED = GameTuning.CAT_MOTION_MAX_SPEED;
-    private static final float CAT_MOTION_MAX_VERTICAL_SPEED = GameTuning.CAT_MOTION_MAX_VERTICAL_SPEED;
+    private static final float CAT_MOTION_MAX_FALL_SPEED = GameTuning.CAT_MOTION_MAX_FALL_SPEED;
+    private static final float CAT_MOTION_MAX_RISE_SPEED = GameTuning.CAT_MOTION_MAX_RISE_SPEED;
 
     private final MainGame game;
     private final GameMode gameMode;
@@ -999,7 +1000,11 @@ public class GameScreen implements Screen {
             }
 
             float limitedSpeedX = clamp(toyBody.getLinearVelocity().x, -CAT_MOTION_MAX_SPEED, CAT_MOTION_MAX_SPEED);
-            float limitedSpeedY = clamp(toyBody.getLinearVelocity().y, -CAT_MOTION_MAX_VERTICAL_SPEED, CAT_MOTION_MAX_VERTICAL_SPEED);
+            float limitedSpeedY = clamp(
+                toyBody.getLinearVelocity().y,
+                -CAT_MOTION_MAX_FALL_SPEED,
+                CAT_MOTION_MAX_RISE_SPEED
+            );
             toyBody.setLinearVelocity(limitedSpeedX, limitedSpeedY);
             toyBody.setAngularVelocity(0f);
         }
