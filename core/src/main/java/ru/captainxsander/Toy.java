@@ -110,8 +110,8 @@ public class Toy {
         Fixture fixture = body.createFixture(fix);
         if (keepUpright) {
             // В режиме CATCH_CAT коты должны "ходить", а не кувыркаться.
-            fixture.setRestitution(0.10f);
-            fixture.setFriction(0.08f);
+            fixture.setRestitution(0.24f);
+            fixture.setFriction(0.02f);
             body.setFixedRotation(true);
         }
 
