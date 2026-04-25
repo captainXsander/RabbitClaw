@@ -17,7 +17,10 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.Box2D;
+import com.badlogic.gdx.physics.box2d.Contact;
+import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -40,10 +43,15 @@ public class GameScreen implements Screen {
     public static final String FONT_PATH = "fonts/arial.ttf";
     private static final float FIND_ANIMAL_RESULT_SHOW_TIME = 2.5f;
     private static final int TOY_COUNT_PER_ROUND = 45;
-    private static final float CAT_MOTION_MIN_X = 2.1f;
-    private static final float CAT_MOTION_MAX_X = WORLD_WIDTH - 2.1f;
-    private static final float CAT_MOTION_MAX_SPEED = 0.62f;
-    private static final float CAT_MOTION_MAX_VERTICAL_SPEED = 0.90f;
+    // Настройки физики и котов берём из GameTuning,
+    // чтобы удобно балансить поведение в одном месте.
+    private static final float PHYSICS_TIME_STEP = GameTuning.PHYSICS_TIME_STEP;
+    private static final float PHYSICS_MAX_ACCUMULATED_TIME = GameTuning.PHYSICS_MAX_ACCUMULATED_TIME;
+    private static final float CAT_MOTION_MIN_X = GameTuning.CAT_MOTION_MIN_X;
+    private static final float CAT_MOTION_MAX_X = GameTuning.CAT_MOTION_MAX_X;
+    private static final float CAT_MOTION_MIN_SPEED = GameTuning.CAT_MOTION_MIN_SPEED;
+    private static final float CAT_MOTION_MAX_SPEED = GameTuning.CAT_MOTION_MAX_SPEED;
+    private static final float CAT_MOTION_MAX_VERTICAL_SPEED = GameTuning.CAT_MOTION_MAX_VERTICAL_SPEED;
 
     private final MainGame game;
     private final GameMode gameMode;
@@ -126,6 +134,8 @@ public class GameScreen implements Screen {
     private float findAnimalExitTimer;
     private boolean findAnimalExitRequested;
     private final Map<Toy, CatToyMotionState> catchCatMotionStates = new HashMap<>();
+    // Аккумулятор фиксированного шага физики (FPS-independent).
+    private float physicsAccumulator = 0f;
 
     public GameScreen(MainGame game, GameMode gameMode, GameSessionSettings sessionSettings) {
         // Экран знает игру (для возврата в меню) и свой режим.
@@ -339,6 +349,7 @@ public class GameScreen implements Screen {
             // В паузе принудительно обнуляем мобильный ввод, чтобы не было "залипания".
             claw.setTouchHorizontalAxis(0f);
             claw.setTouchActionPressed(false);
+            physicsAccumulator = 0f;
             return;
         }
 
@@ -353,8 +364,9 @@ public class GameScreen implements Screen {
         claw.setTouchActionPressed(touchActionPressed);
         claw.update(delta, toys, trayToys, winZone);
 
-        // Фиксированный шаг Box2D.
-        world.step(1 / 60f, 6, 2);
+        // Фиксированный шаг Box2D через аккумулятор:
+        // симуляция идёт одинаково на desktop/mobile при разном FPS.
+        stepWorldFixed(delta);
 
         for (Toy toy : toys) {
             toy.update(delta, winZone);
@@ -379,13 +391,59 @@ public class GameScreen implements Screen {
         }
 
         for (Toy toy : toys) {
-            if (toy.isCaptured() || toy.isInTray() || toy.isWon() || toy.isInsideTrayBounds(winZone)) {
+            if (toy.isCaptured()
+                || toy.isInTray()
+                || toy.isWon()
+                || toy.isReleasedToPhysicsTray()
+                || trayToys.contains(toy)
+                || toy.getBody().getType() != BodyDef.BodyType.DynamicBody
+                || toy.isInsideTrayBounds(winZone)) {
                 continue;
             }
 
             CatToyMotionState motionState = catchCatMotionStates.computeIfAbsent(toy, key -> new CatToyMotionState());
             motionState.update(delta, toy);
         }
+    }
+
+    private void stepWorldFixed(float frameDelta) {
+        float clampedDelta = Math.min(frameDelta, PHYSICS_MAX_ACCUMULATED_TIME);
+        physicsAccumulator += clampedDelta;
+
+        while (physicsAccumulator >= PHYSICS_TIME_STEP) {
+            world.step(PHYSICS_TIME_STEP, 6, 2);
+            physicsAccumulator -= PHYSICS_TIME_STEP;
+        }
+    }
+
+    private boolean isToyTouchingAnotherToy(Toy toy) {
+        Body toyBody = toy.getBody();
+        for (Contact contact : world.getContactList()) {
+            if (!contact.isTouching()) {
+                continue;
+            }
+
+            Fixture fixtureA = contact.getFixtureA();
+            Fixture fixtureB = contact.getFixtureB();
+            Body bodyA = fixtureA.getBody();
+            Body bodyB = fixtureB.getBody();
+            Body otherBody = null;
+
+            if (bodyA == toyBody) {
+                otherBody = bodyB;
+            } else if (bodyB == toyBody) {
+                otherBody = bodyA;
+            }
+
+            if (otherBody == null) {
+                continue;
+            }
+
+            if (otherBody.getUserData() instanceof Toy) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void updateFindAnimalRoundExitTimer(float delta) {
@@ -859,39 +917,85 @@ public class GameScreen implements Screen {
 
     private final class CatToyMotionState {
         private float desiredHorizontalSpeed = randomCruiseSpeed();
-        private float directionChangeTimer = 1.1f + (float) Math.random() * 1.1f;
-        private float jumpTimer = 1.2f + (float) Math.random() * 1.5f;
+        private float directionChangeTimer = 1.4f + (float) Math.random() * 1.6f;
+        private float jumpTimer = 0.55f + (float) Math.random() * 0.75f;
+        private float stuckTimer = 0f;
 
         private void update(float delta, Toy toy) {
             Body toyBody = toy.getBody();
             Vector2 velocity = toyBody.getLinearVelocity();
             Vector2 position = toyBody.getPosition();
+            toyBody.setAwake(true);
 
+            // Активное управление котом включаем только на полу,
+            // чтобы в воздухе (или в клешне) не было "магического" разгона.
+            boolean nearFloor = position.y < GameTuning.CAT_MOTION_GROUND_Y
+                && Math.abs(velocity.y) < GameTuning.CAT_MOTION_GROUND_MAX_VY;
             directionChangeTimer -= delta;
             jumpTimer -= delta;
             if (directionChangeTimer <= 0f) {
-                desiredHorizontalSpeed = randomCruiseSpeed();
-                directionChangeTimer = 0.9f + (float) Math.random() * 1.2f;
+                float currentDirection = Math.signum(desiredHorizontalSpeed);
+                boolean keepDirection = Math.random() < 0.62f && currentDirection != 0f;
+                float nextDirection = keepDirection
+                    ? currentDirection
+                    : (currentDirection >= 0f ? -1f : 1f);
+                float speed = CAT_MOTION_MIN_SPEED
+                    + (float) Math.random() * (CAT_MOTION_MAX_SPEED - CAT_MOTION_MIN_SPEED);
+                desiredHorizontalSpeed = speed * nextDirection;
+                directionChangeTimer = 1.2f + (float) Math.random() * 2.0f;
             }
 
             if (position.x < CAT_MOTION_MIN_X) {
-                desiredHorizontalSpeed = Math.abs(desiredHorizontalSpeed) + 0.10f;
+                desiredHorizontalSpeed = Math.abs(desiredHorizontalSpeed);
             } else if (position.x > CAT_MOTION_MAX_X) {
-                desiredHorizontalSpeed = -Math.abs(desiredHorizontalSpeed) - 0.10f;
+                desiredHorizontalSpeed = -Math.abs(desiredHorizontalSpeed);
             }
 
-            float speedDelta = desiredHorizontalSpeed - velocity.x;
-            float xImpulse = clamp(speedDelta * 0.08f, -0.012f, 0.012f);
-            if (Math.abs(xImpulse) > 0.001f) {
-                toyBody.applyLinearImpulse(xImpulse, 0f, toyBody.getWorldCenter().x, toyBody.getWorldCenter().y, true);
+            if (nearFloor) {
+                // Экспоненциальное сглаживание: независимо от FPS
+                // тянем текущую скорость к целевой.
+                float response = Math.max(0.1f, GameTuning.CAT_MOTION_VELOCITY_RESPONSE);
+                float blend = 1f - (float) Math.exp(-response * delta);
+                float nextVx = velocity.x + (desiredHorizontalSpeed - velocity.x) * blend;
+                toyBody.setLinearVelocity(nextVx, velocity.y);
             }
 
-            boolean nearFloor = position.y < 2.15f && Math.abs(velocity.y) < 0.28f;
+            float horizontalSpeed = Math.abs(toyBody.getLinearVelocity().x);
+            boolean touchingToy = isToyTouchingAnotherToy(toy);
+            if (nearFloor && horizontalSpeed < GameTuning.CAT_MOTION_STUCK_SPEED) {
+                stuckTimer += delta;
+            } else {
+                stuckTimer = 0f;
+            }
+
+            // Если кот упёрся в другого кота и не может разлипнуться,
+            // с вероятностью делаем "перепрыг" поверх соседа.
+            if (stuckTimer > GameTuning.CAT_MOTION_STUCK_TIME && nearFloor) {
+                boolean shouldHop = touchingToy && Math.random() < GameTuning.CAT_MOTION_STUCK_HOP_CHANCE;
+                if (shouldHop) {
+                    float unstickJump = GameTuning.CAT_MOTION_UNSTICK_JUMP_MIN
+                        + (float) Math.random() * GameTuning.CAT_MOTION_UNSTICK_JUMP_RANDOM;
+                    float unstickSide = Math.signum(desiredHorizontalSpeed) * GameTuning.CAT_MOTION_UNSTICK_SIDE_IMPULSE;
+                    toyBody.applyLinearImpulse(
+                        unstickSide,
+                        unstickJump,
+                        toyBody.getWorldCenter().x,
+                        toyBody.getWorldCenter().y,
+                        true
+                    );
+                } else {
+                    desiredHorizontalSpeed = -desiredHorizontalSpeed;
+                }
+                stuckTimer = 0f;
+                jumpTimer = 0.40f + (float) Math.random() * 0.45f;
+            }
+
             if (jumpTimer <= 0f && nearFloor) {
-                float jumpImpulse = 0.018f + (float) Math.random() * 0.016f;
-                float sideImpulse = desiredHorizontalSpeed * 0.006f;
+                float jumpImpulse = GameTuning.CAT_MOTION_JUMP_MIN
+                    + (float) Math.random() * GameTuning.CAT_MOTION_JUMP_RANDOM;
+                float sideImpulse = Math.signum(desiredHorizontalSpeed) * GameTuning.CAT_MOTION_JUMP_SIDE_IMPULSE;
                 toyBody.applyLinearImpulse(sideImpulse, jumpImpulse, toyBody.getWorldCenter().x, toyBody.getWorldCenter().y, true);
-                jumpTimer = 1.0f + (float) Math.random() * 1.8f;
+                jumpTimer = 0.58f + (float) Math.random() * 0.95f;
             }
 
             float limitedSpeedX = clamp(toyBody.getLinearVelocity().x, -CAT_MOTION_MAX_SPEED, CAT_MOTION_MAX_SPEED);
@@ -901,7 +1005,7 @@ public class GameScreen implements Screen {
         }
 
         private float randomCruiseSpeed() {
-            float abs = 0.16f + (float) Math.random() * 0.20f;
+            float abs = CAT_MOTION_MIN_SPEED + (float) Math.random() * (CAT_MOTION_MAX_SPEED - CAT_MOTION_MIN_SPEED);
             return Math.random() < 0.5f ? -abs : abs;
         }
     }

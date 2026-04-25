@@ -156,14 +156,14 @@ public final class GameTuning {
     public static final float RELEASE_MAX_VX = 2.0f;
 
     // Вертикальное падение
-    public static final float RELEASE_BASE_VY = -0.6f;
+    public static final float RELEASE_BASE_VY = -0.9f;
     public static final float RELEASE_RANDOM_VY = 0.2f;
 
 
     // =========================
     // Поведение в лотке
     // =========================
-    public static final float TOY_TRAY_GRAVITY_SCALE = 0.26f;
+    public static final float TOY_TRAY_GRAVITY_SCALE = 0.46f;
 
     // Когда считаем, что игрушка осела в лотке
     public static final float TOY_SETTLE_SPEED = 0.08f;
@@ -197,4 +197,39 @@ public final class GameTuning {
 
     // Передача скорости игрушки от клешни
     public static final float CLAW_VELOCITY_TRANSFER = 3.0f;
+
+    // =========================
+    // Фиксированный шаг физики
+    // =========================
+    // Шаг симуляции Box2D (секунды). Держим его константным, чтобы
+    // скорость игры не зависела от FPS устройства.
+    public static final float PHYSICS_TIME_STEP = 1f / 60f;
+    // Ограничение входящего delta для аккумулятора, чтобы после лагов
+    // не запускать слишком много шагов за один кадр.
+    public static final float PHYSICS_MAX_ACCUMULATED_TIME = 0.25f;
+
+    // =========================
+    // Коты в режиме CATCH_CAT
+    // =========================
+    public static final float CAT_MOTION_MIN_X = 2.1f;
+    public static final float CAT_MOTION_MAX_X = WORLD_WIDTH - 2.1f;
+    public static final float CAT_MOTION_MIN_SPEED = 1.44f;
+    public static final float CAT_MOTION_MAX_SPEED = 3.75f;
+    public static final float CAT_MOTION_MAX_VERTICAL_SPEED = 1.20f;
+    public static final float CAT_MOTION_GROUND_Y = 1.42f;
+    public static final float CAT_MOTION_GROUND_MAX_VY = 0.25f;
+    // Скорость "подтягивания" текущей скорости к целевой (1/сек).
+    // Формула в коде использует экспоненциальное сглаживание, поэтому
+    // эффект одинаковый при любом FPS.
+    public static final float CAT_MOTION_VELOCITY_RESPONSE = 8.5f;
+    public static final float CAT_MOTION_STUCK_SPEED = 0.06f;
+    public static final float CAT_MOTION_STUCK_TIME = 0.42f;
+    // Вероятность "перепрыга", когда кот уткнулся в другого кота и залип.
+    public static final float CAT_MOTION_STUCK_HOP_CHANCE = 0.88f;
+    public static final float CAT_MOTION_UNSTICK_JUMP_MIN = 0.155f;
+    public static final float CAT_MOTION_UNSTICK_JUMP_RANDOM = 0.025f;
+    public static final float CAT_MOTION_UNSTICK_SIDE_IMPULSE = 0.018f;
+    public static final float CAT_MOTION_JUMP_MIN = 0.040f;
+    public static final float CAT_MOTION_JUMP_RANDOM = 0.120f;
+    public static final float CAT_MOTION_JUMP_SIDE_IMPULSE = 0.014f;
 }
