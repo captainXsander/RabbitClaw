@@ -140,9 +140,6 @@ public class MenagerieScreen extends ScreenAdapter {
         batch.draw(pixelTexture, 0f, 0f, UI_WIDTH, UI_HEIGHT);
         batch.setColor(0.28f, 0.24f, 0.50f, 0.95f);
         batch.draw(pixelTexture, 0.65f, 0.72f, UI_WIDTH - 1.3f, UI_HEIGHT - 1.45f);
-        batch.setColor(0.56f, 0.47f, 0.74f, 0.22f);
-        batch.draw(pixelTexture, 0.8f, 0.7f, UI_WIDTH - 1.6f, 1.7f);
-
         batch.setColor(Color.WHITE);
 
         // Узкая светлая линия отделяет шапку экрана от сетки карточек.

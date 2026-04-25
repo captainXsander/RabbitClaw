@@ -8,8 +8,8 @@ class RescueModeSetupScreen extends AbstractDetailMenuScreen {
     private final Rectangle resetBounds = new Rectangle(4.3f, 2.9f, 7.4f, 0.9f);
     private final Rectangle playBounds = new Rectangle(4.3f, 1.85f, 7.4f, 0.9f);
     private final Rectangle backBounds = new Rectangle(4.3f, 0.8f, 7.4f, 0.9f);
-    private final Rectangle confirmYesBounds = new Rectangle(4.3f, 1.85f, 3.55f, 0.9f);
-    private final Rectangle confirmNoBounds = new Rectangle(8.15f, 1.85f, 3.55f, 0.9f);
+    private final Rectangle confirmYesBounds = new Rectangle(4.3f, 2.35f, 3.55f, 0.9f);
+    private final Rectangle confirmNoBounds = new Rectangle(8.15f, 2.35f, 3.55f, 0.9f);
 
     private boolean resetConfirmationVisible;
 
@@ -45,7 +45,7 @@ class RescueModeSetupScreen extends AbstractDetailMenuScreen {
 
         drawParagraph(
             "Подтвердите сброс прогресса. Это действие нельзя отменить.",
-            new Rectangle(3.2f, 2.95f, 9.6f, 0.8f)
+            new Rectangle(3.2f, 3.35f, 9.6f, 0.8f)
         );
         drawButton(confirmYesBounds, "Да, сбросить", selectedIndex == 3);
         drawButton(confirmNoBounds, "Отмена", selectedIndex == 4);

@@ -7,6 +7,7 @@ import java.util.Arrays;
 class NormalModeSetupScreen extends AbstractDetailMenuScreen {
     private static final int ITEMS_PER_PAGE = 5;
     private static final float MODE_TEXT_SCALE = 0.0102f;
+    private static final float MODE_HEADER_SCALE = 0.0128f;
 
     private final MenagerieProgress progress = new MenagerieProgress();
     private final ToyType[] availablePool;
@@ -58,8 +59,8 @@ class NormalModeSetupScreen extends AbstractDetailMenuScreen {
         drawButton(toysPanelBounds, "", false);
         drawButton(settingsPanelBounds, "", false);
 
-        drawCenteredText(bodyFont, "Звери для раунда", new Rectangle(1.9f, 5.38f, 6.2f, 0.35f), MODE_TEXT_SCALE, 1);
-        drawCenteredText(bodyFont, "Сложность", new Rectangle(9.5f, 5.38f, 4.6f, 0.35f), MODE_TEXT_SCALE, 1);
+        drawCenteredText(bodyFont, "Звери для раунда", new Rectangle(1.9f, 5.38f, 6.2f, 0.35f), MODE_HEADER_SCALE, 1);
+        drawCenteredText(bodyFont, "Сложность", new Rectangle(9.5f, 5.38f, 4.6f, 0.35f), MODE_HEADER_SCALE, 1);
 
         drawToyList();
         drawDifficultySection();
@@ -80,7 +81,7 @@ class NormalModeSetupScreen extends AbstractDetailMenuScreen {
 
             ToyType toyType = availablePool[toyIndex];
             boolean checked = Arrays.asList(game.getNormalSelectedToyTypes(availablePool)).contains(toyType);
-            String label = (checked ? "☑ " : "☐ ") + getToyLabelRu(toyType);
+            String label = (checked ? "[x] " : "[ ] ") + getToyLabelRu(toyType);
             drawButton(toyBounds[i], label, selectedIndex == i);
         }
 
@@ -91,13 +92,13 @@ class NormalModeSetupScreen extends AbstractDetailMenuScreen {
     }
 
     private void drawDifficultySection() {
-        drawButton(slipPresetBounds, "Срыв при подъёме: " + getLevelLabel(game.getNormalBaseSlipChance(), 0.16, 0.26),
+        drawButton(slipPresetBounds, "Срыв при подъёме: " + getLevelLabel(game.getNormalBaseSlipChance(), 0.16, 0.22, 0.30),
             selectedIndex == ITEMS_PER_PAGE + 2);
-        drawButton(dropBasePresetBounds, "Выпадение в пути: " + getLevelLabel(game.getNormalClawDropBaseChance(), 0.18, 0.28),
+        drawButton(dropBasePresetBounds, "Выпадение в пути: " + getLevelLabel(game.getNormalClawDropBaseChance(), 0.18, 0.24, 0.32),
             selectedIndex == ITEMS_PER_PAGE + 3);
-        drawButton(dropMinPresetBounds, "Мин. выпадение: " + getLevelLabel(game.getNormalClawDropMinChance(), 0.06, 0.10),
+        drawButton(dropMinPresetBounds, "Мин. выпадение: " + getLevelLabel(game.getNormalClawDropMinChance(), 0.06, 0.09, 0.12),
             selectedIndex == ITEMS_PER_PAGE + 4);
-        drawButton(fakePresetBounds, "Ложный захват: " + getLevelLabel(game.getNormalBaseFakeGrabChance(), 0.14, 0.24),
+        drawButton(fakePresetBounds, "Ложный захват: " + getLevelLabel(game.getNormalBaseFakeGrabChance(), 0.14, 0.20, 0.28),
             selectedIndex == ITEMS_PER_PAGE + 5);
 
         drawCenteredText(
@@ -164,25 +165,40 @@ class NormalModeSetupScreen extends AbstractDetailMenuScreen {
         return Math.max(1, (int) Math.ceil(availablePool.length / (float) ITEMS_PER_PAGE));
     }
 
-    private String getLevelLabel(double value, double lowToMedium, double mediumToHigh) {
-        if (value < lowToMedium) {
+    private String getLevelLabel(double value, double low, double medium, double high) {
+        int presetIndex = resolvePresetIndex(value, low, medium, high);
+        if (presetIndex == 0) {
             return "Низкий";
         }
-        if (value < mediumToHigh) {
+        if (presetIndex == 1) {
             return "Средний";
         }
         return "Высокий";
     }
 
     private double nextPreset(double value, double low, double medium, double high) {
-        double eps = 0.0001;
-        if (Math.abs(value - low) < eps) {
+        int presetIndex = resolvePresetIndex(value, low, medium, high);
+        if (presetIndex == 0) {
             return medium;
         }
-        if (Math.abs(value - medium) < eps) {
+        if (presetIndex == 1) {
             return high;
         }
         return low;
+    }
+
+    private int resolvePresetIndex(double value, double low, double medium, double high) {
+        double lowDiff = Math.abs(value - low);
+        double mediumDiff = Math.abs(value - medium);
+        double highDiff = Math.abs(value - high);
+
+        if (lowDiff <= mediumDiff && lowDiff <= highDiff) {
+            return 0;
+        }
+        if (mediumDiff <= highDiff) {
+            return 1;
+        }
+        return 2;
     }
 
     private String getToyLabelRu(ToyType toyType) {

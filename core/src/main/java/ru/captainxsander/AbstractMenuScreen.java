@@ -123,9 +123,6 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
 
         batch.setColor(0.28f, 0.24f, 0.50f, 0.95f);
         batch.draw(pixelTexture, 0.65f, 0.72f, UI_WIDTH - 1.3f, UI_HEIGHT - 1.45f);
-        batch.setColor(0.56f, 0.47f, 0.74f, 0.22f);
-        batch.draw(pixelTexture, 0.8f, 0.7f, UI_WIDTH - 1.6f, 1.7f);
-
         batch.setColor(0.99f, 0.93f, 0.72f, 0.90f);
         batch.draw(circleTexture, 1.7f, 6.1f, 0.72f, 0.72f);
         batch.setColor(0.30f, 0.26f, 0.52f, 1f);
