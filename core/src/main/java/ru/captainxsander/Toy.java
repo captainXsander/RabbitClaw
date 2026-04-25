@@ -415,6 +415,10 @@ public class Toy {
         return inTray;
     }
 
+    public boolean isReleasedToPhysicsTray() {
+        return releasedToPhysicsTray;
+    }
+
     /**
      * Проверка, что центр игрушки находится внутри внутреннего контура лотка.
      * Используется режимом FIND_ANIMAL, чтобы зафиксировать результат
