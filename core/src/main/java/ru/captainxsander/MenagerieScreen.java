@@ -140,13 +140,9 @@ public class MenagerieScreen extends ScreenAdapter {
         batch.draw(pixelTexture, 0f, 0f, UI_WIDTH, UI_HEIGHT);
         batch.setColor(0.28f, 0.24f, 0.50f, 0.95f);
         batch.draw(pixelTexture, 0.65f, 0.72f, UI_WIDTH - 1.3f, UI_HEIGHT - 1.45f);
-        batch.setColor(0.56f, 0.47f, 0.74f, 0.22f);
-        batch.draw(pixelTexture, 0.8f, 0.7f, UI_WIDTH - 1.6f, 1.7f);
+        batch.setColor(Color.WHITE);
 
-        batch.setColor(0.99f, 0.93f, 0.72f, 0.90f);
-        batch.draw(circleTexture, 1.7f, 6.1f, 0.72f, 0.72f);
-        batch.setColor(0.30f, 0.26f, 0.52f, 1f);
-        batch.draw(circleTexture, 1.92f, 6.2f, 0.58f, 0.58f);
+        // Узкая светлая линия отделяет шапку экрана от сетки карточек.
         drawStar(3.0f, 6.8f, 0.06f);
         drawStar(5.1f, 7.1f, 0.05f);
         drawStar(8.4f, 6.9f, 0.06f);
@@ -154,11 +150,6 @@ public class MenagerieScreen extends ScreenAdapter {
         drawStar(13.1f, 6.75f, 0.06f);
 
         batch.setColor(Color.WHITE);
-        batch.draw(panelTexture, 0.65f, 0.72f, UI_WIDTH - 1.3f, UI_HEIGHT - 1.45f);
-        batch.draw(highlightTexture, 0.8f, 0.7f, UI_WIDTH - 1.6f, 1.7f);
-
-        // Основная полупрозрачная панель зверинца.
-        batch.draw(panelTexture, 0.55f, 0.45f, 14.9f, 8.0f);
 
         // Узкая светлая линия отделяет шапку экрана от сетки карточек.
         batch.draw(highlightTexture, 0.8f, 6.95f, 14.4f, 0.08f);

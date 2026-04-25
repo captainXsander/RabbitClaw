@@ -41,6 +41,7 @@ public class GameScreen implements Screen {
     private final MainGame game;
     private final GameMode gameMode;
     private final MenagerieProgress menagerieProgress;
+    private final GameSessionSettings sessionSettings;
 
     private World world;
     private OrthographicCamera camera;
@@ -116,10 +117,11 @@ public class GameScreen implements Screen {
     private float findAnimalExitTimer;
     private boolean findAnimalExitRequested;
 
-    public GameScreen(MainGame game, GameMode gameMode) {
+    public GameScreen(MainGame game, GameMode gameMode, GameSessionSettings sessionSettings) {
         // Экран знает игру (для возврата в меню) и свой режим.
         this.game = game;
         this.gameMode = gameMode;
+        this.sessionSettings = sessionSettings == null ? GameSessionSettings.defaults() : sessionSettings;
         this.menagerieProgress = new MenagerieProgress();
     }
 
@@ -146,7 +148,7 @@ public class GameScreen implements Screen {
 
         // Клешня получает активный режим, чтобы внутри себя
         // включать/отключать расширенное управление после захвата.
-        claw = new Claw(gameMode);
+        claw = new Claw(gameMode, this.sessionSettings);
         claw.createPhysics(world);
         claw.setWorld(world);
         debugOverlay = new DebugOverlay();
@@ -194,12 +196,13 @@ public class GameScreen implements Screen {
         ToyType[] toyPool = getToyPoolForCurrentMode();
         ToyType[] currentRescueAnimals = menagerieProgress.getCurrentRescueLevelAnimals();
         ToyType[] completedRescueAnimals = menagerieProgress.getCompletedRescueAnimals();
+        ToyType[] normalSpawnOrder = buildEqualNormalSpawnOrder(toyPool);
 
         for (int i = 0; i < TOY_COUNT_PER_ROUND; i++) {
             float x = 3.5f + (float) Math.random() * 6.5f;
             float y = 1.0f + (float) Math.random() * 2.5f;
 
-            ToyType toyType = pickToyTypeForSpawn(i, toyPool, currentRescueAnimals, completedRescueAnimals);
+            ToyType toyType = pickToyTypeForSpawn(i, toyPool, currentRescueAnimals, completedRescueAnimals, normalSpawnOrder);
 
             float difficulty = 0.2f + (float) Math.random() * 0.5f;
             float restitution = 0.1f + (float) Math.random() * 0.3f;
@@ -212,7 +215,8 @@ public class GameScreen implements Screen {
         int spawnIndex,
         ToyType[] modePool,
         ToyType[] currentRescueAnimals,
-        ToyType[] completedRescueAnimals
+        ToyType[] completedRescueAnimals,
+        ToyType[] normalSpawnOrder
     ) {
         if (gameMode == GameMode.RESCUE) {
             // 1-й уровень: только текущие 5 зверей.
@@ -237,6 +241,10 @@ public class GameScreen implements Screen {
             // В FIND_ANIMAL гарантируем наличие целевой игрушки,
             // но оставляем общее количество ровно 45.
             return findAnimalTask.getTargetToyType();
+        }
+
+        if (gameMode == GameMode.NORMAL && normalSpawnOrder.length > 0) {
+            return normalSpawnOrder[spawnIndex % normalSpawnOrder.length];
         }
 
         return modePool[(int) (Math.random() * modePool.length)];
@@ -367,7 +375,32 @@ public class GameScreen implements Screen {
             return unlockedFindPool.length == 0 ? ToyType.ANIMAL_POOL : unlockedFindPool;
         }
 
+        ToyType[] configuredPool = sessionSettings.getNormalToyPool();
+        if (configuredPool != null && configuredPool.length > 0) {
+            return configuredPool;
+        }
+
         return menagerieProgress.getNormalModePool();
+    }
+
+    private ToyType[] buildEqualNormalSpawnOrder(ToyType[] toyPool) {
+        if (gameMode != GameMode.NORMAL || toyPool.length == 0) {
+            return new ToyType[0];
+        }
+
+        List<ToyType> order = new ArrayList<>();
+        int baseCount = TOY_COUNT_PER_ROUND / toyPool.length;
+        int remainder = TOY_COUNT_PER_ROUND % toyPool.length;
+
+        for (int i = 0; i < toyPool.length; i++) {
+            int repeats = baseCount + (i < remainder ? 1 : 0);
+            for (int j = 0; j < repeats; j++) {
+                order.add(toyPool[i]);
+            }
+        }
+
+        java.util.Collections.shuffle(order);
+        return order.toArray(new ToyType[0]);
     }
 
     private boolean hasToyReachedTray(Toy toy) {

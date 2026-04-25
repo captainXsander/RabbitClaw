@@ -4,40 +4,59 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Screen;
 
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class MainGame extends Game {
     private final Deque<MenuId> menuHistory = new ArrayDeque<>();
     private MenuId currentMenuId;
 
+    private boolean soundEnabled = true;
+    private float musicVolume = 0.7f;
+    private float effectsVolume = 0.8f;
+
+    private double normalBaseSlipChance = GameTuning.BASE_SLIP_CHANCE;
+    private float normalClawDropBaseChance = GameTuning.CLAW_DROP_BASE_CHANCE;
+    private float normalClawDropMinChance = GameTuning.CLAW_DROP_MIN_CHANCE;
+    private float normalBaseFakeGrabChance = GameTuning.BASE_FAKE_GRAB_CHANCE;
+    private final Set<ToyType> normalSelectedToyTypes = new LinkedHashSet<>();
+
     @Override
     public void create() {
-        // При запуске игры сразу показываем главное меню.
         showMainMenu();
     }
 
     public void showMainMenu() {
-        // Главное меню приложения.
         showMenu(MenuId.MAIN);
     }
 
     public void showGameModeMenu() {
-        // Подменю выбора режима игры.
         showMenu(MenuId.GAME_MODE);
     }
 
+    public void showNormalModeSetupMenu() {
+        showMenu(MenuId.NORMAL_MODE_SETUP);
+    }
+
+    public void showRescueModeSetupMenu() {
+        showMenu(MenuId.RESCUE_MODE_SETUP);
+    }
+
+    public void showFindAnimalModeSetupMenu() {
+        showMenu(MenuId.FIND_ANIMAL_MODE_SETUP);
+    }
+
     public void showSettings() {
-        // Временный экран настроек.
         showMenu(MenuId.SETTINGS);
     }
 
     public void showMenagerie() {
-        // Полноценный экран зверинца с карточками игрушек.
         showMenu(MenuId.MENAGERIE);
     }
 
     public void showPreviousMenu() {
-        // Возвращаемся в то меню, из которого пользователь пришел.
         if (menuHistory.isEmpty()) {
             showMainMenu();
             return;
@@ -49,25 +68,120 @@ public class MainGame extends Game {
     }
 
     public void startRescueGame() {
-        // Запускаем режим спасения зверей с открытием карточек.
-        // Передаём this, чтобы игровой экран мог сам вернуть игрока в меню.
         clearMenuNavigation();
-        switchScreen(new GameScreen(this, GameMode.RESCUE));
+        switchScreen(new GameScreen(this, GameMode.RESCUE, GameSessionSettings.defaults()));
     }
 
     public void startNormalGame() {
-        // Запускаем текущую обычную игру.
-        // Передаём this, чтобы сигнатура GameScreen была единой во всех режимах.
+        MenagerieProgress progress = new MenagerieProgress();
+        ensureNormalToySelection(progress.getNormalModePool());
+
         clearMenuNavigation();
-        switchScreen(new GameScreen(this, GameMode.NORMAL));
+        switchScreen(new GameScreen(this, GameMode.NORMAL, buildNormalModeSettings(progress.getNormalModePool())));
     }
 
     public void startFindAnimalGame() {
-        // Запускаем режим поиска зверей с ручным управлением после захвата.
-        // История меню очищается, чтобы после окончания раунда
-        // возврат происходил в главный поток навигации, как и в других режимах.
         clearMenuNavigation();
-        switchScreen(new GameScreen(this, GameMode.FIND_ANIMAL));
+        switchScreen(new GameScreen(this, GameMode.FIND_ANIMAL, GameSessionSettings.defaults()));
+    }
+
+    public boolean isSoundEnabled() {
+        return soundEnabled;
+    }
+
+    public void setSoundEnabled(boolean soundEnabled) {
+        this.soundEnabled = soundEnabled;
+    }
+
+    public float getMusicVolume() {
+        return musicVolume;
+    }
+
+    public void setMusicVolume(float musicVolume) {
+        this.musicVolume = clamp01(musicVolume);
+    }
+
+    public float getEffectsVolume() {
+        return effectsVolume;
+    }
+
+    public void setEffectsVolume(float effectsVolume) {
+        this.effectsVolume = clamp01(effectsVolume);
+    }
+
+    public double getNormalBaseSlipChance() {
+        return normalBaseSlipChance;
+    }
+
+    public void setNormalBaseSlipChance(double normalBaseSlipChance) {
+        this.normalBaseSlipChance = clamp(normalBaseSlipChance, 0.0, 0.95);
+    }
+
+    public float getNormalClawDropBaseChance() {
+        return normalClawDropBaseChance;
+    }
+
+    public void setNormalClawDropBaseChance(float normalClawDropBaseChance) {
+        this.normalClawDropBaseChance = (float) clamp(normalClawDropBaseChance, 0.0, 1.0);
+    }
+
+    public float getNormalClawDropMinChance() {
+        return normalClawDropMinChance;
+    }
+
+    public void setNormalClawDropMinChance(float normalClawDropMinChance) {
+        this.normalClawDropMinChance = (float) clamp(normalClawDropMinChance, 0.0, 1.0);
+    }
+
+    public float getNormalBaseFakeGrabChance() {
+        return normalBaseFakeGrabChance;
+    }
+
+    public void setNormalBaseFakeGrabChance(float normalBaseFakeGrabChance) {
+        this.normalBaseFakeGrabChance = (float) clamp(normalBaseFakeGrabChance, 0.0, 0.95);
+    }
+
+    public ToyType[] getNormalSelectedToyTypes(ToyType[] availablePool) {
+        ensureNormalToySelection(availablePool);
+        return normalSelectedToyTypes.toArray(new ToyType[0]);
+    }
+
+    public void toggleNormalToy(ToyType toyType, ToyType[] availablePool) {
+        ensureNormalToySelection(availablePool);
+        if (normalSelectedToyTypes.contains(toyType)) {
+            if (normalSelectedToyTypes.size() > 1) {
+                normalSelectedToyTypes.remove(toyType);
+            }
+            return;
+        }
+
+        normalSelectedToyTypes.add(toyType);
+    }
+
+    public GameSessionSettings buildNormalModeSettings(ToyType[] availablePool) {
+        ensureNormalToySelection(availablePool);
+        return new GameSessionSettings(
+            normalSelectedToyTypes.toArray(new ToyType[0]),
+            normalBaseSlipChance,
+            normalClawDropBaseChance,
+            normalClawDropMinChance,
+            normalBaseFakeGrabChance
+        );
+    }
+
+    private void ensureNormalToySelection(ToyType[] availablePool) {
+        if (availablePool == null || availablePool.length == 0) {
+            normalSelectedToyTypes.clear();
+            normalSelectedToyTypes.addAll(Arrays.asList(ToyType.DEFAULT_POOL));
+            return;
+        }
+
+        normalSelectedToyTypes.removeIf(toyType -> !Arrays.asList(availablePool).contains(toyType));
+        if (!normalSelectedToyTypes.isEmpty()) {
+            return;
+        }
+
+        normalSelectedToyTypes.addAll(Arrays.asList(availablePool));
     }
 
     private void showMenu(MenuId menuId) {
@@ -85,6 +199,12 @@ public class MainGame extends Game {
                 return new MainMenuScreen(this);
             case GAME_MODE:
                 return new GameModeMenuScreen(this);
+            case NORMAL_MODE_SETUP:
+                return new NormalModeSetupScreen(this);
+            case RESCUE_MODE_SETUP:
+                return new RescueModeSetupScreen(this);
+            case FIND_ANIMAL_MODE_SETUP:
+                return new FindAnimalModeSetupScreen(this);
             case SETTINGS:
                 return new SettingsScreen(this);
             case MENAGERIE:
@@ -100,19 +220,27 @@ public class MainGame extends Game {
     }
 
     private void switchScreen(Screen newScreen) {
-        // Сохраняем старый экран, чтобы освободить его ресурсы после переключения.
         Screen previousScreen = getScreen();
-        // Передаем управление новому экрану.
         setScreen(newScreen);
         if (previousScreen != null) {
-            // Освобождаем текстуры, батчи и прочие ресурсы предыдущего экрана.
             previousScreen.dispose();
         }
+    }
+
+    private static float clamp01(float value) {
+        return Math.max(0f, Math.min(1f, value));
+    }
+
+    private static double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private enum MenuId {
         MAIN,
         GAME_MODE,
+        NORMAL_MODE_SETUP,
+        RESCUE_MODE_SETUP,
+        FIND_ANIMAL_MODE_SETUP,
         SETTINGS,
         MENAGERIE
     }

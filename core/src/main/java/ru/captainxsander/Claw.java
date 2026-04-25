@@ -49,6 +49,10 @@ public class Claw {
     // В режиме FIND_ANIMAL разрешаем управление по X
     // после захвата игрушки (подъём и поездка к лотку).
     private final boolean extendedFindAnimalControl;
+    private final double baseSlipChance;
+    private final float clawDropBaseChance;
+    private final float clawDropMinChance;
+    private final float baseFakeGrabChance;
 
     private final Texture headTexture;
     private final Texture fingerTexture;
@@ -96,10 +100,15 @@ public class Claw {
     // Предыдущее состояние кнопки действия для расчёта "just pressed".
     private boolean previousTouchActionPressed = false;
 
-    public Claw(GameMode gameMode) {
+    public Claw(GameMode gameMode, GameSessionSettings sessionSettings) {
         // Флаг рассчитывается один раз в конструкторе,
         // чтобы не проверять enum в каждом кадре по нескольким местам.
+        GameSessionSettings activeSettings = sessionSettings == null ? GameSessionSettings.defaults() : sessionSettings;
         extendedFindAnimalControl = gameMode == GameMode.FIND_ANIMAL;
+        baseSlipChance = activeSettings.getBaseSlipChance();
+        clawDropBaseChance = activeSettings.getClawDropBaseChance();
+        clawDropMinChance = activeSettings.getClawDropMinChance();
+        baseFakeGrabChance = activeSettings.getBaseFakeGrabChance();
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
         fingerTexture = createRectTexture(18, 90, Color.WHITE);
         cableTexture = createRectTexture(6, 240, Color.LIGHT_GRAY);
@@ -341,7 +350,7 @@ public class Claw {
                 dropCheckTimer = 0f;
                 // 🔥 определяем ложный захват
                 float fakeChance =
-                    BASE_FAKE_GRAB_CHANCE +
+                    baseFakeGrabChance +
                         capturedToy.getCatchDifficulty() * FAKE_GRAB_DIFFICULTY_MULT;
 
                 fakeGrabThisCycle = Math.random() < fakeChance;
@@ -401,7 +410,7 @@ public class Claw {
         if (capturedToy != null && !slipCheckedThisCycle && y > GameTuning.SLIP_CHECK_Y) {
             slipCheckedThisCycle = true;
 
-            double slipChance = GameTuning.BASE_SLIP_CHANCE
+            double slipChance = baseSlipChance
                 + capturedToy.getCatchDifficulty() * GameTuning.SLIP_DIFFICULTY_MULT;
 
             if (Math.random() < slipChance) {
@@ -521,9 +530,9 @@ public class Claw {
         float distanceFactor = Math.min(1f, dx / maxDist);
 
         return
-            CLAW_DROP_MIN_CHANCE +                              // 🔥 всегда есть шанс
-                CLAW_DROP_BASE_CHANCE * distanceFactor +            // 🔥 дальше — выше шанс
-                capturedToy.getCatchDifficulty() * CLAW_DROP_DIFFICULTY_MULT;
+            clawDropMinChance
+                + clawDropBaseChance * distanceFactor
+                + capturedToy.getCatchDifficulty() * CLAW_DROP_DIFFICULTY_MULT;
     }
 
     private void updateOpen(float delta, List<Toy> trayToys, WinZone winZone) {
