@@ -950,7 +950,8 @@ public class GameScreen implements Screen {
     private final class CatToyMotionState {
         private float desiredHorizontalSpeed = randomCruiseSpeed();
         private float directionChangeTimer = 1.4f + (float) Math.random() * 1.6f;
-        private float jumpTimer = 0.55f + (float) Math.random() * 0.75f;
+        private float jumpTimer = GameTuning.CAT_MOTION_JUMP_INTERVAL_MIN
+            + (float) Math.random() * GameTuning.CAT_MOTION_JUMP_INTERVAL_RANDOM;
         private float stuckTimer = 0f;
         private float previousX = Float.NaN;
 
@@ -963,8 +964,9 @@ public class GameScreen implements Screen {
             // Активное управление котом включаем только на полу,
             // чтобы в воздухе (или в клешне) не было "магического" разгона.
             boolean supported = isToySupported(toy);
-            boolean nearFloor = (supported || position.y < GameTuning.CAT_MOTION_GROUND_Y)
-                && Math.abs(velocity.y) < GameTuning.CAT_MOTION_GROUND_MAX_VY;
+            boolean nearFloor = supported
+                || (position.y < GameTuning.CAT_MOTION_GROUND_Y
+                && velocity.y < GameTuning.CAT_MOTION_GROUND_MAX_VY);
             directionChangeTimer -= delta;
             jumpTimer -= delta;
             if (directionChangeTimer <= 0f) {
@@ -1026,7 +1028,8 @@ public class GameScreen implements Screen {
                     desiredHorizontalSpeed = -desiredHorizontalSpeed;
                 }
                 stuckTimer = 0f;
-                jumpTimer = 0.40f + (float) Math.random() * 0.45f;
+                jumpTimer = GameTuning.CAT_MOTION_UNSTICK_REJUMP_DELAY_MIN
+                    + (float) Math.random() * GameTuning.CAT_MOTION_UNSTICK_REJUMP_DELAY_RANDOM;
             }
 
             if (jumpTimer <= 0f && nearFloor) {
@@ -1034,7 +1037,8 @@ public class GameScreen implements Screen {
                     + (float) Math.random() * GameTuning.CAT_MOTION_JUMP_RANDOM;
                 float sideImpulse = Math.signum(desiredHorizontalSpeed) * GameTuning.CAT_MOTION_JUMP_SIDE_IMPULSE;
                 toyBody.applyLinearImpulse(sideImpulse, jumpImpulse, toyBody.getWorldCenter().x, toyBody.getWorldCenter().y, true);
-                jumpTimer = 0.58f + (float) Math.random() * 0.95f;
+                jumpTimer = GameTuning.CAT_MOTION_JUMP_INTERVAL_MIN
+                    + (float) Math.random() * GameTuning.CAT_MOTION_JUMP_INTERVAL_RANDOM;
             }
 
             float limitedSpeedX = clamp(toyBody.getLinearVelocity().x, -CAT_MOTION_MAX_SPEED, CAT_MOTION_MAX_SPEED);

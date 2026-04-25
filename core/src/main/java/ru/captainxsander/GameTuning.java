@@ -239,4 +239,10 @@ public final class GameTuning {
     public static final float CAT_MOTION_JUMP_MIN = 0.040f;
     public static final float CAT_MOTION_JUMP_RANDOM = 0.120f;
     public static final float CAT_MOTION_JUMP_SIDE_IMPULSE = 0.014f;
+    // Интервалы обычных прыжков (сек).
+    public static final float CAT_MOTION_JUMP_INTERVAL_MIN = 0.25f;
+    public static final float CAT_MOTION_JUMP_INTERVAL_RANDOM = 0.45f;
+    // Пауза после anti-stuck перед следующей попыткой прыжка (сек).
+    public static final float CAT_MOTION_UNSTICK_REJUMP_DELAY_MIN = 0.18f;
+    public static final float CAT_MOTION_UNSTICK_REJUMP_DELAY_RANDOM = 0.24f;
 }
