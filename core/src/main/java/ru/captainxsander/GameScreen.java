@@ -16,6 +16,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Align;
@@ -24,8 +25,10 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class GameScreen implements Screen {
@@ -37,6 +40,10 @@ public class GameScreen implements Screen {
     public static final String FONT_PATH = "fonts/arial.ttf";
     private static final float FIND_ANIMAL_RESULT_SHOW_TIME = 2.5f;
     private static final int TOY_COUNT_PER_ROUND = 45;
+    private static final float CAT_MOTION_MIN_X = 2.1f;
+    private static final float CAT_MOTION_MAX_X = WORLD_WIDTH - 2.1f;
+    private static final float CAT_MOTION_MAX_SPEED = 0.62f;
+    private static final float CAT_MOTION_MAX_VERTICAL_SPEED = 0.90f;
 
     private final MainGame game;
     private final GameMode gameMode;
@@ -112,10 +119,13 @@ public class GameScreen implements Screen {
     private Texture rabbitRightTexture;
 
     private FindAnimalFacts.FindAnimalTask findAnimalTask;
+    private ToyType catchCatTargetToyType;
+    private String catchCatTargetLabelRu;
     private boolean findAnimalRoundResolved;
     private String findAnimalResultText;
     private float findAnimalExitTimer;
     private boolean findAnimalExitRequested;
+    private final Map<Toy, CatToyMotionState> catchCatMotionStates = new HashMap<>();
 
     public GameScreen(MainGame game, GameMode gameMode, GameSessionSettings sessionSettings) {
         // Экран знает игру (для возврата в меню) и свой режим.
@@ -155,6 +165,8 @@ public class GameScreen implements Screen {
 
         if (gameMode == GameMode.FIND_ANIMAL) {
             setupFindAnimalRound();
+        } else if (gameMode == GameMode.CATCH_CAT) {
+            setupCatchCatRound();
         }
 
         // Единый шрифт используем для оверлея паузы и действий внутри него.
@@ -192,11 +204,48 @@ public class GameScreen implements Screen {
         statusFont = createFont(30, new Color(0.98f, 0.84f, 0.25f, 1f));
     }
 
+    private void setupCatchCatRound() {
+        ToyType[] catPool = ToyType.CAT_EMOTION_POOL;
+        catchCatTargetToyType = catPool[(int) (Math.random() * catPool.length)];
+        catchCatTargetLabelRu = getCatEmotionLabelRu(catchCatTargetToyType);
+
+        findAnimalRoundResolved = false;
+        findAnimalResultText = null;
+        findAnimalExitTimer = 0f;
+        findAnimalExitRequested = false;
+
+        factFont = createFont(27, new Color(0.98f, 0.92f, 0.84f, 1f));
+        statusFont = createFont(30, new Color(0.98f, 0.84f, 0.25f, 1f));
+    }
+
+    private String getCatEmotionLabelRu(ToyType toyType) {
+        switch (toyType) {
+            case CAT_BORED:
+                return "скучающего кота";
+            case CAT_EVIL:
+                return "злого кота";
+            case CAT_FUNNY:
+                return "весёлого кота";
+            case CAT_CRYING:
+                return "грустного кота";
+            case CAT_ILL:
+                return "заболевшего кота";
+            case CAT_NORMAL:
+            default:
+                return "обычного кота";
+        }
+    }
+
     private void createToys() {
         ToyType[] toyPool = getToyPoolForCurrentMode();
         ToyType[] currentRescueAnimals = menagerieProgress.getCurrentRescueLevelAnimals();
         ToyType[] completedRescueAnimals = menagerieProgress.getCompletedRescueAnimals();
         ToyType[] normalSpawnOrder = buildEqualNormalSpawnOrder(toyPool);
+
+        if (gameMode == GameMode.CATCH_CAT) {
+            createCatchCatToys(toyPool);
+            return;
+        }
 
         for (int i = 0; i < TOY_COUNT_PER_ROUND; i++) {
             float x = 3.5f + (float) Math.random() * 6.5f;
@@ -207,7 +256,25 @@ public class GameScreen implements Screen {
             float difficulty = 0.2f + (float) Math.random() * 0.5f;
             float restitution = 0.1f + (float) Math.random() * 0.3f;
 
-            toys.add(new Toy(world, x, y, toyType, difficulty, restitution));
+            Toy toy = new Toy(world, x, y, toyType, difficulty, restitution);
+            toys.add(toy);
+            if (gameMode == GameMode.CATCH_CAT) {
+                catchCatMotionStates.put(toy, new CatToyMotionState());
+            }
+        }
+    }
+
+    private void createCatchCatToys(ToyType[] catPool) {
+        // В режиме CATCH_CAT создаём ровно по одному коту на каждый доступный ассет.
+        for (int i = 0; i < catPool.length; i++) {
+            float x = 3.0f + (float) Math.random() * 7.8f;
+            float y = 1.0f + (float) Math.random() * 2.1f;
+            float difficulty = 0.22f + (float) Math.random() * 0.25f;
+            float restitution = 0.06f + (float) Math.random() * 0.06f;
+
+            Toy toy = new Toy(world, x, y, catPool[i], difficulty, restitution, true);
+            toys.add(toy);
+            catchCatMotionStates.put(toy, new CatToyMotionState());
         }
     }
 
@@ -241,6 +308,11 @@ public class GameScreen implements Screen {
             // В FIND_ANIMAL гарантируем наличие целевой игрушки,
             // но оставляем общее количество ровно 45.
             return findAnimalTask.getTargetToyType();
+        }
+
+        if (gameMode == GameMode.CATCH_CAT && catchCatTargetToyType != null && spawnIndex == 0) {
+            // В CATCH_CAT тоже гарантируем хотя бы один целевой тип в раунде.
+            return catchCatTargetToyType;
         }
 
         if (gameMode == GameMode.NORMAL && normalSpawnOrder.length > 0) {
@@ -291,10 +363,29 @@ public class GameScreen implements Screen {
             toy.update(delta, winZone);
         }
 
+        if (gameMode == GameMode.CATCH_CAT) {
+            updateCatchCatToyMotion(delta);
+        }
+
         updateMenagerieUnlocks();
         updateFindAnimalRoundState();
         updateFindAnimalRoundExitTimer(delta);
         debugOverlay.updateToggle();
+    }
+
+    private void updateCatchCatToyMotion(float delta) {
+        if (isFindAnimalFinished()) {
+            return;
+        }
+
+        for (Toy toy : toys) {
+            if (toy.isCaptured() || toy.isInTray() || toy.isWon() || toy.isInsideTrayBounds(winZone)) {
+                continue;
+            }
+
+            CatToyMotionState motionState = catchCatMotionStates.computeIfAbsent(toy, key -> new CatToyMotionState());
+            motionState.update(delta, toy);
+        }
     }
 
     private void updateFindAnimalRoundExitTimer(float delta) {
@@ -311,7 +402,7 @@ public class GameScreen implements Screen {
 
     private void updateFindAnimalRoundState() {
         // Логика результата нужна только до момента, пока раунд не завершён.
-        if (gameMode != GameMode.FIND_ANIMAL || findAnimalRoundResolved) {
+        if ((gameMode != GameMode.FIND_ANIMAL && gameMode != GameMode.CATCH_CAT) || findAnimalRoundResolved) {
             return;
         }
 
@@ -343,11 +434,27 @@ public class GameScreen implements Screen {
         findAnimalRoundResolved = true;
         findAnimalExitTimer = FIND_ANIMAL_RESULT_SHOW_TIME;
 
-        if (toy.getToyType() == findAnimalTask.getTargetToyType()) {
-            findAnimalResultText = "Молодец, это действительно " + findAnimalTask.getTargetAnimalLabelRu();
+        ToyType targetToyType = getCurrentTargetToyType();
+        String targetLabel = getCurrentTargetLabelRu();
+        if (targetToyType != null && toy.getToyType() == targetToyType) {
+            findAnimalResultText = "Молодец, это действительно " + targetLabel;
         } else {
-            findAnimalResultText = "Было близко, но это " + findAnimalTask.getTargetAnimalLabelRu();
+            findAnimalResultText = "Было близко, но нужно было поймать " + targetLabel;
         }
+    }
+
+    private ToyType getCurrentTargetToyType() {
+        if (gameMode == GameMode.CATCH_CAT) {
+            return catchCatTargetToyType;
+        }
+        return findAnimalTask == null ? null : findAnimalTask.getTargetToyType();
+    }
+
+    private String getCurrentTargetLabelRu() {
+        if (gameMode == GameMode.CATCH_CAT) {
+            return catchCatTargetLabelRu == null ? "нужного кота" : catchCatTargetLabelRu;
+        }
+        return findAnimalTask == null ? "нужного зверя" : findAnimalTask.getTargetAnimalLabelRu();
     }
 
     private void updateMenagerieUnlocks() {
@@ -373,6 +480,10 @@ public class GameScreen implements Screen {
         if (gameMode == GameMode.FIND_ANIMAL) {
             ToyType[] unlockedFindPool = menagerieProgress.getFindAnimalPool();
             return unlockedFindPool.length == 0 ? ToyType.ANIMAL_POOL : unlockedFindPool;
+        }
+
+        if (gameMode == GameMode.CATCH_CAT) {
+            return ToyType.CAT_EMOTION_POOL;
         }
 
         ToyType[] configuredPool = sessionSettings.getNormalToyPool();
@@ -442,7 +553,7 @@ public class GameScreen implements Screen {
         claw.render(batch);
         drawMachineForeground();
 
-        if (gameMode == GameMode.FIND_ANIMAL) {
+        if (gameMode == GameMode.FIND_ANIMAL || gameMode == GameMode.CATCH_CAT) {
             drawFindAnimalUi();
         }
 
@@ -545,19 +656,15 @@ public class GameScreen implements Screen {
     }
 
     private void drawFindAnimalUi() {
-        if (factFont == null || findAnimalTask == null) {
+        if (factFont == null) {
             return;
         }
 
         factFont.getData().setScale(0.011f);
-        glyphLayout.setText(
-            factFont,
-            "Факт: " + findAnimalTask.getFact(),
-            factFont.getColor(),
-            factBounds.width,
-            Align.center,
-            true
-        );
+        String topText = gameMode == GameMode.CATCH_CAT
+            ? "Поймай " + getCurrentTargetLabelRu()
+            : findAnimalTask == null ? "" : "Факт: " + findAnimalTask.getFact();
+        glyphLayout.setText(factFont, topText, factFont.getColor(), factBounds.width, Align.center, true);
         factFont.draw(batch, glyphLayout, factBounds.x, factBounds.y + factBounds.height);
 
         if (!isFindAnimalFinished()) {
@@ -747,7 +854,56 @@ public class GameScreen implements Screen {
     }
 
     private boolean isFindAnimalFinished() {
-        return gameMode == GameMode.FIND_ANIMAL && findAnimalRoundResolved;
+        return (gameMode == GameMode.FIND_ANIMAL || gameMode == GameMode.CATCH_CAT) && findAnimalRoundResolved;
+    }
+
+    private final class CatToyMotionState {
+        private float desiredHorizontalSpeed = randomCruiseSpeed();
+        private float directionChangeTimer = 1.1f + (float) Math.random() * 1.1f;
+        private float jumpTimer = 1.2f + (float) Math.random() * 1.5f;
+
+        private void update(float delta, Toy toy) {
+            Body toyBody = toy.getBody();
+            Vector2 velocity = toyBody.getLinearVelocity();
+            Vector2 position = toyBody.getPosition();
+
+            directionChangeTimer -= delta;
+            jumpTimer -= delta;
+            if (directionChangeTimer <= 0f) {
+                desiredHorizontalSpeed = randomCruiseSpeed();
+                directionChangeTimer = 0.9f + (float) Math.random() * 1.2f;
+            }
+
+            if (position.x < CAT_MOTION_MIN_X) {
+                desiredHorizontalSpeed = Math.abs(desiredHorizontalSpeed) + 0.10f;
+            } else if (position.x > CAT_MOTION_MAX_X) {
+                desiredHorizontalSpeed = -Math.abs(desiredHorizontalSpeed) - 0.10f;
+            }
+
+            float speedDelta = desiredHorizontalSpeed - velocity.x;
+            float xImpulse = clamp(speedDelta * 0.08f, -0.012f, 0.012f);
+            if (Math.abs(xImpulse) > 0.001f) {
+                toyBody.applyLinearImpulse(xImpulse, 0f, toyBody.getWorldCenter().x, toyBody.getWorldCenter().y, true);
+            }
+
+            boolean nearFloor = position.y < 2.15f && Math.abs(velocity.y) < 0.28f;
+            if (jumpTimer <= 0f && nearFloor) {
+                float jumpImpulse = 0.018f + (float) Math.random() * 0.016f;
+                float sideImpulse = desiredHorizontalSpeed * 0.006f;
+                toyBody.applyLinearImpulse(sideImpulse, jumpImpulse, toyBody.getWorldCenter().x, toyBody.getWorldCenter().y, true);
+                jumpTimer = 1.0f + (float) Math.random() * 1.8f;
+            }
+
+            float limitedSpeedX = clamp(toyBody.getLinearVelocity().x, -CAT_MOTION_MAX_SPEED, CAT_MOTION_MAX_SPEED);
+            float limitedSpeedY = clamp(toyBody.getLinearVelocity().y, -CAT_MOTION_MAX_VERTICAL_SPEED, CAT_MOTION_MAX_VERTICAL_SPEED);
+            toyBody.setLinearVelocity(limitedSpeedX, limitedSpeedY);
+            toyBody.setAngularVelocity(0f);
+        }
+
+        private float randomCruiseSpeed() {
+            float abs = 0.16f + (float) Math.random() * 0.20f;
+            return Math.random() < 0.5f ? -abs : abs;
+        }
     }
 
 

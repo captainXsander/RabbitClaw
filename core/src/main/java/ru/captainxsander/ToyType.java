@@ -65,6 +65,14 @@ public enum ToyType {
             .filter(toyType -> toyType.texturePath.startsWith("toys/animals/"))
             .toArray(ToyType[]::new);
 
+    /**
+     * Набор котов с эмоциями для режима CATCH_CAT.
+     */
+    public static final ToyType[] CAT_EMOTION_POOL =
+        Arrays.stream(values())
+            .filter(toyType -> toyType.texturePath.startsWith("toys/cats/"))
+            .toArray(ToyType[]::new);
+
     // Путь к изображению игрушки в каталоге assets.
     private final String texturePath;
 

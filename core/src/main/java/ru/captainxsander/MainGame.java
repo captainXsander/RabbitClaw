@@ -48,6 +48,10 @@ public class MainGame extends Game {
         showMenu(MenuId.FIND_ANIMAL_MODE_SETUP);
     }
 
+    public void showCatchCatModeSetupMenu() {
+        showMenu(MenuId.CATCH_CAT_MODE_SETUP);
+    }
+
     public void showSettings() {
         showMenu(MenuId.SETTINGS);
     }
@@ -83,6 +87,11 @@ public class MainGame extends Game {
     public void startFindAnimalGame() {
         clearMenuNavigation();
         switchScreen(new GameScreen(this, GameMode.FIND_ANIMAL, GameSessionSettings.defaults()));
+    }
+
+    public void startCatchCatGame() {
+        clearMenuNavigation();
+        switchScreen(new GameScreen(this, GameMode.CATCH_CAT, GameSessionSettings.defaults()));
     }
 
     public boolean isSoundEnabled() {
@@ -205,6 +214,8 @@ public class MainGame extends Game {
                 return new RescueModeSetupScreen(this);
             case FIND_ANIMAL_MODE_SETUP:
                 return new FindAnimalModeSetupScreen(this);
+            case CATCH_CAT_MODE_SETUP:
+                return new CatchCatModeSetupScreen(this);
             case SETTINGS:
                 return new SettingsScreen(this);
             case MENAGERIE:
@@ -241,6 +252,7 @@ public class MainGame extends Game {
         NORMAL_MODE_SETUP,
         RESCUE_MODE_SETUP,
         FIND_ANIMAL_MODE_SETUP,
+        CATCH_CAT_MODE_SETUP,
         SETTINGS,
         MENAGERIE
     }
