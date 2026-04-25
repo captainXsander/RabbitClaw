@@ -952,15 +952,12 @@ public class GameScreen implements Screen {
             }
 
             if (nearFloor) {
-                // Делим на FPS через delta: рассчитываем ускорение (м/с²) и
-                // превращаем его в импульс за текущий кадр.
-                float acceleration = clamp(
-                    (desiredHorizontalSpeed - velocity.x) * GameTuning.CAT_MOTION_ACCEL,
-                    -GameTuning.CAT_MOTION_MAX_ACCEL,
-                    GameTuning.CAT_MOTION_MAX_ACCEL
-                );
-                float impulseX = acceleration * delta * toyBody.getMass();
-                toyBody.applyLinearImpulse(impulseX, 0f, toyBody.getWorldCenter().x, toyBody.getWorldCenter().y, true);
+                // Экспоненциальное сглаживание: независимо от FPS
+                // тянем текущую скорость к целевой.
+                float response = Math.max(0.1f, GameTuning.CAT_MOTION_VELOCITY_RESPONSE);
+                float blend = 1f - (float) Math.exp(-response * delta);
+                float nextVx = velocity.x + (desiredHorizontalSpeed - velocity.x) * blend;
+                toyBody.setLinearVelocity(nextVx, velocity.y);
             }
 
             float horizontalSpeed = Math.abs(toyBody.getLinearVelocity().x);

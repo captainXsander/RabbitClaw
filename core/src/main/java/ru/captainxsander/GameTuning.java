@@ -218,9 +218,10 @@ public final class GameTuning {
     public static final float CAT_MOTION_MAX_VERTICAL_SPEED = 1.20f;
     public static final float CAT_MOTION_GROUND_Y = 1.42f;
     public static final float CAT_MOTION_GROUND_MAX_VY = 0.25f;
-    // "Ускорение" разгона по X в единицах м/с².
-    public static final float CAT_MOTION_ACCEL = 2.2f;
-    public static final float CAT_MOTION_MAX_ACCEL = 0.95f;
+    // Скорость "подтягивания" текущей скорости к целевой (1/сек).
+    // Формула в коде использует экспоненциальное сглаживание, поэтому
+    // эффект одинаковый при любом FPS.
+    public static final float CAT_MOTION_VELOCITY_RESPONSE = 8.5f;
     public static final float CAT_MOTION_STUCK_SPEED = 0.06f;
     public static final float CAT_MOTION_STUCK_TIME = 0.42f;
     // Вероятность "перепрыга", когда кот уткнулся в другого кота и залип.
