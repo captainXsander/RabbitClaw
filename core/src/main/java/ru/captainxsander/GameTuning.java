@@ -215,14 +215,21 @@ public final class GameTuning {
     public static final float CAT_MOTION_MAX_X = WORLD_WIDTH - 2.1f;
     public static final float CAT_MOTION_MIN_SPEED = 1.44f;
     public static final float CAT_MOTION_MAX_SPEED = 3.75f;
-    public static final float CAT_MOTION_MAX_VERTICAL_SPEED = 1.20f;
+    // Ограничиваем падение отдельно от подъёма:
+    // при симметричном clamp коты визуально "топчутся" и почти не набирают высоту.
+    public static final float CAT_MOTION_MAX_FALL_SPEED = 1.20f;
+    public static final float CAT_MOTION_MAX_RISE_SPEED = 6.00f;
     public static final float CAT_MOTION_GROUND_Y = 1.42f;
     public static final float CAT_MOTION_GROUND_MAX_VY = 0.25f;
+    // Погрешность по Y для определения опоры под котом (пол/другой кот).
+    public static final float CAT_MOTION_SUPPORT_Y_EPS = 0.02f;
     // Скорость "подтягивания" текущей скорости к целевой (1/сек).
     // Формула в коде использует экспоненциальное сглаживание, поэтому
     // эффект одинаковый при любом FPS.
     public static final float CAT_MOTION_VELOCITY_RESPONSE = 8.5f;
     public static final float CAT_MOTION_STUCK_SPEED = 0.06f;
+    // Минимальный прогресс по X за кадр, ниже которого считаем, что кот "топчется".
+    public static final float CAT_MOTION_STUCK_PROGRESS_EPS = 0.0035f;
     public static final float CAT_MOTION_STUCK_TIME = 0.42f;
     // Вероятность "перепрыга", когда кот уткнулся в другого кота и залип.
     public static final float CAT_MOTION_STUCK_HOP_CHANCE = 0.88f;
@@ -232,4 +239,10 @@ public final class GameTuning {
     public static final float CAT_MOTION_JUMP_MIN = 0.040f;
     public static final float CAT_MOTION_JUMP_RANDOM = 0.120f;
     public static final float CAT_MOTION_JUMP_SIDE_IMPULSE = 0.014f;
+    // Интервалы обычных прыжков (сек).
+    public static final float CAT_MOTION_JUMP_INTERVAL_MIN = 0.25f;
+    public static final float CAT_MOTION_JUMP_INTERVAL_RANDOM = 0.45f;
+    // Пауза после anti-stuck перед следующей попыткой прыжка (сек).
+    public static final float CAT_MOTION_UNSTICK_REJUMP_DELAY_MIN = 0.18f;
+    public static final float CAT_MOTION_UNSTICK_REJUMP_DELAY_RANDOM = 0.24f;
 }
