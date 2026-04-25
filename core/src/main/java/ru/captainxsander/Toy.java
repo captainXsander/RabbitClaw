@@ -110,13 +110,13 @@ public class Toy {
         Fixture fixture = body.createFixture(fix);
         if (keepUpright) {
             // В режиме CATCH_CAT коты должны "ходить", а не кувыркаться.
-            fixture.setRestitution(0.08f);
-            fixture.setFriction(0.24f);
+            fixture.setRestitution(0.10f);
+            fixture.setFriction(0.08f);
             body.setFixedRotation(true);
         }
 
         // Демпфирование нужно, чтобы игрушки не катались бесконечно.
-        body.setLinearDamping(GameTuning.TOY_LINEAR_DAMPING);
+        body.setLinearDamping(keepUpright ? 0.22f : GameTuning.TOY_LINEAR_DAMPING);
         body.setAngularDamping(GameTuning.TOY_ANGULAR_DAMPING);
 
         shape.dispose();

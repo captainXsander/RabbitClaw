@@ -44,7 +44,7 @@ public class GameScreen implements Screen {
     private static final float CAT_MOTION_MAX_X = WORLD_WIDTH - 2.1f;
     private static final float CAT_MOTION_MIN_SPEED = 0.34f;
     private static final float CAT_MOTION_MAX_SPEED = 0.74f;
-    private static final float CAT_MOTION_MAX_VERTICAL_SPEED = 0.90f;
+    private static final float CAT_MOTION_MAX_VERTICAL_SPEED = 1.20f;
 
     private final MainGame game;
     private final GameMode gameMode;
@@ -872,6 +872,7 @@ public class GameScreen implements Screen {
             Body toyBody = toy.getBody();
             Vector2 velocity = toyBody.getLinearVelocity();
             Vector2 position = toyBody.getPosition();
+            toyBody.setAwake(true);
 
             directionChangeTimer -= delta;
             jumpTimer -= delta;
@@ -893,14 +894,18 @@ public class GameScreen implements Screen {
                 desiredHorizontalSpeed = -Math.abs(desiredHorizontalSpeed);
             }
 
-            float blending = clamp(delta * 5.5f, 0f, 1f);
-            float vx = velocity.x + (desiredHorizontalSpeed - velocity.x) * blending;
-            toyBody.setLinearVelocity(vx, velocity.y);
+            float forceX = clamp((desiredHorizontalSpeed - velocity.x) * 4.2f, -1.6f, 1.6f);
+            toyBody.applyForceToCenter(forceX, 0f, true);
 
             boolean nearFloor = position.y < 2.10f && Math.abs(velocity.y) < 0.30f;
+            if (nearFloor && Math.abs(toyBody.getLinearVelocity().x) < 0.08f) {
+                float kick = Math.signum(desiredHorizontalSpeed) * 0.012f;
+                toyBody.applyLinearImpulse(kick, 0f, toyBody.getWorldCenter().x, toyBody.getWorldCenter().y, true);
+            }
+
             if (jumpTimer <= 0f && nearFloor) {
-                float jumpImpulse = 0.020f + (float) Math.random() * 0.020f;
-                float sideImpulse = Math.signum(desiredHorizontalSpeed) * 0.0045f;
+                float jumpImpulse = 0.028f + (float) Math.random() * 0.017f;
+                float sideImpulse = Math.signum(desiredHorizontalSpeed) * 0.010f;
                 toyBody.applyLinearImpulse(sideImpulse, jumpImpulse, toyBody.getWorldCenter().x, toyBody.getWorldCenter().y, true);
                 jumpTimer = 0.75f + (float) Math.random() * 1.35f;
             }
