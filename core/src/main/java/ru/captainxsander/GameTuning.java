@@ -221,6 +221,8 @@ public final class GameTuning {
     public static final float CAT_MOTION_MAX_RISE_SPEED = 6.00f;
     public static final float CAT_MOTION_GROUND_Y = 1.42f;
     public static final float CAT_MOTION_GROUND_MAX_VY = 0.25f;
+    // Погрешность по Y для определения опоры под котом (пол/другой кот).
+    public static final float CAT_MOTION_SUPPORT_Y_EPS = 0.02f;
     // Скорость "подтягивания" текущей скорости к целевой (1/сек).
     // Формула в коде использует экспоненциальное сглаживание, поэтому
     // эффект одинаковый при любом FPS.

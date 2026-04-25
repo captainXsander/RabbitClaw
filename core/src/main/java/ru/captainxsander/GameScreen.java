@@ -447,6 +447,37 @@ public class GameScreen implements Screen {
         return false;
     }
 
+    private boolean isToySupported(Toy toy) {
+        Body toyBody = toy.getBody();
+        float toyY = toyBody.getPosition().y;
+        for (Contact contact : world.getContactList()) {
+            if (!contact.isTouching()) {
+                continue;
+            }
+
+            Fixture fixtureA = contact.getFixtureA();
+            Fixture fixtureB = contact.getFixtureB();
+            Body bodyA = fixtureA.getBody();
+            Body bodyB = fixtureB.getBody();
+            Body otherBody = null;
+
+            if (bodyA == toyBody) {
+                otherBody = bodyB;
+            } else if (bodyB == toyBody) {
+                otherBody = bodyA;
+            }
+
+            if (otherBody == null) {
+                continue;
+            }
+
+            if (otherBody.getPosition().y <= toyY - GameTuning.CAT_MOTION_SUPPORT_Y_EPS) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void updateFindAnimalRoundExitTimer(float delta) {
         // После показа результата автоматически возвращаем игрока в предыдущее меню.
         if (!isFindAnimalFinished()) {
@@ -931,7 +962,8 @@ public class GameScreen implements Screen {
 
             // Активное управление котом включаем только на полу,
             // чтобы в воздухе (или в клешне) не было "магического" разгона.
-            boolean nearFloor = position.y < GameTuning.CAT_MOTION_GROUND_Y
+            boolean supported = isToySupported(toy);
+            boolean nearFloor = (supported || position.y < GameTuning.CAT_MOTION_GROUND_Y)
                 && Math.abs(velocity.y) < GameTuning.CAT_MOTION_GROUND_MAX_VY;
             directionChangeTimer -= delta;
             jumpTimer -= delta;
