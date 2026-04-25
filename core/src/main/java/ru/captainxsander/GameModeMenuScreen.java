@@ -11,6 +11,7 @@ class GameModeMenuScreen extends AbstractMenuScreen {
         if (progress.isFindAnimalModeUnlocked()) {
             addOption("find_animals.png", game::showFindAnimalModeSetupMenu);
         }
+        addOption("catch_cat.png", game::showCatchCatModeSetupMenu);
 
         addOption("menu_back.png", game::showPreviousMenu);
     }

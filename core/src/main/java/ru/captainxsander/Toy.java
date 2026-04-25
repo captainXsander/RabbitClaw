@@ -25,6 +25,7 @@ public class Toy {
     private final ToyType toyType;
     private final Body body;
     private final Texture texture;
+    private final boolean keepUpright;
 
     // =========================
     // Состояния после отпускания
@@ -73,9 +74,15 @@ public class Toy {
 
     public Toy(World world, float x, float y, ToyType toyType,
                float catchDifficulty, float trayRestitution) {
+        this(world, x, y, toyType, catchDifficulty, trayRestitution, false);
+    }
+
+    public Toy(World world, float x, float y, ToyType toyType,
+               float catchDifficulty, float trayRestitution, boolean keepUpright) {
 
         this.toyType = toyType;
         texture = new Texture(Gdx.files.internal(toyType.getTexturePath()));
+        this.keepUpright = keepUpright;
 
         this.catchDifficulty = catchDifficulty;
         this.trayRestitution = trayRestitution;
@@ -100,10 +107,16 @@ public class Toy {
         fix.friction = GameTuning.TOY_FRICTION;
         fix.restitution = GameTuning.TOY_RESTITUTION;
 
-        body.createFixture(fix);
+        Fixture fixture = body.createFixture(fix);
+        if (keepUpright) {
+            // В режиме CATCH_CAT коты должны "ходить", а не кувыркаться.
+            fixture.setRestitution(0.24f);
+            fixture.setFriction(0.02f);
+            body.setFixedRotation(true);
+        }
 
         // Демпфирование нужно, чтобы игрушки не катались бесконечно.
-        body.setLinearDamping(GameTuning.TOY_LINEAR_DAMPING);
+        body.setLinearDamping(keepUpright ? 0.22f : GameTuning.TOY_LINEAR_DAMPING);
         body.setAngularDamping(GameTuning.TOY_ANGULAR_DAMPING);
 
         shape.dispose();
@@ -162,6 +175,12 @@ public class Toy {
             body.setLinearVelocity(0, 0);
             body.setAngularVelocity(0);
             return;
+        }
+
+        if (keepUpright) {
+            // На всякий случай принудительно удерживаем лицевую сторону вверх.
+            body.setAngularVelocity(0f);
+            body.setTransform(body.getPosition(), 0f);
         }
 
         // =========================
@@ -250,7 +269,7 @@ public class Toy {
         body.setGravityScale(0f);
 
         // Игрушка следует за клешнёй напрямую.
-        body.setTransform(x, y, swing * 0.12f);
+        body.setTransform(x, y, keepUpright ? 0f : swing * 0.12f);
 
         body.setLinearVelocity(0, 0);
         body.setAngularVelocity(0);
@@ -266,7 +285,7 @@ public class Toy {
         body.setGravityScale(1f);
 
         body.setLinearVelocity(impulseX, impulseY);
-        body.setAngularVelocity(impulseX * 0.25f);
+        body.setAngularVelocity(keepUpright ? 0f : impulseX * 0.25f);
     }
 
     /**
@@ -344,9 +363,7 @@ public class Toy {
         // Скорость задаётся один раз, дальше работает физика.
         body.setLinearVelocity(vx, vy);
 
-        body.setAngularVelocity(
-            ((float) Math.random() - 0.5f) * 1.2f
-        );
+        body.setAngularVelocity(keepUpright ? 0f : ((float) Math.random() - 0.5f) * 1.2f);
     }
 
     private boolean isAndroidRuntime() {
@@ -396,6 +413,10 @@ public class Toy {
 
     public boolean isInTray() {
         return inTray;
+    }
+
+    public boolean isReleasedToPhysicsTray() {
+        return releasedToPhysicsTray;
     }
 
     /**

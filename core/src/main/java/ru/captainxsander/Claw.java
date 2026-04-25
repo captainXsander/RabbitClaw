@@ -46,8 +46,8 @@ public class Claw {
 
     private Body physicsBody;
     private World world;
-    // В режиме FIND_ANIMAL разрешаем управление по X
-    // после захвата игрушки (подъём и поездка к лотку).
+    // В режимах с ручной доставкой (FIND_ANIMAL/CATCH_CAT)
+    // разрешаем управление по X после захвата игрушки.
     private final boolean extendedFindAnimalControl;
     private final double baseSlipChance;
     private final float clawDropBaseChance;
@@ -104,7 +104,7 @@ public class Claw {
         // Флаг рассчитывается один раз в конструкторе,
         // чтобы не проверять enum в каждом кадре по нескольким местам.
         GameSessionSettings activeSettings = sessionSettings == null ? GameSessionSettings.defaults() : sessionSettings;
-        extendedFindAnimalControl = gameMode == GameMode.FIND_ANIMAL;
+        extendedFindAnimalControl = gameMode == GameMode.FIND_ANIMAL || gameMode == GameMode.CATCH_CAT;
         baseSlipChance = activeSettings.getBaseSlipChance();
         clawDropBaseChance = activeSettings.getClawDropBaseChance();
         clawDropMinChance = activeSettings.getClawDropMinChance();
@@ -381,7 +381,7 @@ public class Claw {
         // клешню даже во время подъёма захваченной игрушки.
         if (canControlAfterCatch()) {
             applyHorizontalInput(delta);
-            // FIND_ANIMAL: разрешаем отпустить игрушку сразу после захвата.
+            // Режимы с ручной доставкой: можно отпустить сразу после захвата.
             if (actionJustPressed) {
                 state = State.OPEN;
                 stateTimer = 0f;
@@ -473,7 +473,7 @@ public class Claw {
         }
 
         if (canControlAfterCatch()) {
-            // FIND_ANIMAL: после подъёма игрушки клешня остаётся под контролем игрока.
+            // Режимы с ручной доставкой: после подъёма клешня остаётся под контролем игрока.
             applyHorizontalInput(delta);
 
             if (actionJustPressed) {
@@ -517,7 +517,7 @@ public class Claw {
 
     private boolean canControlAfterCatch() {
         // Расширенное управление доступно только:
-        // 1) в FIND_ANIMAL;
+        // 1) в режиме с ручной доставкой (FIND_ANIMAL/CATCH_CAT);
         // 2) когда игрушка реально удерживается клешней.
         return extendedFindAnimalControl && capturedToy != null;
     }
@@ -826,7 +826,7 @@ public class Claw {
     }
 
     public boolean isHorizontalControlAllowed() {
-        // В обычных режимах — только в IDLE; в FIND_ANIMAL — и после захвата.
+        // В обычных режимах — только в IDLE; в ручных режимах — и после захвата.
         return state == State.IDLE || canControlAfterCatch();
     }
 
@@ -836,7 +836,7 @@ public class Claw {
     }
 
     public boolean shouldShowReleaseAction() {
-        // Для UI: если удерживаем игрушку в FIND_ANIMAL, показываем "Отпустить".
+        // Для UI: если удерживаем игрушку в ручном режиме, показываем "Отпустить".
         return canControlAfterCatch();
     }
 
