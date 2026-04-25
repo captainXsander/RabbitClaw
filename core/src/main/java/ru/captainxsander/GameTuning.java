@@ -226,6 +226,8 @@ public final class GameTuning {
     // эффект одинаковый при любом FPS.
     public static final float CAT_MOTION_VELOCITY_RESPONSE = 8.5f;
     public static final float CAT_MOTION_STUCK_SPEED = 0.06f;
+    // Минимальный прогресс по X за кадр, ниже которого считаем, что кот "топчется".
+    public static final float CAT_MOTION_STUCK_PROGRESS_EPS = 0.0035f;
     public static final float CAT_MOTION_STUCK_TIME = 0.42f;
     // Вероятность "перепрыга", когда кот уткнулся в другого кота и залип.
     public static final float CAT_MOTION_STUCK_HOP_CHANCE = 0.88f;

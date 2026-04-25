@@ -921,6 +921,7 @@ public class GameScreen implements Screen {
         private float directionChangeTimer = 1.4f + (float) Math.random() * 1.6f;
         private float jumpTimer = 0.55f + (float) Math.random() * 0.75f;
         private float stuckTimer = 0f;
+        private float previousX = Float.NaN;
 
         private void update(float delta, Toy toy) {
             Body toyBody = toy.getBody();
@@ -963,11 +964,16 @@ public class GameScreen implements Screen {
 
             float horizontalSpeed = Math.abs(toyBody.getLinearVelocity().x);
             boolean touchingToy = isToyTouchingAnotherToy(toy);
-            if (nearFloor && horizontalSpeed < GameTuning.CAT_MOTION_STUCK_SPEED) {
+            boolean hasPreviousX = !Float.isNaN(previousX);
+            float deltaX = hasPreviousX ? Math.abs(position.x - previousX) : 0f;
+            boolean barelyMovesX = hasPreviousX && deltaX < GameTuning.CAT_MOTION_STUCK_PROGRESS_EPS;
+            boolean slowByVelocity = horizontalSpeed < GameTuning.CAT_MOTION_STUCK_SPEED;
+            if (nearFloor && (slowByVelocity || (touchingToy && barelyMovesX))) {
                 stuckTimer += delta;
             } else {
                 stuckTimer = 0f;
             }
+            previousX = position.x;
 
             // Если кот упёрся в другого кота и не может разлипнуться,
             // с вероятностью делаем "перепрыг" поверх соседа.
