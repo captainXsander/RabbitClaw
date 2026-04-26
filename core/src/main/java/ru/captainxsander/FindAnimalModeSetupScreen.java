@@ -24,12 +24,15 @@ class FindAnimalModeSetupScreen extends AbstractDetailMenuScreen {
                 + " После результата режим автоматически вернёт вас в меню.",
             new Rectangle(2.5f, 5.1f, 11.0f, 1.0f)
         );
-        int level = progress.getCurrentRescueLevelNumber();
         int coins = progress.getCoinBalance();
         int maxCoins = progress.getCurrentRescueDailyCoinLimit();
-        drawCenteredText(bodyFont, "Текущий уровень: " + level, new Rectangle(1.5f, 4.5f, 13f, 0.45f), 0.0108f, 1);
-        batch.draw(moneyTexture, 5.2f, 4.06f, 0.36f, 0.36f);
-        drawCenteredText(bodyFont, "Монеты: " + coins + "/" + maxCoins, new Rectangle(5.6f, 4.0f, 5.2f, 0.45f), 0.0108f, 0);
+        String coinText = "Монеты: " + coins + "/" + maxCoins;
+        bodyFont.getData().setScale(0.0108f);
+        glyphLayout.setText(bodyFont, coinText);
+        float textX = 6.0f;
+        float textY = 4.55f;
+        bodyFont.draw(batch, glyphLayout, textX, textY);
+        batch.draw(moneyTexture, textX + glyphLayout.width + 0.14f, 4.24f, 0.34f, 0.34f);
 
         drawButton(playBounds, "Играть", selectedIndex == 0);
         drawButton(backBounds, "Назад", selectedIndex == 1);

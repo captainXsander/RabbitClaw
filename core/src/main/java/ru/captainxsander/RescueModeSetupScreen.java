@@ -45,10 +45,10 @@ class RescueModeSetupScreen extends AbstractDetailMenuScreen {
 
         String levelInfo = "Текущий уровень: " + progress.getCurrentRescueLevelNumber()
             + " из " + progress.getRescueLevelCount();
-        drawCenteredText(bodyFont, levelInfo, new Rectangle(1.3f, 4.8f, 13.4f, 0.5f), 0.011f, 1);
-        drawMoneyInfo(4.3f, 4.1f);
+        drawCenteredText(bodyFont, levelInfo, new Rectangle(1.3f, 4.95f, 13.4f, 0.5f), 0.011f, 1);
+        drawMoneyInfo(5.9f, 4.45f);
         if (nextRefillInfo != null) {
-            drawCenteredText(bodyFont, nextRefillInfo, new Rectangle(2.8f, 3.8f, 10.4f, 0.42f), 0.0102f, 1);
+            drawCenteredText(bodyFont, nextRefillInfo, new Rectangle(2.8f, 4.08f, 10.4f, 0.42f), 0.0102f, 1);
         }
 
         if (progress.isRescueFullyCompleted()) {
@@ -133,11 +133,14 @@ class RescueModeSetupScreen extends AbstractDetailMenuScreen {
         moneyTexture.dispose();
     }
 
-    private void drawMoneyInfo(float x, float y) {
+    private void drawMoneyInfo(float textX, float y) {
         int coins = progress.getCoinBalance();
         int dailyLimit = progress.getCurrentRescueDailyCoinLimit();
         String coinText = "Монеты: " + coins + "/" + dailyLimit;
-        batch.draw(moneyTexture, x, y, 0.38f, 0.38f);
-        drawCenteredText(bodyFont, coinText, new Rectangle(x + 0.45f, y - 0.03f, 6.2f, 0.45f), 0.0108f, 0);
+        bodyFont.getData().setScale(0.0108f);
+        glyphLayout.setText(bodyFont, coinText);
+        float textY = y + 0.29f;
+        bodyFont.draw(batch, glyphLayout, textX, textY);
+        batch.draw(moneyTexture, textX + glyphLayout.width + 0.14f, y, 0.34f, 0.34f);
     }
 }
