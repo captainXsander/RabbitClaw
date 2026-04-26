@@ -71,9 +71,15 @@ public class MainGame extends Game {
         switchScreen(createMenuScreen(previousMenuId));
     }
 
-    public void startRescueGame() {
+    public boolean startRescueGame() {
+        MenagerieProgress progress = new MenagerieProgress();
+        if (!progress.canSpendCoinForRescueAttempt()) {
+            return false;
+        }
+
         clearMenuNavigation();
         switchScreen(new GameScreen(this, GameMode.RESCUE, GameSessionSettings.defaults()));
+        return true;
     }
 
     public void startNormalGame() {

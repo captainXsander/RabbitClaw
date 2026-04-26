@@ -15,6 +15,9 @@ import java.util.List;
 import static ru.captainxsander.GameTuning.*;
 
 public class Claw {
+    public interface AttemptListener {
+        boolean onAttemptRequested();
+    }
     // Android-профиль: только для тач-управления. Desktop-значения не меняем.
     private static final float ANDROID_SWING_INPUT_BASE_MULT = 0.58f;
     private static final float ANDROID_SWING_ACCEL_MULT = 0.45f;
@@ -99,6 +102,7 @@ public class Claw {
     private boolean touchActionPressed = false;
     // Предыдущее состояние кнопки действия для расчёта "just pressed".
     private boolean previousTouchActionPressed = false;
+    private AttemptListener attemptListener;
 
     public Claw(GameMode gameMode, GameSessionSettings sessionSettings) {
         // Флаг рассчитывается один раз в конструкторе,
@@ -152,6 +156,10 @@ public class Claw {
             handleIdleInput(delta);
 
             if (actionJustPressed) {
+                if (attemptListener != null && !attemptListener.onAttemptRequested()) {
+                    return;
+                }
+
                 hasMovedDown = false;
                 capturedToy = null;
                 pressDepth = 0f;
@@ -208,6 +216,10 @@ public class Claw {
         updateSwing(delta);
         // Фиксируем кадр для следующего "just pressed" на мобильной кнопке.
         previousTouchActionPressed = touchActionPressed;
+    }
+
+    public void setAttemptListener(AttemptListener attemptListener) {
+        this.attemptListener = attemptListener;
     }
 
     private void handleIdleInput(float delta) {
