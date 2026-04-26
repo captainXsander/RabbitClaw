@@ -817,21 +817,21 @@ public class GameScreen implements Screen {
         pauseFont.getData().setScale(0.0105f);
         String levelText = "Уровень " + level + "/" + levelCount;
         glyphLayout.setText(pauseFont, levelText);
-        pauseFont.draw(batch, glyphLayout, 0.75f, WORLD_HEIGHT - 0.70f);
+        pauseFont.draw(batch, glyphLayout, 0.75f, WORLD_HEIGHT - 1.05f);
 
         pauseFont.getData().setScale(0.0108f);
         String coinsText = coins + "/" + maxCoins;
         glyphLayout.setText(pauseFont, coinsText);
         float coinsTextX = WORLD_WIDTH - 4.8f;
-        float coinsTextY = WORLD_HEIGHT - 0.70f;
+        float coinsTextY = WORLD_HEIGHT - 1.05f;
         pauseFont.draw(batch, glyphLayout, coinsTextX, coinsTextY);
-        batch.draw(moneyTexture, coinsTextX + glyphLayout.width + 0.16f, WORLD_HEIGHT - 1.02f, 0.34f, 0.34f);
+        batch.draw(moneyTexture, coinsTextX + glyphLayout.width + 0.16f, WORLD_HEIGHT - 1.37f, 0.34f, 0.34f);
 
         if (gameMode == GameMode.RESCUE && rescueNoCoinsHintTimer > 0f) {
             pauseFont.getData().setScale(0.0102f);
             String hint = "Недостаточно монет. Пополнение в следующее ежедневное обновление.";
             glyphLayout.setText(pauseFont, hint);
-            pauseFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, WORLD_HEIGHT - 0.82f);
+            pauseFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, WORLD_HEIGHT - 1.20f);
         }
     }
 

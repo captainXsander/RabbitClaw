@@ -29,10 +29,13 @@ class FindAnimalModeSetupScreen extends AbstractDetailMenuScreen {
         String coinText = "Монеты: " + coins + "/" + maxCoins;
         bodyFont.getData().setScale(0.0108f);
         glyphLayout.setText(bodyFont, coinText);
-        float textX = 6.0f;
+        float iconSize = 0.34f;
+        float gap = 0.14f;
+        float groupWidth = glyphLayout.width + gap + iconSize;
+        float textX = (UI_WIDTH - groupWidth) * 0.5f;
         float textY = 4.55f;
         bodyFont.draw(batch, glyphLayout, textX, textY);
-        batch.draw(moneyTexture, textX + glyphLayout.width + 0.14f, 4.24f, 0.34f, 0.34f);
+        batch.draw(moneyTexture, textX + glyphLayout.width + gap, 4.24f, iconSize, iconSize);
 
         drawButton(playBounds, "Играть", selectedIndex == 0);
         drawButton(backBounds, "Назад", selectedIndex == 1);
