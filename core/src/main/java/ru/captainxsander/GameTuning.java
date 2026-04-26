@@ -245,4 +245,11 @@ public final class GameTuning {
     // Пауза после anti-stuck перед следующей попыткой прыжка (сек).
     public static final float CAT_MOTION_UNSTICK_REJUMP_DELAY_MIN = 0.18f;
     public static final float CAT_MOTION_UNSTICK_REJUMP_DELAY_RANDOM = 0.24f;
+
+    // =========================
+    // Экономика
+    // =========================
+    // Ежедневное пополнение монет происходит в локальном времени устройства.
+    public static final int DAILY_COIN_REFILL_HOUR = 0;
+    public static final int DAILY_COIN_REFILL_MINUTE = 0;
 }

@@ -126,6 +126,7 @@ public class GameScreen implements Screen {
     private Texture pixelTexture;
     private Texture rabbitLeftTexture;
     private Texture rabbitRightTexture;
+    private Texture moneyTexture;
 
     private FindAnimalFacts.FindAnimalTask findAnimalTask;
     private ToyType catchCatTargetToyType;
@@ -137,6 +138,7 @@ public class GameScreen implements Screen {
     private final Map<Toy, CatToyMotionState> catchCatMotionStates = new HashMap<>();
     // Аккумулятор фиксированного шага физики (FPS-independent).
     private float physicsAccumulator = 0f;
+    private float rescueNoCoinsHintTimer = 0f;
 
     public GameScreen(MainGame game, GameMode gameMode, GameSessionSettings sessionSettings) {
         // Экран знает игру (для возврата в меню) и свой режим.
@@ -172,6 +174,15 @@ public class GameScreen implements Screen {
         claw = new Claw(gameMode, this.sessionSettings);
         claw.createPhysics(world);
         claw.setWorld(world);
+        if (gameMode == GameMode.RESCUE) {
+            claw.setAttemptListener(() -> {
+                boolean spent = menagerieProgress.spendCoinForRescueAttempt();
+                if (!spent) {
+                    rescueNoCoinsHintTimer = 2.4f;
+                }
+                return spent;
+            });
+        }
         debugOverlay = new DebugOverlay();
 
         if (gameMode == GameMode.FIND_ANIMAL) {
@@ -187,6 +198,7 @@ public class GameScreen implements Screen {
         touchCircleTexture = createCircleTexture(192);
         rabbitLeftTexture = new Texture(Gdx.files.internal("toys/default/rabbit_big.png"));
         rabbitRightTexture = new Texture(Gdx.files.internal("toys/animals/rabbit_large.png"));
+        moneyTexture = new Texture(Gdx.files.internal("money.png"));
 
         createToys();
         // Перехватываем системную кнопку BACK, чтобы она открывала нашу паузу.
@@ -383,6 +395,9 @@ public class GameScreen implements Screen {
         updateMenagerieUnlocks();
         updateFindAnimalRoundState();
         updateFindAnimalRoundExitTimer(delta);
+        if (rescueNoCoinsHintTimer > 0f) {
+            rescueNoCoinsHintTimer = Math.max(0f, rescueNoCoinsHintTimer - delta);
+        }
         debugOverlay.updateToggle();
     }
 
@@ -527,7 +542,12 @@ public class GameScreen implements Screen {
         ToyType targetToyType = getCurrentTargetToyType();
         String targetLabel = getCurrentTargetLabelRu();
         if (targetToyType != null && toy.getToyType() == targetToyType) {
-            findAnimalResultText = "Молодец, это действительно " + targetLabel;
+            boolean coinAwarded = gameMode == GameMode.FIND_ANIMAL && menagerieProgress.awardCoinFromFindAnimalWin();
+            if (coinAwarded) {
+                findAnimalResultText = "Верно! Это " + targetLabel + ". +1 монета";
+            } else {
+                findAnimalResultText = "Молодец, это действительно " + targetLabel;
+            }
         } else {
             findAnimalResultText = "Было близко, но нужно было поймать " + targetLabel;
         }
@@ -646,6 +666,7 @@ public class GameScreen implements Screen {
         if (gameMode == GameMode.FIND_ANIMAL || gameMode == GameMode.CATCH_CAT) {
             drawFindAnimalUi();
         }
+        drawEconomyHud();
 
         if (pauseActive) {
             drawPauseOverlay();
@@ -777,6 +798,41 @@ public class GameScreen implements Screen {
         String hint = "Возврат в меню через " + secondsLeft + " сек.";
         glyphLayout.setText(factFont, hint);
         factFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, resultBounds.y - 0.2f);
+    }
+
+    private void drawEconomyHud() {
+        if (pauseFont == null || moneyTexture == null) {
+            return;
+        }
+
+        if (gameMode != GameMode.RESCUE && gameMode != GameMode.FIND_ANIMAL) {
+            return;
+        }
+
+        int level = menagerieProgress.getCurrentRescueLevelNumber();
+        int levelCount = menagerieProgress.getRescueLevelCount();
+        int coins = menagerieProgress.getCoinBalance();
+        int maxCoins = menagerieProgress.getCurrentRescueDailyCoinLimit();
+
+        pauseFont.getData().setScale(0.0105f);
+        String levelText = "Уровень " + level + "/" + levelCount;
+        glyphLayout.setText(pauseFont, levelText);
+        pauseFont.draw(batch, glyphLayout, 0.75f, WORLD_HEIGHT - 1.05f);
+
+        pauseFont.getData().setScale(0.0108f);
+        String coinsText = coins + "/" + maxCoins;
+        glyphLayout.setText(pauseFont, coinsText);
+        float coinsTextX = WORLD_WIDTH - 4.8f;
+        float coinsTextY = WORLD_HEIGHT - 1.05f;
+        pauseFont.draw(batch, glyphLayout, coinsTextX, coinsTextY);
+        batch.draw(moneyTexture, coinsTextX + glyphLayout.width + 0.16f, WORLD_HEIGHT - 1.37f, 0.34f, 0.34f);
+
+        if (gameMode == GameMode.RESCUE && rescueNoCoinsHintTimer > 0f) {
+            pauseFont.getData().setScale(0.0102f);
+            String hint = "Недостаточно монет. Пополнение в следующее ежедневное обновление.";
+            glyphLayout.setText(pauseFont, hint);
+            pauseFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, WORLD_HEIGHT - 1.20f);
+        }
     }
 
     private void drawPauseOverlay() {
@@ -1164,6 +1220,9 @@ public class GameScreen implements Screen {
         }
         if (rabbitRightTexture != null) {
             rabbitRightTexture.dispose();
+        }
+        if (moneyTexture != null) {
+            moneyTexture.dispose();
         }
     }
 

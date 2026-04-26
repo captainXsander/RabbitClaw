@@ -3,6 +3,10 @@ package ru.captainxsander;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,10 +29,13 @@ public class MenagerieProgress {
 
     private static final String RESCUE_ORDER_KEY = "rescue.order";
     private static final String RESCUE_ORDER_INITIALIZED_KEY = "rescue.order.initialized";
+    private static final String COIN_BALANCE_KEY = "economy.coins.balance";
+    private static final String COIN_LAST_REFILL_DAY_KEY = "economy.coins.lastRefillDay";
 
     // Настройки уровней режима спасения.
     private static final int RESCUE_LEVEL_SIZE = 5;
     private static final int RESCUE_NEW_ANIMAL_PERCENT = 20;
+    private static final int[] RESCUE_LEVEL_DAILY_COINS = {50, 40, 30, 20, 10};
 
     private final Preferences preferences;
 
@@ -180,6 +187,76 @@ public class MenagerieProgress {
         return (int) Math.ceil(ToyType.ANIMAL_POOL.length / (float) RESCUE_LEVEL_SIZE);
     }
 
+    public boolean isRescueFullyCompleted() {
+        return getCurrentRescueLevelIndex() >= getRescueLevelCount();
+    }
+
+    public int getCurrentRescueLevelNumber() {
+        return Math.min(getCurrentRescueLevelIndex() + 1, getRescueLevelCount());
+    }
+
+    public int getCurrentRescueDailyCoinLimit() {
+        int levelNumber = getCurrentRescueLevelNumber();
+        int levelIndex = Math.max(0, Math.min(levelNumber - 1, RESCUE_LEVEL_DAILY_COINS.length - 1));
+        return RESCUE_LEVEL_DAILY_COINS[levelIndex];
+    }
+
+    public int getCoinBalance() {
+        refreshCoinsForCurrentDay();
+        return preferences.getInteger(COIN_BALANCE_KEY, getCurrentRescueDailyCoinLimit());
+    }
+
+    public boolean canSpendCoinForRescueAttempt() {
+        if (isRescueFullyCompleted()) {
+            return true;
+        }
+        return getCoinBalance() > 0;
+    }
+
+    public boolean spendCoinForRescueAttempt() {
+        if (isRescueFullyCompleted()) {
+            return true;
+        }
+
+        int current = getCoinBalance();
+        if (current <= 0) {
+            return false;
+        }
+
+        preferences.putInteger(COIN_BALANCE_KEY, current - 1);
+        preferences.flush();
+        return true;
+    }
+
+    public boolean awardCoinFromFindAnimalWin() {
+        refreshCoinsForCurrentDay();
+
+        int current = preferences.getInteger(COIN_BALANCE_KEY, getCurrentRescueDailyCoinLimit());
+        int limit = getCurrentRescueDailyCoinLimit();
+        if (current >= limit) {
+            return false;
+        }
+
+        preferences.putInteger(COIN_BALANCE_KEY, current + 1);
+        preferences.flush();
+        return true;
+    }
+
+    public String getTimeUntilNextRefillRu() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime nextRefill = getNextRefillDateTime(now);
+        Duration duration = Duration.between(now, nextRefill);
+
+        long totalMinutes = duration.toMinutes();
+        if (duration.getSeconds() % 60 != 0) {
+            totalMinutes += 1;
+        }
+
+        long hours = totalMinutes / 60;
+        long minutes = totalMinutes % 60;
+        return hours + " ч " + minutes + " мин";
+    }
+
     /**
      * Доля новых зверей на уровнях 2+ в RESCUE.
      */
@@ -194,6 +271,7 @@ public class MenagerieProgress {
         preferences.clear();
         preferences.flush();
         ensureRescueOrderInitialized();
+        refreshCoinsForCurrentDay();
     }
 
     private String getCurrentRescueLevelKey() {
@@ -249,5 +327,47 @@ public class MenagerieProgress {
         }
 
         return order.toArray(new ToyType[0]);
+    }
+
+    private void refreshCoinsForCurrentDay() {
+        String currentCycleDay = getRefillCycleDay();
+        String savedCycleDay = preferences.getString(COIN_LAST_REFILL_DAY_KEY, "");
+        int limit = getCurrentRescueDailyCoinLimit();
+        int currentBalance = preferences.getInteger(COIN_BALANCE_KEY, limit);
+
+        boolean dayChanged = !currentCycleDay.equals(savedCycleDay);
+        if (dayChanged) {
+            currentBalance = limit;
+        } else if (currentBalance > limit) {
+            currentBalance = limit;
+        }
+
+        if (dayChanged || currentBalance != preferences.getInteger(COIN_BALANCE_KEY, limit)) {
+            preferences.putString(COIN_LAST_REFILL_DAY_KEY, currentCycleDay);
+            preferences.putInteger(COIN_BALANCE_KEY, currentBalance);
+            preferences.flush();
+        }
+    }
+
+    private String getRefillCycleDay() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalTime refillTime = LocalTime.of(
+            GameTuning.DAILY_COIN_REFILL_HOUR,
+            GameTuning.DAILY_COIN_REFILL_MINUTE
+        );
+        LocalDate cycleDate = now.toLocalDate();
+        if (now.toLocalTime().isBefore(refillTime)) {
+            cycleDate = cycleDate.minusDays(1);
+        }
+        return cycleDate.toString();
+    }
+
+    private LocalDateTime getNextRefillDateTime(LocalDateTime now) {
+        LocalTime refillTime = LocalTime.of(
+            GameTuning.DAILY_COIN_REFILL_HOUR,
+            GameTuning.DAILY_COIN_REFILL_MINUTE
+        );
+        LocalDateTime todayRefill = now.toLocalDate().atTime(refillTime);
+        return now.isBefore(todayRefill) ? todayRefill : todayRefill.plusDays(1);
     }
 }
