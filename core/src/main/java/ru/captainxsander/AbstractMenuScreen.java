@@ -90,6 +90,28 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         float buttonHeight = 0.92f;
         float buttonGap = 0.38f;
         float buttonY = 5.1f;
+        float maxButtonY = 5.9f;
+        float minButtonY = 1.0f;
+
+        if (options.size > 1) {
+            float defaultStep = buttonHeight + buttonGap;
+            float lowestButtonY = buttonY - (options.size - 1f) * defaultStep;
+
+            if (lowestButtonY < minButtonY) {
+                float requiredLift = minButtonY - lowestButtonY;
+                float maxLift = maxButtonY - buttonY;
+                float appliedLift = Math.min(requiredLift, maxLift);
+                buttonY += appliedLift;
+                lowestButtonY += appliedLift;
+            }
+
+            if (lowestButtonY < minButtonY) {
+                float maxStep = (buttonY - minButtonY) / (options.size - 1f);
+                float scale = Math.max(0.78f, maxStep / defaultStep);
+                buttonHeight *= scale;
+                buttonGap *= scale;
+            }
+        }
 
         batch.begin();
         // Фон и декоративные элементы.
@@ -104,7 +126,9 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
             float y = buttonY - i * (buttonHeight + buttonGap);
 
             // Запоминаем область клика немного больше самой текстуры для удобства.
-            option.bounds.set(x - 0.25f, y - 0.12f, buttonWidth + 0.5f, buttonHeight + 0.24f);
+            float boundsPadX = 0.25f;
+            float boundsPadY = Math.max(0.08f, buttonHeight * 0.13f);
+            option.bounds.set(x - boundsPadX, y - boundsPadY, buttonWidth + boundsPadX * 2f, buttonHeight + boundsPadY * 2f);
             // Рисуем подложку для каждой кнопки.
             batch.draw(panelTexture, option.bounds.x, option.bounds.y, option.bounds.width, option.bounds.height);
             if (selectedIndex == i) {
