@@ -26,7 +26,7 @@ class SettingsScreen extends AbstractDetailMenuScreen {
     protected void drawContent() {
         drawMenuTitle("Настройки");
         drawParagraph(
-            "Общие настройки звука интерфейса. Реализация влияния на аудиосистему будет добавлена отдельно.",
+            "Общие настройки звука меню и игрового процесса.",
             new Rectangle(2.4f, 5.75f, 11.2f, 0.85f)
         );
 

@@ -2,6 +2,8 @@ package ru.captainxsander;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -16,6 +18,12 @@ public class MainGame extends Game {
     private boolean soundEnabled = true;
     private float musicVolume = 0.7f;
     private float effectsVolume = 0.8f;
+    private Music gameMusic;
+    private Sound clawDownSound;
+    private Sound clawUpSound;
+    private Sound moveToTraySound;
+    private Sound failTraySound;
+    private Sound toyWinnerSound;
 
     private double normalBaseSlipChance = GameTuning.BASE_SLIP_CHANCE;
     private float normalClawDropBaseChance = GameTuning.CLAW_DROP_BASE_CHANCE;
@@ -25,6 +33,7 @@ public class MainGame extends Game {
 
     @Override
     public void create() {
+        initAudio();
         showMainMenu();
     }
 
@@ -106,6 +115,7 @@ public class MainGame extends Game {
 
     public void setSoundEnabled(boolean soundEnabled) {
         this.soundEnabled = soundEnabled;
+        applyAudioSettings();
     }
 
     public float getMusicVolume() {
@@ -114,6 +124,7 @@ public class MainGame extends Game {
 
     public void setMusicVolume(float musicVolume) {
         this.musicVolume = clamp01(musicVolume);
+        applyAudioSettings();
     }
 
     public float getEffectsVolume() {
@@ -122,6 +133,26 @@ public class MainGame extends Game {
 
     public void setEffectsVolume(float effectsVolume) {
         this.effectsVolume = clamp01(effectsVolume);
+    }
+
+    public void playClawDownSound() {
+        playEffect(clawDownSound);
+    }
+
+    public void playClawUpSound() {
+        playEffect(clawUpSound);
+    }
+
+    public void playMoveToTraySound() {
+        playEffect(moveToTraySound);
+    }
+
+    public void playFailTraySound() {
+        playEffect(failTraySound);
+    }
+
+    public void playToyWinnerSound() {
+        playEffect(toyWinnerSound);
     }
 
     public double getNormalBaseSlipChance() {
@@ -250,6 +281,67 @@ public class MainGame extends Game {
 
     private static double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    private void initAudio() {
+        gameMusic = com.badlogic.gdx.Gdx.audio.newMusic(com.badlogic.gdx.Gdx.files.internal("sound/game_music.wav"));
+        gameMusic.setLooping(true);
+        clawDownSound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/claw_down.wav"));
+        clawUpSound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/claw_up.wav"));
+        moveToTraySound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/move_to_tray.wav"));
+        failTraySound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/fail_tray.wav"));
+        toyWinnerSound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/toy_win.mp3"));
+        applyAudioSettings();
+    }
+
+    private void applyAudioSettings() {
+        if (gameMusic == null) {
+            return;
+        }
+
+        if (!soundEnabled || musicVolume <= 0f) {
+            gameMusic.pause();
+            return;
+        }
+
+        gameMusic.setVolume(musicVolume);
+        if (!gameMusic.isPlaying()) {
+            gameMusic.play();
+        }
+    }
+
+    private void playEffect(Sound sound) {
+        if (sound == null || !soundEnabled || effectsVolume <= 0f) {
+            return;
+        }
+        sound.play(effectsVolume);
+    }
+
+    @Override
+    public void dispose() {
+        Screen currentScreen = getScreen();
+        if (currentScreen != null) {
+            currentScreen.dispose();
+        }
+        if (gameMusic != null) {
+            gameMusic.dispose();
+        }
+        if (clawDownSound != null) {
+            clawDownSound.dispose();
+        }
+        if (clawUpSound != null) {
+            clawUpSound.dispose();
+        }
+        if (moveToTraySound != null) {
+            moveToTraySound.dispose();
+        }
+        if (failTraySound != null) {
+            failTraySound.dispose();
+        }
+        if (toyWinnerSound != null) {
+            toyWinnerSound.dispose();
+        }
+        super.dispose();
     }
 
     private enum MenuId {

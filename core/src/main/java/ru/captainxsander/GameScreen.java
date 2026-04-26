@@ -78,6 +78,8 @@ public class GameScreen implements Screen {
 
     // Уже обработанные выигрыши текущего запуска.
     private final Set<Toy> reportedWins = new HashSet<>();
+    // Игрушки, для которых уже проигран звук результата в лотке.
+    private final Set<Toy> trayResultReported = new HashSet<>();
 
     // UI-слой режима FIND_ANIMAL.
     private BitmapFont factFont;
@@ -174,6 +176,22 @@ public class GameScreen implements Screen {
         claw = new Claw(gameMode, this.sessionSettings);
         claw.createPhysics(world);
         claw.setWorld(world);
+        claw.setAudioListener(new Claw.AudioListener() {
+            @Override
+            public void onClawDown() {
+                game.playClawDownSound();
+            }
+
+            @Override
+            public void onClawUp() {
+                game.playClawUpSound();
+            }
+
+            @Override
+            public void onMoveToTray() {
+                game.playMoveToTraySound();
+            }
+        });
         if (gameMode == GameMode.RESCUE) {
             claw.setAttemptListener(() -> {
                 boolean spent = menagerieProgress.spendCoinForRescueAttempt();
@@ -393,6 +411,7 @@ public class GameScreen implements Screen {
         }
 
         updateMenagerieUnlocks();
+        updateTrayResultSounds();
         updateFindAnimalRoundState();
         updateFindAnimalRoundExitTimer(delta);
         if (rescueNoCoinsHintTimer > 0f) {
@@ -579,6 +598,29 @@ public class GameScreen implements Screen {
         for (Toy toy : trayToys) {
             registerWonToy(toy);
         }
+    }
+
+    private void updateTrayResultSounds() {
+        for (Toy toy : toys) {
+            playTrayResultSoundIfNeeded(toy);
+        }
+        for (Toy toy : trayToys) {
+            playTrayResultSoundIfNeeded(toy);
+        }
+    }
+
+    private void playTrayResultSoundIfNeeded(Toy toy) {
+        if (trayResultReported.contains(toy) || !hasToyReachedTray(toy)) {
+            return;
+        }
+
+        trayResultReported.add(toy);
+        if (toy.isWon()) {
+            game.playToyWinnerSound();
+            return;
+        }
+
+        game.playFailTraySound();
     }
 
     private ToyType[] getToyPoolForCurrentMode() {

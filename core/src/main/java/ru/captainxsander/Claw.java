@@ -18,6 +18,11 @@ public class Claw {
     public interface AttemptListener {
         boolean onAttemptRequested();
     }
+    public interface AudioListener {
+        void onClawDown();
+        void onClawUp();
+        void onMoveToTray();
+    }
     // Android-профиль: только для тач-управления. Desktop-значения не меняем.
     private static final float ANDROID_SWING_INPUT_BASE_MULT = 0.58f;
     private static final float ANDROID_SWING_ACCEL_MULT = 0.45f;
@@ -103,6 +108,7 @@ public class Claw {
     // Предыдущее состояние кнопки действия для расчёта "just pressed".
     private boolean previousTouchActionPressed = false;
     private AttemptListener attemptListener;
+    private AudioListener audioListener;
 
     public Claw(GameMode gameMode, GameSessionSettings sessionSettings) {
         // Флаг рассчитывается один раз в конструкторе,
@@ -167,6 +173,9 @@ public class Claw {
 
                 state = State.MOVE_DOWN;
                 stateTimer = 0f;
+                if (audioListener != null) {
+                    audioListener.onClawDown();
+                }
 
                 slipCheckedThisCycle = false;
 
@@ -220,6 +229,10 @@ public class Claw {
 
     public void setAttemptListener(AttemptListener attemptListener) {
         this.attemptListener = attemptListener;
+    }
+
+    public void setAudioListener(AudioListener audioListener) {
+        this.audioListener = audioListener;
     }
 
     private void handleIdleInput(float delta) {
@@ -385,6 +398,9 @@ public class Claw {
         if (stateTimer >= GameTuning.CLAW_CLOSE_TIME) {
             state = State.MOVE_UP;
             stateTimer = 0f;
+            if (audioListener != null) {
+                audioListener.onClawUp();
+            }
         }
     }
 
@@ -437,6 +453,10 @@ public class Claw {
         if (y >= HOME_Y) {
             y = HOME_Y;
             state = State.MOVE_TO_TRAY;
+            stateTimer = 0f;
+            if (audioListener != null && !extendedFindAnimalControl) {
+                audioListener.onMoveToTray();
+            }
             if (!canControlAfterCatch()) {
                 swingVelocity += 0.18f;
             }
