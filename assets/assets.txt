@@ -15,6 +15,7 @@ menu_play.png
 menu_rescue_title.png
 menu_settings.png
 menu_settings_title.png
+money.png
 toys/animals/bear.png
 toys/animals/birdy.png
 toys/animals/bull.png
