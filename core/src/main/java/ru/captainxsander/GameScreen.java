@@ -625,17 +625,30 @@ public class GameScreen implements Screen {
     }
 
     private void playTrayResultSoundIfNeeded(Toy toy) {
-        if (trayResultReported.contains(toy) || !hasToyReachedTray(toy)) {
+        if (trayResultReported.contains(toy)) {
             return;
         }
 
-        trayResultReported.add(toy);
         if (toy.isWon()) {
+            trayResultReported.add(toy);
             game.playToyWinnerSound();
             return;
         }
 
-        game.playFailTraySound();
+        if (isFailedTrayAttempt(toy)) {
+            trayResultReported.add(toy);
+            game.playFailTraySound();
+        }
+    }
+
+    private boolean isFailedTrayAttempt(Toy toy) {
+        if (!trayToys.contains(toy) || toy.isWon() || toy.isInTray() || toy.isCaptured()) {
+            return false;
+        }
+
+        // Игрушка уже была отправлена в лоток, но не засчиталась и
+        // вернулась обратно в "кучу" (вне границ лотка).
+        return !toy.isReleasedToPhysicsTray() && !toy.isInsideTrayBounds(winZone);
     }
 
     private ToyType[] getToyPoolForCurrentMode() {

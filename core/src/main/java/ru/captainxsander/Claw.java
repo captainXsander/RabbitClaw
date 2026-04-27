@@ -336,6 +336,7 @@ public class Claw {
                 if (pressDepth >= CLAW_MAX_PRESS_DEPTH) {
                     if (audioListener != null) {
                         audioListener.onClawDownFinished();
+                        audioListener.onClawUp();
                     }
                     state = State.CLOSE;
                     stateTimer = 0f;
@@ -347,6 +348,7 @@ public class Claw {
                 // нет опоры → сразу пытаемся схватить
                 if (audioListener != null) {
                     audioListener.onClawDownFinished();
+                    audioListener.onClawUp();
                 }
                 state = State.CLOSE;
                 stateTimer = 0f;
@@ -362,6 +364,7 @@ public class Claw {
             y = DOWN_LIMIT_Y;
             if (audioListener != null) {
                 audioListener.onClawDownFinished();
+                audioListener.onClawUp();
             }
             state = State.CLOSE;
             stateTimer = 0f;
@@ -410,9 +413,6 @@ public class Claw {
         if (stateTimer >= GameTuning.CLAW_CLOSE_TIME) {
             state = State.MOVE_UP;
             stateTimer = 0f;
-            if (audioListener != null) {
-                audioListener.onClawUp();
-            }
         }
     }
 
