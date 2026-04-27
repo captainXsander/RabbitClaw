@@ -1,7 +1,10 @@
 package ru.captainxsander;
 
 import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -16,6 +19,27 @@ public class MainGame extends Game {
     private boolean soundEnabled = true;
     private float musicVolume = 0.7f;
     private float effectsVolume = 0.8f;
+    private Music gameMusicA;
+    private Music gameMusicB;
+    private boolean useMusicAAsLead = true;
+    private boolean musicCrossfadeActive = false;
+    private Sound clawDownSound;
+    private Sound clawUpSound;
+    private Sound moveToTraySound;
+    private Sound failTraySound;
+    private Sound toyWinnerSound;
+    private long clawDownSoundId = -1L;
+    private long clawUpSoundId = -1L;
+    private long moveToTraySoundId = -1L;
+    private float clawDownFadeRemaining = -1f;
+    private float clawUpFadeRemaining = -1f;
+    private float moveToTrayFadeRemaining = -1f;
+
+    private static final float CLAW_DOWN_FADE_DURATION = 0.10f;
+    private static final float CLAW_UP_FADE_DURATION = 0.14f;
+    private static final float MOVE_TO_TRAY_FADE_DURATION = 0.18f;
+    private static final float GAME_MUSIC_DURATION = 2.8057f;
+    private static final float GAME_MUSIC_CROSSFADE = 0.12f;
 
     private double normalBaseSlipChance = GameTuning.BASE_SLIP_CHANCE;
     private float normalClawDropBaseChance = GameTuning.CLAW_DROP_BASE_CHANCE;
@@ -25,6 +49,7 @@ public class MainGame extends Game {
 
     @Override
     public void create() {
+        initAudio();
         showMainMenu();
     }
 
@@ -106,6 +131,10 @@ public class MainGame extends Game {
 
     public void setSoundEnabled(boolean soundEnabled) {
         this.soundEnabled = soundEnabled;
+        applyAudioSettings();
+        if (!soundEnabled) {
+            forceStopClawMotionSounds();
+        }
     }
 
     public float getMusicVolume() {
@@ -114,6 +143,7 @@ public class MainGame extends Game {
 
     public void setMusicVolume(float musicVolume) {
         this.musicVolume = clamp01(musicVolume);
+        applyAudioSettings();
     }
 
     public float getEffectsVolume() {
@@ -122,6 +152,50 @@ public class MainGame extends Game {
 
     public void setEffectsVolume(float effectsVolume) {
         this.effectsVolume = clamp01(effectsVolume);
+    }
+
+    public void playClawDownSound() {
+        forceStopClawDownSound();
+        clawDownFadeRemaining = -1f;
+        clawDownSoundId = playEffect(clawDownSound, effectsVolume, false);
+    }
+
+    public void playClawUpSound() {
+        forceStopClawUpSound();
+        clawUpFadeRemaining = -1f;
+        clawUpSoundId = playEffect(clawUpSound, effectsVolume, false);
+    }
+
+    public void playMoveToTraySound() {
+        forceStopMoveToTraySound();
+        moveToTrayFadeRemaining = -1f;
+        moveToTraySoundId = playEffect(moveToTraySound, effectsVolume, true);
+    }
+
+    public void stopClawDownSound() {
+        startFadeOut(clawDownSoundId, CLAW_DOWN_FADE_DURATION, true, false, false);
+    }
+
+    public void stopClawUpSound() {
+        startFadeOut(clawUpSoundId, CLAW_UP_FADE_DURATION, false, true, false);
+    }
+
+    public void stopMoveToTraySound() {
+        startFadeOut(moveToTraySoundId, MOVE_TO_TRAY_FADE_DURATION, false, false, true);
+    }
+
+    public void stopClawMotionSounds() {
+        stopClawDownSound();
+        stopClawUpSound();
+        stopMoveToTraySound();
+    }
+
+    public void playFailTraySound() {
+        playEffect(failTraySound, effectsVolume, false);
+    }
+
+    public void playToyWinnerSound() {
+        playEffect(toyWinnerSound, effectsVolume, false);
     }
 
     public double getNormalBaseSlipChance() {
@@ -250,6 +324,226 @@ public class MainGame extends Game {
 
     private static double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    private void initAudio() {
+        gameMusicA = com.badlogic.gdx.Gdx.audio.newMusic(com.badlogic.gdx.Gdx.files.internal("sound/game_music.wav"));
+        gameMusicB = com.badlogic.gdx.Gdx.audio.newMusic(com.badlogic.gdx.Gdx.files.internal("sound/game_music.wav"));
+        gameMusicA.setLooping(false);
+        gameMusicB.setLooping(false);
+        gameMusicA.setVolume(0f);
+        gameMusicB.setVolume(0f);
+        clawDownSound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/claw_down.wav"));
+        clawUpSound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/claw_up.wav"));
+        moveToTraySound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/move_to_tray.wav"));
+        failTraySound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/fail_tray.wav"));
+        toyWinnerSound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/toy_win.mp3"));
+        applyAudioSettings();
+    }
+
+    private void applyAudioSettings() {
+        if (gameMusicA == null || gameMusicB == null) {
+            return;
+        }
+
+        if (!soundEnabled || musicVolume <= 0f) {
+            gameMusicA.pause();
+            gameMusicB.pause();
+            return;
+        }
+
+        Music lead = getLeadMusic();
+        Music tail = getTailMusic();
+
+        if (!lead.isPlaying()) {
+            lead.setPosition(0f);
+            lead.setVolume(musicVolume);
+            lead.play();
+        } else if (!musicCrossfadeActive) {
+            lead.setVolume(musicVolume);
+        }
+
+        if (!musicCrossfadeActive) {
+            tail.setVolume(0f);
+        }
+    }
+
+    @Override
+    public void render() {
+        float delta = Gdx.graphics.getDeltaTime();
+        updateMotionSoundFades(delta);
+        updateGameMusicLoop();
+        super.render();
+    }
+
+    private void updateGameMusicLoop() {
+        if (!soundEnabled || musicVolume <= 0f || gameMusicA == null || gameMusicB == null) {
+            return;
+        }
+
+        Music lead = getLeadMusic();
+        Music tail = getTailMusic();
+        if (!lead.isPlaying()) {
+            lead.setPosition(0f);
+            lead.setVolume(musicVolume);
+            lead.play();
+        }
+
+        float leadPosition = lead.getPosition();
+        float crossfadeStart = GAME_MUSIC_DURATION - GAME_MUSIC_CROSSFADE;
+        if (leadPosition >= crossfadeStart) {
+            if (!musicCrossfadeActive) {
+                musicCrossfadeActive = true;
+                tail.setPosition(0f);
+                tail.setVolume(0f);
+                tail.play();
+            }
+
+            float progress = clamp01((leadPosition - crossfadeStart) / GAME_MUSIC_CROSSFADE);
+            lead.setVolume(musicVolume * (1f - progress));
+            tail.setVolume(musicVolume * progress);
+        }
+
+        if (musicCrossfadeActive && !lead.isPlaying()) {
+            lead.stop();
+            lead.setVolume(0f);
+            useMusicAAsLead = !useMusicAAsLead;
+            musicCrossfadeActive = false;
+
+            Music nextLead = getLeadMusic();
+            if (!nextLead.isPlaying()) {
+                nextLead.setPosition(0f);
+                nextLead.setVolume(musicVolume);
+                nextLead.play();
+            } else {
+                nextLead.setVolume(musicVolume);
+            }
+            getTailMusic().setVolume(0f);
+        }
+    }
+
+    private Music getLeadMusic() {
+        return useMusicAAsLead ? gameMusicA : gameMusicB;
+    }
+
+    private Music getTailMusic() {
+        return useMusicAAsLead ? gameMusicB : gameMusicA;
+    }
+
+    private long playEffect(Sound sound, float volume, boolean loop) {
+        if (sound == null || !soundEnabled || effectsVolume <= 0f) {
+            return -1L;
+        }
+        float clampedVolume = clamp01(volume);
+        return loop ? sound.loop(clampedVolume) : sound.play(clampedVolume);
+    }
+
+    private void startFadeOut(long soundId, float duration, boolean clawDown, boolean clawUp, boolean moveToTray) {
+        if (soundId == -1L) {
+            return;
+        }
+        if (clawDown) {
+            clawDownFadeRemaining = duration;
+        }
+        if (clawUp) {
+            clawUpFadeRemaining = duration;
+        }
+        if (moveToTray) {
+            moveToTrayFadeRemaining = duration;
+        }
+    }
+
+    private void updateMotionSoundFades(float delta) {
+        clawDownFadeRemaining = updateSingleFade(clawDownSound, clawDownSoundId, clawDownFadeRemaining, CLAW_DOWN_FADE_DURATION, effectsVolume, delta);
+        if (clawDownFadeRemaining == 0f) {
+            forceStopClawDownSound();
+        }
+        clawUpFadeRemaining = updateSingleFade(clawUpSound, clawUpSoundId, clawUpFadeRemaining, CLAW_UP_FADE_DURATION, effectsVolume, delta);
+        if (clawUpFadeRemaining == 0f) {
+            forceStopClawUpSound();
+        }
+
+        moveToTrayFadeRemaining = updateSingleFade(moveToTraySound, moveToTraySoundId, moveToTrayFadeRemaining, MOVE_TO_TRAY_FADE_DURATION, effectsVolume, delta);
+        if (moveToTrayFadeRemaining == 0f) {
+            forceStopMoveToTraySound();
+        }
+    }
+
+    private float updateSingleFade(Sound sound, long soundId, float fadeRemaining, float fadeDuration, float targetVolume, float delta) {
+        if (sound == null || soundId == -1L || fadeRemaining < 0f) {
+            return fadeRemaining;
+        }
+
+        float next = fadeRemaining - delta;
+        if (next <= 0f) {
+            sound.setVolume(soundId, 0f);
+            return 0f;
+        }
+
+        float progress = next / fadeDuration;
+        sound.setVolume(soundId, clamp01(targetVolume * progress));
+        return next;
+    }
+
+    private void forceStopClawMotionSounds() {
+        forceStopClawDownSound();
+        forceStopClawUpSound();
+        forceStopMoveToTraySound();
+    }
+
+    private void forceStopClawDownSound() {
+        if (clawDownSound != null && clawDownSoundId != -1L) {
+            clawDownSound.stop(clawDownSoundId);
+            clawDownSoundId = -1L;
+        }
+        clawDownFadeRemaining = -1f;
+    }
+
+    private void forceStopClawUpSound() {
+        if (clawUpSound != null && clawUpSoundId != -1L) {
+            clawUpSound.stop(clawUpSoundId);
+            clawUpSoundId = -1L;
+        }
+        clawUpFadeRemaining = -1f;
+    }
+
+    private void forceStopMoveToTraySound() {
+        if (moveToTraySound != null && moveToTraySoundId != -1L) {
+            moveToTraySound.stop(moveToTraySoundId);
+            moveToTraySoundId = -1L;
+        }
+        moveToTrayFadeRemaining = -1f;
+    }
+
+    @Override
+    public void dispose() {
+        forceStopClawMotionSounds();
+        Screen currentScreen = getScreen();
+        if (currentScreen != null) {
+            currentScreen.dispose();
+        }
+        if (gameMusicA != null) {
+            gameMusicA.dispose();
+        }
+        if (gameMusicB != null) {
+            gameMusicB.dispose();
+        }
+        if (clawDownSound != null) {
+            clawDownSound.dispose();
+        }
+        if (clawUpSound != null) {
+            clawUpSound.dispose();
+        }
+        if (moveToTraySound != null) {
+            moveToTraySound.dispose();
+        }
+        if (failTraySound != null) {
+            failTraySound.dispose();
+        }
+        if (toyWinnerSound != null) {
+            toyWinnerSound.dispose();
+        }
+        super.dispose();
     }
 
     private enum MenuId {
