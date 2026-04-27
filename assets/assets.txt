@@ -16,6 +16,12 @@ menu_rescue_title.png
 menu_settings.png
 menu_settings_title.png
 money.png
+sound/claw_down.wav
+sound/claw_up.wav
+sound/fail_tray.wav
+sound/game_music.wav
+sound/move_to_tray.wav
+sound/toy_win.mp3
 toys/animals/bear.png
 toys/animals/birdy.png
 toys/animals/bull.png
