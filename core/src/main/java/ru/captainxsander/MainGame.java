@@ -35,7 +35,6 @@ public class MainGame extends Game {
     private static final float CLAW_DOWN_FADE_DURATION = 0.10f;
     private static final float CLAW_UP_FADE_DURATION = 0.14f;
     private static final float MOVE_TO_TRAY_FADE_DURATION = 0.18f;
-    private static final float CLAW_UP_VOLUME_BOOST = 1.30f;
 
     private double normalBaseSlipChance = GameTuning.BASE_SLIP_CHANCE;
     private float normalClawDropBaseChance = GameTuning.CLAW_DROP_BASE_CHANCE;
@@ -159,7 +158,7 @@ public class MainGame extends Game {
     public void playClawUpSound() {
         forceStopClawUpSound();
         clawUpFadeRemaining = -1f;
-        clawUpSoundId = playEffect(clawUpSound, effectsVolume * CLAW_UP_VOLUME_BOOST, false);
+        clawUpSoundId = playEffect(clawUpSound, effectsVolume, false);
     }
 
     public void playMoveToTraySound() {
@@ -383,8 +382,7 @@ public class MainGame extends Game {
         if (clawDownFadeRemaining == 0f) {
             forceStopClawDownSound();
         }
-        float upTargetVolume = clamp01(effectsVolume * CLAW_UP_VOLUME_BOOST);
-        clawUpFadeRemaining = updateSingleFade(clawUpSound, clawUpSoundId, clawUpFadeRemaining, CLAW_UP_FADE_DURATION, upTargetVolume);
+        clawUpFadeRemaining = updateSingleFade(clawUpSound, clawUpSoundId, clawUpFadeRemaining, CLAW_UP_FADE_DURATION, effectsVolume);
         if (clawUpFadeRemaining == 0f) {
             forceStopClawUpSound();
         }
