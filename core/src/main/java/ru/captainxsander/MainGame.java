@@ -24,6 +24,9 @@ public class MainGame extends Game {
     private Sound moveToTraySound;
     private Sound failTraySound;
     private Sound toyWinnerSound;
+    private long clawDownSoundId = -1L;
+    private long clawUpSoundId = -1L;
+    private long moveToTraySoundId = -1L;
 
     private double normalBaseSlipChance = GameTuning.BASE_SLIP_CHANCE;
     private float normalClawDropBaseChance = GameTuning.CLAW_DROP_BASE_CHANCE;
@@ -116,6 +119,9 @@ public class MainGame extends Game {
     public void setSoundEnabled(boolean soundEnabled) {
         this.soundEnabled = soundEnabled;
         applyAudioSettings();
+        if (!soundEnabled) {
+            stopClawMotionSounds();
+        }
     }
 
     public float getMusicVolume() {
@@ -136,15 +142,39 @@ public class MainGame extends Game {
     }
 
     public void playClawDownSound() {
-        playEffect(clawDownSound);
+        stopClawDownSound();
+        clawDownSoundId = playEffect(clawDownSound);
     }
 
     public void playClawUpSound() {
-        playEffect(clawUpSound);
+        stopClawUpSound();
+        clawUpSoundId = playEffect(clawUpSound);
     }
 
     public void playMoveToTraySound() {
-        playEffect(moveToTraySound);
+        stopMoveToTraySound();
+        moveToTraySoundId = playEffect(moveToTraySound);
+    }
+
+    public void stopClawDownSound() {
+        stopEffect(clawDownSound, clawDownSoundId);
+        clawDownSoundId = -1L;
+    }
+
+    public void stopClawUpSound() {
+        stopEffect(clawUpSound, clawUpSoundId);
+        clawUpSoundId = -1L;
+    }
+
+    public void stopMoveToTraySound() {
+        stopEffect(moveToTraySound, moveToTraySoundId);
+        moveToTraySoundId = -1L;
+    }
+
+    public void stopClawMotionSounds() {
+        stopClawDownSound();
+        stopClawUpSound();
+        stopMoveToTraySound();
     }
 
     public void playFailTraySound() {
@@ -310,11 +340,18 @@ public class MainGame extends Game {
         }
     }
 
-    private void playEffect(Sound sound) {
+    private long playEffect(Sound sound) {
         if (sound == null || !soundEnabled || effectsVolume <= 0f) {
+            return -1L;
+        }
+        return sound.play(effectsVolume);
+    }
+
+    private void stopEffect(Sound sound, long soundId) {
+        if (sound == null || soundId == -1L) {
             return;
         }
-        sound.play(effectsVolume);
+        sound.stop(soundId);
     }
 
     @Override

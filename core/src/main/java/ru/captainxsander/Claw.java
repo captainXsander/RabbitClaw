@@ -20,8 +20,11 @@ public class Claw {
     }
     public interface AudioListener {
         void onClawDown();
+        void onClawDownFinished();
         void onClawUp();
+        void onClawUpFinished();
         void onMoveToTray();
+        void onMoveToTrayFinished();
     }
     // Android-профиль: только для тач-управления. Desktop-значения не меняем.
     private static final float ANDROID_SWING_INPUT_BASE_MULT = 0.58f;
@@ -331,6 +334,9 @@ public class Claw {
                 pressDepth += MOVE_SPEED_Y * delta * pressureFactor;
 
                 if (pressDepth >= CLAW_MAX_PRESS_DEPTH) {
+                    if (audioListener != null) {
+                        audioListener.onClawDownFinished();
+                    }
                     state = State.CLOSE;
                     stateTimer = 0f;
                     triedToCatch = false;
@@ -339,6 +345,9 @@ public class Claw {
 
             } else {
                 // нет опоры → сразу пытаемся схватить
+                if (audioListener != null) {
+                    audioListener.onClawDownFinished();
+                }
                 state = State.CLOSE;
                 stateTimer = 0f;
                 triedToCatch = false;
@@ -351,6 +360,9 @@ public class Claw {
 
         if (y <= DOWN_LIMIT_Y) {
             y = DOWN_LIMIT_Y;
+            if (audioListener != null) {
+                audioListener.onClawDownFinished();
+            }
             state = State.CLOSE;
             stateTimer = 0f;
             triedToCatch = false;
@@ -411,6 +423,9 @@ public class Claw {
             applyHorizontalInput(delta);
             // Режимы с ручной доставкой: можно отпустить сразу после захвата.
             if (actionJustPressed) {
+                if (audioListener != null) {
+                    audioListener.onClawUpFinished();
+                }
                 state = State.OPEN;
                 stateTimer = 0f;
                 return;
@@ -452,6 +467,9 @@ public class Claw {
 
         if (y >= HOME_Y) {
             y = HOME_Y;
+            if (audioListener != null) {
+                audioListener.onClawUpFinished();
+            }
             state = State.MOVE_TO_TRAY;
             stateTimer = 0f;
             if (audioListener != null && !extendedFindAnimalControl) {
@@ -467,6 +485,9 @@ public class Claw {
         float oldX = getRealX();
 
         if (extendedFindAnimalControl && capturedToy == null) {
+            if (audioListener != null) {
+                audioListener.onMoveToTrayFinished();
+            }
             state = State.RETURN_HOME;
             stateTimer = 0f;
             velocityX = 0f;
@@ -509,6 +530,9 @@ public class Claw {
             applyHorizontalInput(delta);
 
             if (actionJustPressed) {
+                if (audioListener != null) {
+                    audioListener.onMoveToTrayFinished();
+                }
                 state = State.OPEN;
                 stateTimer = 0f;
                 return;
@@ -524,7 +548,9 @@ public class Claw {
             if (Math.abs(dx) < 0.04f) {
 
                 x = TRAY_DROP_X;
-
+                if (audioListener != null) {
+                    audioListener.onMoveToTrayFinished();
+                }
                 state = State.OPEN;
                 stateTimer = 0f;
                 return;
@@ -538,6 +564,9 @@ public class Claw {
         // сразу открываем клешню над лотком.
         if (Math.abs(dxToTray) < 0.04f) {
             x = TRAY_DROP_X;
+            if (audioListener != null) {
+                audioListener.onMoveToTrayFinished();
+            }
             state = State.OPEN;
             stateTimer = 0f;
             return;

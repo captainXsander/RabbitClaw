@@ -183,13 +183,28 @@ public class GameScreen implements Screen {
             }
 
             @Override
+            public void onClawDownFinished() {
+                game.stopClawDownSound();
+            }
+
+            @Override
             public void onClawUp() {
                 game.playClawUpSound();
             }
 
             @Override
+            public void onClawUpFinished() {
+                game.stopClawUpSound();
+            }
+
+            @Override
             public void onMoveToTray() {
                 game.playMoveToTraySound();
+            }
+
+            @Override
+            public void onMoveToTrayFinished() {
+                game.stopMoveToTraySound();
             }
         });
         if (gameMode == GameMode.RESCUE) {
@@ -1219,6 +1234,7 @@ public class GameScreen implements Screen {
     @Override
     public void hide() {
         // Возвращаем стандартное поведение BACK при выходе с игрового экрана.
+        game.stopClawMotionSounds();
         Gdx.input.setCatchKey(Input.Keys.BACK, false);
         if (Gdx.input.getInputProcessor() != null) {
             Gdx.input.setInputProcessor(null);
@@ -1227,6 +1243,7 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
+        game.stopClawMotionSounds();
         for (Toy toy : toys) {
             toy.dispose();
         }
