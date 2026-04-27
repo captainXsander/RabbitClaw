@@ -378,22 +378,22 @@ public class MainGame extends Game {
     }
 
     private void updateMotionSoundFades(float delta) {
-        clawDownFadeRemaining = updateSingleFade(clawDownSound, clawDownSoundId, clawDownFadeRemaining, CLAW_DOWN_FADE_DURATION, effectsVolume);
+        clawDownFadeRemaining = updateSingleFade(clawDownSound, clawDownSoundId, clawDownFadeRemaining, CLAW_DOWN_FADE_DURATION, effectsVolume, delta);
         if (clawDownFadeRemaining == 0f) {
             forceStopClawDownSound();
         }
-        clawUpFadeRemaining = updateSingleFade(clawUpSound, clawUpSoundId, clawUpFadeRemaining, CLAW_UP_FADE_DURATION, effectsVolume);
+        clawUpFadeRemaining = updateSingleFade(clawUpSound, clawUpSoundId, clawUpFadeRemaining, CLAW_UP_FADE_DURATION, effectsVolume, delta);
         if (clawUpFadeRemaining == 0f) {
             forceStopClawUpSound();
         }
 
-        moveToTrayFadeRemaining = updateSingleFade(moveToTraySound, moveToTraySoundId, moveToTrayFadeRemaining, MOVE_TO_TRAY_FADE_DURATION, effectsVolume);
+        moveToTrayFadeRemaining = updateSingleFade(moveToTraySound, moveToTraySoundId, moveToTrayFadeRemaining, MOVE_TO_TRAY_FADE_DURATION, effectsVolume, delta);
         if (moveToTrayFadeRemaining == 0f) {
             forceStopMoveToTraySound();
         }
     }
 
-    private float updateSingleFade(Sound sound, long soundId, float fadeRemaining, float fadeDuration, float targetVolume) {
+    private float updateSingleFade(Sound sound, long soundId, float fadeRemaining, float fadeDuration, float targetVolume, float delta) {
         if (sound == null || soundId == -1L || fadeRemaining < 0f) {
             return fadeRemaining;
         }
