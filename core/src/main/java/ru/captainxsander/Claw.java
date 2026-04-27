@@ -25,6 +25,7 @@ public class Claw {
         void onClawUpFinished();
         void onMoveToTray();
         void onMoveToTrayFinished();
+        void onTrayDropAttempt(boolean hadToy);
     }
     // Android-профиль: только для тач-управления. Desktop-значения не меняем.
     private static final float ANDROID_SWING_INPUT_BASE_MULT = 0.58f;
@@ -532,6 +533,7 @@ public class Claw {
             if (actionJustPressed) {
                 if (audioListener != null) {
                     audioListener.onMoveToTrayFinished();
+                    audioListener.onTrayDropAttempt(capturedToy != null);
                 }
                 state = State.OPEN;
                 stateTimer = 0f;
@@ -550,6 +552,7 @@ public class Claw {
                 x = TRAY_DROP_X;
                 if (audioListener != null) {
                     audioListener.onMoveToTrayFinished();
+                    audioListener.onTrayDropAttempt(capturedToy != null);
                 }
                 state = State.OPEN;
                 stateTimer = 0f;
@@ -566,6 +569,7 @@ public class Claw {
             x = TRAY_DROP_X;
             if (audioListener != null) {
                 audioListener.onMoveToTrayFinished();
+                audioListener.onTrayDropAttempt(capturedToy != null);
             }
             state = State.OPEN;
             stateTimer = 0f;

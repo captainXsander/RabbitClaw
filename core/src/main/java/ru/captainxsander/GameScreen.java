@@ -78,8 +78,6 @@ public class GameScreen implements Screen {
 
     // Уже обработанные выигрыши текущего запуска.
     private final Set<Toy> reportedWins = new HashSet<>();
-    // Игрушки, для которых уже проигран звук результата в лотке.
-    private final Set<Toy> trayResultReported = new HashSet<>();
 
     // UI-слой режима FIND_ANIMAL.
     private BitmapFont factFont;
@@ -205,6 +203,15 @@ public class GameScreen implements Screen {
             @Override
             public void onMoveToTrayFinished() {
                 game.stopMoveToTraySound();
+            }
+
+            @Override
+            public void onTrayDropAttempt(boolean hadToy) {
+                if (hadToy) {
+                    game.playToyWinnerSound();
+                    return;
+                }
+                game.playFailTraySound();
             }
         });
         if (gameMode == GameMode.RESCUE) {
@@ -426,7 +433,6 @@ public class GameScreen implements Screen {
         }
 
         updateMenagerieUnlocks();
-        updateTrayResultSounds();
         updateFindAnimalRoundState();
         updateFindAnimalRoundExitTimer(delta);
         if (rescueNoCoinsHintTimer > 0f) {
@@ -613,42 +619,6 @@ public class GameScreen implements Screen {
         for (Toy toy : trayToys) {
             registerWonToy(toy);
         }
-    }
-
-    private void updateTrayResultSounds() {
-        for (Toy toy : toys) {
-            playTrayResultSoundIfNeeded(toy);
-        }
-        for (Toy toy : trayToys) {
-            playTrayResultSoundIfNeeded(toy);
-        }
-    }
-
-    private void playTrayResultSoundIfNeeded(Toy toy) {
-        if (trayResultReported.contains(toy)) {
-            return;
-        }
-
-        if (toy.isWon()) {
-            trayResultReported.add(toy);
-            game.playToyWinnerSound();
-            return;
-        }
-
-        if (isFailedTrayAttempt(toy)) {
-            trayResultReported.add(toy);
-            game.playFailTraySound();
-        }
-    }
-
-    private boolean isFailedTrayAttempt(Toy toy) {
-        if (!trayToys.contains(toy) || toy.isWon() || toy.isInTray() || toy.isCaptured()) {
-            return false;
-        }
-
-        // Игрушка уже была отправлена в лоток, но не засчиталась и
-        // вернулась обратно в "кучу" (вне границ лотка).
-        return !toy.isReleasedToPhysicsTray() && !toy.isInsideTrayBounds(winZone);
     }
 
     private ToyType[] getToyPoolForCurrentMode() {
