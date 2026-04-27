@@ -25,8 +25,8 @@ public final class GameTuning {
     public static final float CLAW_HOME_Y = 7.7f;
     public static final float CLAW_DOWN_LIMIT_Y = 2.2f;
 
-    public static final float CLAW_MOVE_SPEED_X = 4.0f;
-    public static final float CLAW_MOVE_SPEED_Y = 4.2f;
+    public static final float CLAW_MOVE_SPEED_X = 3.25f;
+    public static final float CLAW_MOVE_SPEED_Y = 3.45f;
 
     public static final float CLAW_HEAD_W = 0.95f;
     public static final float CLAW_HEAD_H = 0.28f;
