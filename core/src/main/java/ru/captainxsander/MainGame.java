@@ -39,10 +39,6 @@ public class MainGame extends Game {
     private static final float CLAW_DOWN_FADE_DURATION = 0.10f;
     private static final float CLAW_UP_FADE_DURATION = 0.14f;
     private static final float MOVE_TO_TRAY_FADE_DURATION = 0.18f;
-    private static final float MUSIC_OVERLAP_DURATION_DESKTOP = 0.08f;
-    private static final float MUSIC_OVERLAP_DURATION_ANDROID = 0.14f;
-    private static final float MUSIC_CROSSFADE_START_GUARD_ANDROID = 0.03f;
-    private static final float MIN_TRACK_DURATION_FOR_OVERLAP = 1.0f;
     private static final String GAME_MUSIC_PATH = "sound/game_music.wav";
 
     private int activeMusicIndex = -1;
@@ -481,16 +477,16 @@ public class MainGame extends Game {
     }
 
     private boolean isOverlapAllowed() {
-        return gameMusicDuration >= MIN_TRACK_DURATION_FOR_OVERLAP
+        return gameMusicDuration >= GameTuning.MIN_TRACK_DURATION_FOR_OVERLAP
             && gameMusicDuration > getMusicOverlapDuration();
     }
 
     private float getMusicOverlapDuration() {
-        return isAndroidRuntime() ? MUSIC_OVERLAP_DURATION_ANDROID : MUSIC_OVERLAP_DURATION_DESKTOP;
+        return isAndroidRuntime() ? GameTuning.MUSIC_OVERLAP_DURATION_ANDROID : GameTuning.MUSIC_OVERLAP_DURATION_DESKTOP;
     }
 
     private float getCrossfadeStartGuard() {
-        return isAndroidRuntime() ? MUSIC_CROSSFADE_START_GUARD_ANDROID : 0f;
+        return isAndroidRuntime() ? GameTuning.MUSIC_CROSSFADE_START_GUARD_ANDROID : 0f;
     }
 
     private boolean isAndroidRuntime() {

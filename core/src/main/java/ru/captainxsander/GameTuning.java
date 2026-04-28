@@ -252,4 +252,12 @@ public final class GameTuning {
     // Ежедневное пополнение монет происходит в локальном времени устройства.
     public static final int DAILY_COIN_REFILL_HOUR = 0;
     public static final int DAILY_COIN_REFILL_MINUTE = 0;
+
+    // =========================
+    // Аудио (музыка фона)
+    // =========================
+    public static final float MUSIC_OVERLAP_DURATION_DESKTOP = 0.08f;
+    public static final float MUSIC_OVERLAP_DURATION_ANDROID = 0.14f;
+    public static final float MUSIC_CROSSFADE_START_GUARD_ANDROID = 0.03f;
+    public static final float MIN_TRACK_DURATION_FOR_OVERLAP = 1.0f;
 }
