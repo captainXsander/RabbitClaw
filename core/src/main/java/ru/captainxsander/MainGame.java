@@ -19,7 +19,8 @@ public class MainGame extends Game {
     private boolean soundEnabled = true;
     private float musicVolume = 0.7f;
     private float effectsVolume = 0.8f;
-    private Music gameMusic;
+    private Music gameMusicA;
+    private Music gameMusicB;
     private Sound clawDownSound;
     private Sound clawUpSound;
     private Sound moveToTraySound;
@@ -35,6 +36,14 @@ public class MainGame extends Game {
     private static final float CLAW_DOWN_FADE_DURATION = 0.10f;
     private static final float CLAW_UP_FADE_DURATION = 0.14f;
     private static final float MOVE_TO_TRAY_FADE_DURATION = 0.18f;
+    private static final float MUSIC_OVERLAP_DURATION = 0.35f;
+
+    private int activeMusicIndex = -1;
+    private float activeMusicElapsed = 0f;
+    private float measuredTrackDuration = -1f;
+    private boolean crossfadeInProgress = false;
+    private float crossfadeElapsed = 0f;
+    private boolean backgroundMusicPausedBySettings = false;
 
     private double normalBaseSlipChance = GameTuning.BASE_SLIP_CHANCE;
     private float normalClawDropBaseChance = GameTuning.CLAW_DROP_BASE_CHANCE;
@@ -322,8 +331,10 @@ public class MainGame extends Game {
     }
 
     private void initAudio() {
-        gameMusic = com.badlogic.gdx.Gdx.audio.newMusic(com.badlogic.gdx.Gdx.files.internal("sound/game_music.wav"));
-        gameMusic.setLooping(true);
+        gameMusicA = com.badlogic.gdx.Gdx.audio.newMusic(com.badlogic.gdx.Gdx.files.internal("sound/game_music.wav"));
+        gameMusicA.setLooping(false);
+        gameMusicB = com.badlogic.gdx.Gdx.audio.newMusic(com.badlogic.gdx.Gdx.files.internal("sound/game_music.wav"));
+        gameMusicB.setLooping(false);
         clawDownSound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/claw_down.wav"));
         clawUpSound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/claw_up.wav"));
         moveToTraySound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/move_to_tray.wav"));
@@ -333,25 +344,172 @@ public class MainGame extends Game {
     }
 
     private void applyAudioSettings() {
-        if (gameMusic == null) {
+        if (gameMusicA == null || gameMusicB == null) {
             return;
         }
 
         if (!soundEnabled || musicVolume <= 0f) {
-            gameMusic.pause();
+            gameMusicA.pause();
+            gameMusicB.pause();
+            backgroundMusicPausedBySettings = true;
             return;
         }
 
-        gameMusic.setVolume(musicVolume);
-        if (!gameMusic.isPlaying()) {
-            gameMusic.play();
+        ensureMusicLoopStarted();
+        if (backgroundMusicPausedBySettings) {
+            resumeBackgroundMusic();
+            return;
         }
+        updateMusicVolumes();
     }
 
     @Override
     public void render() {
-        updateMotionSoundFades(Gdx.graphics.getDeltaTime());
+        float delta = Gdx.graphics.getDeltaTime();
+        updateBackgroundMusic(delta);
+        updateMotionSoundFades(delta);
         super.render();
+    }
+
+
+    private void ensureMusicLoopStarted() {
+        if (activeMusicIndex != -1) {
+            return;
+        }
+
+        activeMusicIndex = 0;
+        activeMusicElapsed = 0f;
+        crossfadeInProgress = false;
+        crossfadeElapsed = 0f;
+        Music activeMusic = getMusicByIndex(activeMusicIndex);
+        activeMusic.stop();
+        activeMusic.setVolume(musicVolume);
+        activeMusic.play();
+    }
+
+    private void updateBackgroundMusic(float delta) {
+        if (gameMusicA == null || gameMusicB == null) {
+            return;
+        }
+
+        if (!soundEnabled || musicVolume <= 0f) {
+            gameMusicA.pause();
+            gameMusicB.pause();
+            backgroundMusicPausedBySettings = true;
+            return;
+        }
+
+        ensureMusicLoopStarted();
+        if (backgroundMusicPausedBySettings) {
+            resumeBackgroundMusic();
+            return;
+        }
+
+        Music activeMusic = getMusicByIndex(activeMusicIndex);
+        Music standbyMusic = getMusicByIndex(1 - activeMusicIndex);
+
+        if (!activeMusic.isPlaying()) {
+            if (activeMusicElapsed > 0.05f && measuredTrackDuration < 0f) {
+                measuredTrackDuration = activeMusicElapsed;
+            }
+            if (crossfadeInProgress) {
+                swapToStandby(crossfadeElapsed);
+                activeMusic = getMusicByIndex(activeMusicIndex);
+                standbyMusic = getMusicByIndex(1 - activeMusicIndex);
+            } else {
+                standbyMusic.stop();
+                standbyMusic.setVolume(musicVolume);
+                standbyMusic.play();
+                activeMusicIndex = 1 - activeMusicIndex;
+                activeMusicElapsed = 0f;
+                activeMusic = standbyMusic;
+                standbyMusic = getMusicByIndex(1 - activeMusicIndex);
+            }
+        }
+
+        activeMusicElapsed += delta;
+
+        if (measuredTrackDuration > 0f && !crossfadeInProgress
+            && activeMusicElapsed >= Math.max(0f, measuredTrackDuration - MUSIC_OVERLAP_DURATION)) {
+            standbyMusic.stop();
+            standbyMusic.setVolume(0f);
+            standbyMusic.play();
+            crossfadeInProgress = true;
+            crossfadeElapsed = 0f;
+        }
+
+        if (crossfadeInProgress) {
+            crossfadeElapsed += delta;
+            float progress = clamp01(crossfadeElapsed / MUSIC_OVERLAP_DURATION);
+            activeMusic.setVolume(musicVolume * (1f - progress));
+            standbyMusic.setVolume(musicVolume * progress);
+
+            if (activeMusicElapsed >= measuredTrackDuration) {
+                swapToStandby(crossfadeElapsed);
+            }
+        } else {
+            activeMusic.setVolume(musicVolume);
+            standbyMusic.setVolume(0f);
+        }
+    }
+
+    private void swapToStandby(float standbyElapsed) {
+        Music previousActive = getMusicByIndex(activeMusicIndex);
+        previousActive.stop();
+
+        activeMusicIndex = 1 - activeMusicIndex;
+        activeMusicElapsed = Math.max(0f, standbyElapsed);
+        crossfadeInProgress = false;
+        crossfadeElapsed = 0f;
+
+        Music newActive = getMusicByIndex(activeMusicIndex);
+        if (!newActive.isPlaying()) {
+            newActive.play();
+        }
+        newActive.setVolume(musicVolume);
+    }
+
+    private void updateMusicVolumes() {
+        if (activeMusicIndex == -1) {
+            return;
+        }
+
+        Music activeMusic = getMusicByIndex(activeMusicIndex);
+        Music standbyMusic = getMusicByIndex(1 - activeMusicIndex);
+        if (crossfadeInProgress) {
+            float progress = clamp01(crossfadeElapsed / MUSIC_OVERLAP_DURATION);
+            activeMusic.setVolume(musicVolume * (1f - progress));
+            standbyMusic.setVolume(musicVolume * progress);
+            return;
+        }
+
+        activeMusic.setVolume(musicVolume);
+        standbyMusic.setVolume(0f);
+    }
+
+    private void resumeBackgroundMusic() {
+        if (activeMusicIndex == -1) {
+            return;
+        }
+
+        Music activeMusic = getMusicByIndex(activeMusicIndex);
+        if (!activeMusic.isPlaying()) {
+            activeMusic.play();
+        }
+
+        if (crossfadeInProgress) {
+            Music standbyMusic = getMusicByIndex(1 - activeMusicIndex);
+            if (!standbyMusic.isPlaying()) {
+                standbyMusic.play();
+            }
+        }
+
+        backgroundMusicPausedBySettings = false;
+        updateMusicVolumes();
+    }
+
+    private Music getMusicByIndex(int index) {
+        return index == 0 ? gameMusicA : gameMusicB;
     }
 
     private long playEffect(Sound sound, float volume, boolean loop) {
@@ -446,8 +604,11 @@ public class MainGame extends Game {
         if (currentScreen != null) {
             currentScreen.dispose();
         }
-        if (gameMusic != null) {
-            gameMusic.dispose();
+        if (gameMusicA != null) {
+            gameMusicA.dispose();
+        }
+        if (gameMusicB != null) {
+            gameMusicB.dispose();
         }
         if (clawDownSound != null) {
             clawDownSound.dispose();
