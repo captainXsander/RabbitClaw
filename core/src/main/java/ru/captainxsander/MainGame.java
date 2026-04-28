@@ -3,6 +3,7 @@ package ru.captainxsander;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 
@@ -20,6 +21,8 @@ public class MainGame extends Game {
     private float musicVolume = 0.7f;
     private float effectsVolume = 0.8f;
     private Music gameMusic;
+    private Sound gameMusicLoopSound;
+    private long gameMusicLoopSoundId = -1L;
     private Sound clawDownSound;
     private Sound clawUpSound;
     private Sound moveToTraySound;
@@ -322,8 +325,12 @@ public class MainGame extends Game {
     }
 
     private void initAudio() {
-        gameMusic = com.badlogic.gdx.Gdx.audio.newMusic(com.badlogic.gdx.Gdx.files.internal("sound/game_music.wav"));
-        gameMusic.setLooping(true);
+        if (Gdx.app.getType() == Application.ApplicationType.Android) {
+            gameMusicLoopSound = Gdx.audio.newSound(Gdx.files.internal("sound/game_music.wav"));
+        } else {
+            gameMusic = Gdx.audio.newMusic(Gdx.files.internal("sound/game_music.wav"));
+            gameMusic.setLooping(true);
+        }
         clawDownSound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/claw_down.wav"));
         clawUpSound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/claw_up.wav"));
         moveToTraySound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/move_to_tray.wav"));
@@ -333,18 +340,33 @@ public class MainGame extends Game {
     }
 
     private void applyAudioSettings() {
-        if (gameMusic == null) {
+        if (gameMusic == null && gameMusicLoopSound == null) {
             return;
         }
 
         if (!soundEnabled || musicVolume <= 0f) {
-            gameMusic.pause();
+            if (gameMusic != null) {
+                gameMusic.pause();
+            }
+            if (gameMusicLoopSound != null && gameMusicLoopSoundId != -1L) {
+                gameMusicLoopSound.stop(gameMusicLoopSoundId);
+                gameMusicLoopSoundId = -1L;
+            }
             return;
         }
 
-        gameMusic.setVolume(musicVolume);
-        if (!gameMusic.isPlaying()) {
-            gameMusic.play();
+        if (gameMusic != null) {
+            gameMusic.setVolume(musicVolume);
+            if (!gameMusic.isPlaying()) {
+                gameMusic.play();
+            }
+        }
+        if (gameMusicLoopSound != null) {
+            if (gameMusicLoopSoundId == -1L) {
+                gameMusicLoopSoundId = gameMusicLoopSound.loop(musicVolume);
+            } else {
+                gameMusicLoopSound.setVolume(gameMusicLoopSoundId, musicVolume);
+            }
         }
     }
 
@@ -448,6 +470,9 @@ public class MainGame extends Game {
         }
         if (gameMusic != null) {
             gameMusic.dispose();
+        }
+        if (gameMusicLoopSound != null) {
+            gameMusicLoopSound.dispose();
         }
         if (clawDownSound != null) {
             clawDownSound.dispose();
