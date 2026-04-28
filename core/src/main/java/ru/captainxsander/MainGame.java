@@ -6,6 +6,9 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
@@ -36,13 +39,14 @@ public class MainGame extends Game {
     private static final float CLAW_DOWN_FADE_DURATION = 0.10f;
     private static final float CLAW_UP_FADE_DURATION = 0.14f;
     private static final float MOVE_TO_TRAY_FADE_DURATION = 0.18f;
-    private static final float MUSIC_OVERLAP_DURATION = 0.35f;
+    private static final float MUSIC_OVERLAP_DURATION = 0.45f;
+    private static final float MIN_TRACK_DURATION_FOR_OVERLAP = 1.0f;
+    private static final String GAME_MUSIC_PATH = "sound/game_music.wav";
 
     private int activeMusicIndex = -1;
-    private float activeMusicElapsed = 0f;
-    private float measuredTrackDuration = -1f;
+    private float gameMusicDuration = -1f;
     private boolean crossfadeInProgress = false;
-    private float crossfadeElapsed = 0f;
+    private float crossfadeProgress = 0f;
     private boolean backgroundMusicPausedBySettings = false;
 
     private double normalBaseSlipChance = GameTuning.BASE_SLIP_CHANCE;
@@ -331,9 +335,11 @@ public class MainGame extends Game {
     }
 
     private void initAudio() {
-        gameMusicA = com.badlogic.gdx.Gdx.audio.newMusic(com.badlogic.gdx.Gdx.files.internal("sound/game_music.wav"));
+        gameMusicDuration = readWavDurationSeconds(GAME_MUSIC_PATH);
+
+        gameMusicA = com.badlogic.gdx.Gdx.audio.newMusic(com.badlogic.gdx.Gdx.files.internal(GAME_MUSIC_PATH));
         gameMusicA.setLooping(false);
-        gameMusicB = com.badlogic.gdx.Gdx.audio.newMusic(com.badlogic.gdx.Gdx.files.internal("sound/game_music.wav"));
+        gameMusicB = com.badlogic.gdx.Gdx.audio.newMusic(com.badlogic.gdx.Gdx.files.internal(GAME_MUSIC_PATH));
         gameMusicB.setLooping(false);
         clawDownSound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/claw_down.wav"));
         clawUpSound = com.badlogic.gdx.Gdx.audio.newSound(com.badlogic.gdx.Gdx.files.internal("sound/claw_up.wav"));
@@ -360,7 +366,7 @@ public class MainGame extends Game {
             resumeBackgroundMusic();
             return;
         }
-        updateMusicVolumes();
+        updateMusicVolumes(0f);
     }
 
     @Override
@@ -378,9 +384,8 @@ public class MainGame extends Game {
         }
 
         activeMusicIndex = 0;
-        activeMusicElapsed = 0f;
         crossfadeInProgress = false;
-        crossfadeElapsed = 0f;
+        crossfadeProgress = 0f;
         Music activeMusic = getMusicByIndex(activeMusicIndex);
         activeMusic.stop();
         activeMusic.setVolume(musicVolume);
@@ -409,82 +414,71 @@ public class MainGame extends Game {
         Music standbyMusic = getMusicByIndex(1 - activeMusicIndex);
 
         if (!activeMusic.isPlaying()) {
-            if (activeMusicElapsed > 0.05f && measuredTrackDuration < 0f) {
-                measuredTrackDuration = activeMusicElapsed;
-            }
-            if (crossfadeInProgress) {
-                swapToStandby(crossfadeElapsed);
-                activeMusic = getMusicByIndex(activeMusicIndex);
-                standbyMusic = getMusicByIndex(1 - activeMusicIndex);
-            } else {
-                standbyMusic.stop();
-                standbyMusic.setVolume(musicVolume);
-                standbyMusic.play();
-                activeMusicIndex = 1 - activeMusicIndex;
-                activeMusicElapsed = 0f;
-                activeMusic = standbyMusic;
-                standbyMusic = getMusicByIndex(1 - activeMusicIndex);
-            }
+            forceSwitchToStandby();
+            return;
         }
 
-        activeMusicElapsed += delta;
-
-        if (measuredTrackDuration > 0f && !crossfadeInProgress
-            && activeMusicElapsed >= Math.max(0f, measuredTrackDuration - MUSIC_OVERLAP_DURATION)) {
+        if (isOverlapAllowed() && !crossfadeInProgress && shouldStartCrossfade(activeMusic)) {
             standbyMusic.stop();
             standbyMusic.setVolume(0f);
             standbyMusic.play();
             crossfadeInProgress = true;
-            crossfadeElapsed = 0f;
+            crossfadeProgress = 0f;
         }
 
-        if (crossfadeInProgress) {
-            crossfadeElapsed += delta;
-            float progress = clamp01(crossfadeElapsed / MUSIC_OVERLAP_DURATION);
-            activeMusic.setVolume(musicVolume * (1f - progress));
-            standbyMusic.setVolume(musicVolume * progress);
-
-            if (activeMusicElapsed >= measuredTrackDuration) {
-                swapToStandby(crossfadeElapsed);
-            }
-        } else {
-            activeMusic.setVolume(musicVolume);
-            standbyMusic.setVolume(0f);
-        }
+        updateMusicVolumes(delta);
     }
 
-    private void swapToStandby(float standbyElapsed) {
+    private void forceSwitchToStandby() {
         Music previousActive = getMusicByIndex(activeMusicIndex);
         previousActive.stop();
+        previousActive.setVolume(0f);
 
         activeMusicIndex = 1 - activeMusicIndex;
-        activeMusicElapsed = Math.max(0f, standbyElapsed);
-        crossfadeInProgress = false;
-        crossfadeElapsed = 0f;
-
         Music newActive = getMusicByIndex(activeMusicIndex);
-        if (!newActive.isPlaying()) {
+        if (!newActive.isPlaying() || !crossfadeInProgress) {
+            newActive.stop();
             newActive.play();
         }
         newActive.setVolume(musicVolume);
+
+        if (crossfadeInProgress) {
+            getMusicByIndex(1 - activeMusicIndex).setVolume(0f);
+        }
+        crossfadeInProgress = false;
+        crossfadeProgress = 0f;
     }
 
-    private void updateMusicVolumes() {
+    private void updateMusicVolumes(float delta) {
         if (activeMusicIndex == -1) {
             return;
         }
 
         Music activeMusic = getMusicByIndex(activeMusicIndex);
         Music standbyMusic = getMusicByIndex(1 - activeMusicIndex);
-        if (crossfadeInProgress) {
-            float progress = clamp01(crossfadeElapsed / MUSIC_OVERLAP_DURATION);
-            activeMusic.setVolume(musicVolume * (1f - progress));
-            standbyMusic.setVolume(musicVolume * progress);
+        if (!crossfadeInProgress) {
+            activeMusic.setVolume(musicVolume);
+            standbyMusic.setVolume(0f);
             return;
         }
 
-        activeMusic.setVolume(musicVolume);
-        standbyMusic.setVolume(0f);
+        crossfadeProgress = clamp01(crossfadeProgress + (delta / MUSIC_OVERLAP_DURATION));
+        activeMusic.setVolume(musicVolume * (1f - crossfadeProgress));
+        standbyMusic.setVolume(musicVolume * crossfadeProgress);
+
+        if (crossfadeProgress >= 1f) {
+            forceSwitchToStandby();
+        }
+    }
+
+    private boolean shouldStartCrossfade(Music activeMusic) {
+        float activePosition = activeMusic.getPosition();
+        return activePosition >= gameMusicDuration - MUSIC_OVERLAP_DURATION;
+    }
+
+    private boolean isOverlapAllowed() {
+        return gameMusicDuration >= MIN_TRACK_DURATION_FOR_OVERLAP
+            && gameMusicDuration > MUSIC_OVERLAP_DURATION;
     }
 
     private void resumeBackgroundMusic() {
@@ -505,11 +499,69 @@ public class MainGame extends Game {
         }
 
         backgroundMusicPausedBySettings = false;
-        updateMusicVolumes();
+        updateMusicVolumes(0f);
     }
 
     private Music getMusicByIndex(int index) {
         return index == 0 ? gameMusicA : gameMusicB;
+    }
+
+    private float readWavDurationSeconds(String path) {
+        try (DataInputStream input = new DataInputStream(new BufferedInputStream(Gdx.files.internal(path).read()))) {
+            byte[] riffHeader = new byte[12];
+            input.readFully(riffHeader);
+            if (!matchesChunkId(riffHeader, 0, 'R', 'I', 'F', 'F') || !matchesChunkId(riffHeader, 8, 'W', 'A', 'V', 'E')) {
+                return -1f;
+            }
+
+            int byteRate = -1;
+            int dataSize = -1;
+
+            while (input.available() > 0) {
+                byte[] chunkHeader = new byte[8];
+                input.readFully(chunkHeader);
+                int chunkSize = toLittleEndianInt(chunkHeader, 4);
+
+                if (matchesChunkId(chunkHeader, 0, 'f', 'm', 't', ' ')) {
+                    byte[] fmtChunk = new byte[chunkSize];
+                    input.readFully(fmtChunk);
+                    if (fmtChunk.length >= 12) {
+                        byteRate = toLittleEndianInt(fmtChunk, 8);
+                    }
+                } else if (matchesChunkId(chunkHeader, 0, 'd', 'a', 't', 'a')) {
+                    dataSize = chunkSize;
+                    input.skipBytes(chunkSize);
+                } else {
+                    input.skipBytes(chunkSize);
+                }
+
+                if ((chunkSize & 1) == 1) {
+                    input.skipBytes(1);
+                }
+            }
+
+            if (byteRate <= 0 || dataSize <= 0) {
+                return -1f;
+            }
+
+            return (float) dataSize / (float) byteRate;
+        } catch (IOException ignored) {
+            return -1f;
+        }
+    }
+
+    private static boolean matchesChunkId(byte[] bytes, int offset, char c1, char c2, char c3, char c4) {
+        return bytes[offset] == (byte) c1
+            && bytes[offset + 1] == (byte) c2
+            && bytes[offset + 2] == (byte) c3
+            && bytes[offset + 3] == (byte) c4;
+    }
+
+    private static int toLittleEndianInt(byte[] bytes, int offset) {
+        return (bytes[offset] & 0xFF)
+            | ((bytes[offset + 1] & 0xFF) << 8)
+            | ((bytes[offset + 2] & 0xFF) << 16)
+            | ((bytes[offset + 3] & 0xFF) << 24);
     }
 
     private long playEffect(Sound sound, float volume, boolean loop) {
