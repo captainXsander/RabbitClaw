@@ -50,6 +50,7 @@ android {
   }
   lint {
     baseline = file("lint-baseline.xml")
+    lintConfig = file("lint.xml")
   }
 
   kotlin.compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
