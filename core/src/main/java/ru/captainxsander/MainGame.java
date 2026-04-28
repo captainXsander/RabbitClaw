@@ -39,7 +39,7 @@ public class MainGame extends Game {
     private static final float CLAW_DOWN_FADE_DURATION = 0.10f;
     private static final float CLAW_UP_FADE_DURATION = 0.14f;
     private static final float MOVE_TO_TRAY_FADE_DURATION = 0.18f;
-    private static final float MUSIC_OVERLAP_DURATION = 0.45f;
+    private static final float MUSIC_OVERLAP_DURATION = 0.08f;
     private static final float MIN_TRACK_DURATION_FOR_OVERLAP = 1.0f;
     private static final String GAME_MUSIC_PATH = "sound/game_music.wav";
 
@@ -463,8 +463,9 @@ public class MainGame extends Game {
         }
 
         crossfadeProgress = clamp01(crossfadeProgress + (delta / MUSIC_OVERLAP_DURATION));
-        activeMusic.setVolume(musicVolume * (1f - crossfadeProgress));
-        standbyMusic.setVolume(musicVolume * crossfadeProgress);
+        float smoothProgress = crossfadeProgress * crossfadeProgress * (3f - 2f * crossfadeProgress);
+        activeMusic.setVolume(musicVolume * (1f - smoothProgress));
+        standbyMusic.setVolume(musicVolume * smoothProgress);
 
         if (crossfadeProgress >= 1f) {
             forceSwitchToStandby();
