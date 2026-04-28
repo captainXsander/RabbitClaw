@@ -39,7 +39,9 @@ public class MainGame extends Game {
     private static final float CLAW_DOWN_FADE_DURATION = 0.10f;
     private static final float CLAW_UP_FADE_DURATION = 0.14f;
     private static final float MOVE_TO_TRAY_FADE_DURATION = 0.18f;
-    private static final float MUSIC_OVERLAP_DURATION = 0.08f;
+    private static final float MUSIC_OVERLAP_DURATION_DESKTOP = 0.08f;
+    private static final float MUSIC_OVERLAP_DURATION_ANDROID = 0.14f;
+    private static final float MUSIC_CROSSFADE_START_GUARD_ANDROID = 0.03f;
     private static final float MIN_TRACK_DURATION_FOR_OVERLAP = 1.0f;
     private static final String GAME_MUSIC_PATH = "sound/game_music.wav";
 
@@ -462,7 +464,8 @@ public class MainGame extends Game {
             return;
         }
 
-        crossfadeProgress = clamp01(crossfadeProgress + (delta / MUSIC_OVERLAP_DURATION));
+        float overlapDuration = getMusicOverlapDuration();
+        crossfadeProgress = clamp01(crossfadeProgress + (delta / overlapDuration));
         float smoothProgress = crossfadeProgress * crossfadeProgress * (3f - 2f * crossfadeProgress);
         activeMusic.setVolume(musicVolume * (1f - smoothProgress));
         standbyMusic.setVolume(musicVolume * smoothProgress);
@@ -474,12 +477,24 @@ public class MainGame extends Game {
 
     private boolean shouldStartCrossfade(Music activeMusic) {
         float activePosition = activeMusic.getPosition();
-        return activePosition >= gameMusicDuration - MUSIC_OVERLAP_DURATION;
+        return activePosition >= gameMusicDuration - getMusicOverlapDuration() - getCrossfadeStartGuard();
     }
 
     private boolean isOverlapAllowed() {
         return gameMusicDuration >= MIN_TRACK_DURATION_FOR_OVERLAP
-            && gameMusicDuration > MUSIC_OVERLAP_DURATION;
+            && gameMusicDuration > getMusicOverlapDuration();
+    }
+
+    private float getMusicOverlapDuration() {
+        return isAndroidRuntime() ? MUSIC_OVERLAP_DURATION_ANDROID : MUSIC_OVERLAP_DURATION_DESKTOP;
+    }
+
+    private float getCrossfadeStartGuard() {
+        return isAndroidRuntime() ? MUSIC_CROSSFADE_START_GUARD_ANDROID : 0f;
+    }
+
+    private boolean isAndroidRuntime() {
+        return Gdx.app != null && Gdx.app.getType() == com.badlogic.gdx.Application.ApplicationType.Android;
     }
 
     private void resumeBackgroundMusic() {
