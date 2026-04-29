@@ -89,11 +89,15 @@ abstract class AbstractDetailMenuScreen extends ScreenAdapter {
     }
 
     protected void drawButton(Rectangle bounds, String label, boolean selected) {
+        drawButton(bounds, label, selected, 0.0115f);
+    }
+
+    protected void drawButton(Rectangle bounds, String label, boolean selected, float textScale) {
         batch.draw(panelTexture, bounds.x, bounds.y, bounds.width, bounds.height);
         if (selected) {
             batch.draw(highlightTexture, bounds.x + 0.04f, bounds.y + 0.04f, bounds.width - 0.08f, bounds.height - 0.08f);
         }
-        drawCenteredText(titleFont, label, bounds, 0.0115f, Align.center);
+        drawCenteredText(titleFont, label, bounds, textScale, Align.center);
     }
 
     protected void drawCenteredText(BitmapFont font, String text, Rectangle bounds, float scale, int align) {
