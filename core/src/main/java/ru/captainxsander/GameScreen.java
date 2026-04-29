@@ -872,7 +872,7 @@ public class GameScreen implements Screen {
         float coinsTextX = WORLD_WIDTH - 4.8f;
         float coinsTextY = WORLD_HEIGHT - 1.34f;
         pauseFont.draw(batch, glyphLayout, coinsTextX, coinsTextY);
-        batch.draw(moneyTexture, coinsTextX + glyphLayout.width + 0.16f, WORLD_HEIGHT - 1.37f, 0.34f, 0.34f);
+        batch.draw(moneyTexture, coinsTextX + glyphLayout.width + 0.16f, WORLD_HEIGHT - 1.66f, 0.34f, 0.34f);
 
         if (gameMode == GameMode.RESCUE && rescueNoCoinsHintTimer > 0f) {
             pauseFont.getData().setScale(0.0102f);
