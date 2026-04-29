@@ -74,7 +74,7 @@ class RescueModeSetupScreen extends AbstractDetailMenuScreen {
 
         drawParagraph(
             "Подтвердите сброс прогресса. Это действие нельзя отменить.",
-            new Rectangle(3.2f, 3.35f, 9.6f, 0.8f)
+            new Rectangle(3.2f, 2.95f, 9.6f, 0.7f)
         );
         drawButton(confirmYesBounds, "Да, сбросить", selectedIndex == 3);
         drawButton(confirmNoBounds, "Отмена", selectedIndex == 4);
