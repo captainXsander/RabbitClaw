@@ -6,8 +6,8 @@ import java.util.Arrays;
 
 class NormalModeSetupScreen extends AbstractDetailMenuScreen {
     private static final int ITEMS_PER_PAGE = 5;
-    private static final float MODE_HEADER_SCALE = 0.0118f;
-    private static final float MODE_ITEM_SCALE = 0.0106f;
+    private static final float MODE_HEADER_SCALE = 0.0124f;
+    private static final float MODE_ITEM_SCALE = 0.0101f;
     private static final float MODE_HINT_SCALE = 0.0080f;
 
     private final MenagerieProgress progress = new MenagerieProgress();
@@ -60,8 +60,8 @@ class NormalModeSetupScreen extends AbstractDetailMenuScreen {
         drawButton(toysPanelBounds, "", false);
         drawButton(settingsPanelBounds, "", false);
 
-        drawCenteredText(bodyFont, "Звери для раунда", new Rectangle(1.9f, 5.52f, 6.2f, 0.35f), MODE_HEADER_SCALE, 1);
-        drawCenteredText(bodyFont, "Сложность", new Rectangle(9.5f, 5.52f, 4.6f, 0.35f), MODE_HEADER_SCALE, 1);
+        drawCenteredText(titleFont, "Звери для раунда", new Rectangle(1.9f, 5.64f, 6.2f, 0.3f), MODE_HEADER_SCALE, 1);
+        drawCenteredText(titleFont, "Сложность", new Rectangle(9.5f, 5.64f, 4.6f, 0.3f), MODE_HEADER_SCALE, 1);
 
         drawToyList();
         drawDifficultySection();
