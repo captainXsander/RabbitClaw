@@ -6,8 +6,9 @@ import java.util.Arrays;
 
 class NormalModeSetupScreen extends AbstractDetailMenuScreen {
     private static final int ITEMS_PER_PAGE = 5;
-    private static final float MODE_TEXT_SCALE = 0.0102f;
-    private static final float MODE_HEADER_SCALE = 0.0128f;
+    private static final float MODE_HEADER_SCALE = 0.0124f;
+    private static final float MODE_ITEM_SCALE = 0.0101f;
+    private static final float MODE_HINT_SCALE = 0.0080f;
 
     private final MenagerieProgress progress = new MenagerieProgress();
     private final ToyType[] availablePool;
@@ -59,8 +60,8 @@ class NormalModeSetupScreen extends AbstractDetailMenuScreen {
         drawButton(toysPanelBounds, "", false);
         drawButton(settingsPanelBounds, "", false);
 
-        drawCenteredText(bodyFont, "Звери для раунда", new Rectangle(1.9f, 5.38f, 6.2f, 0.35f), MODE_HEADER_SCALE, 1);
-        drawCenteredText(bodyFont, "Сложность", new Rectangle(9.5f, 5.38f, 4.6f, 0.35f), MODE_HEADER_SCALE, 1);
+        drawCenteredText(titleFont, "Звери для раунда", new Rectangle(1.9f, 5.64f, 6.2f, 0.3f), MODE_HEADER_SCALE, 1);
+        drawCenteredText(titleFont, "Сложность", new Rectangle(9.5f, 5.64f, 4.6f, 0.3f), MODE_HEADER_SCALE, 1);
 
         drawToyList();
         drawDifficultySection();
@@ -82,30 +83,30 @@ class NormalModeSetupScreen extends AbstractDetailMenuScreen {
             ToyType toyType = availablePool[toyIndex];
             boolean checked = Arrays.asList(game.getNormalSelectedToyTypes(availablePool)).contains(toyType);
             String label = (checked ? "[x] " : "[ ] ") + getToyLabelRu(toyType);
-            drawButton(toyBounds[i], label, selectedIndex == i);
+            drawButton(toyBounds[i], label, selectedIndex == i, MODE_ITEM_SCALE);
         }
 
         drawButton(prevPageBounds, "<", selectedIndex == ITEMS_PER_PAGE && page > 0);
         drawButton(nextPageBounds, ">", selectedIndex == ITEMS_PER_PAGE + 1 && page < totalPages - 1);
         drawCenteredText(bodyFont, (page + 1) + "/" + totalPages,
-            new Rectangle(4.5f, 1.25f, 1.0f, 0.5f), MODE_TEXT_SCALE, 1);
+            new Rectangle(4.5f, 1.25f, 1.0f, 0.5f), MODE_ITEM_SCALE, 1);
     }
 
     private void drawDifficultySection() {
         drawButton(slipPresetBounds, "Срыв при подъёме: " + getLevelLabel(game.getNormalBaseSlipChance(), 0.16, 0.22, 0.30),
-            selectedIndex == ITEMS_PER_PAGE + 2);
+            selectedIndex == ITEMS_PER_PAGE + 2, MODE_ITEM_SCALE);
         drawButton(dropBasePresetBounds, "Выпадение в пути: " + getLevelLabel(game.getNormalClawDropBaseChance(), 0.18, 0.24, 0.32),
-            selectedIndex == ITEMS_PER_PAGE + 3);
+            selectedIndex == ITEMS_PER_PAGE + 3, MODE_ITEM_SCALE);
         drawButton(dropMinPresetBounds, "Мин. выпадение: " + getLevelLabel(game.getNormalClawDropMinChance(), 0.06, 0.09, 0.12),
-            selectedIndex == ITEMS_PER_PAGE + 4);
+            selectedIndex == ITEMS_PER_PAGE + 4, MODE_ITEM_SCALE);
         drawButton(fakePresetBounds, "Ложный захват: " + getLevelLabel(game.getNormalBaseFakeGrabChance(), 0.14, 0.20, 0.28),
-            selectedIndex == ITEMS_PER_PAGE + 5);
+            selectedIndex == ITEMS_PER_PAGE + 5, MODE_ITEM_SCALE);
 
         drawCenteredText(
             bodyFont,
             "Нажмите на параметр для смены уровня",
             new Rectangle(9.35f, 2.12f, 4.9f, 0.35f),
-            MODE_TEXT_SCALE,
+            MODE_HINT_SCALE,
             1
         );
     }
