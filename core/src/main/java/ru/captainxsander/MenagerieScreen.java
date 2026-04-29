@@ -220,6 +220,14 @@ public class MenagerieScreen extends ScreenAdapter {
         // Количество страниц считается по размеру каталога игрушек.
         int pageCount = getPageCount();
 
+        Rectangle menagerieHintBounds = new Rectangle(4.1f, 0.84f, 6.6f, 0.70f);
+        drawWrappedText(
+            hintFont,
+            "Зверинец — это коллекция открытых зверей. Новые звери открываются в режиме \"Спасти Зверей\": "
+                + "собирайте уникальных зверей уровня, чтобы пополнять этот раздел.",
+            menagerieHintBounds
+        );
+
         // Кнопка предыдущей страницы.
         if (currentPage > 0) {
             batch.draw(panelTexture, prevPageBounds.x, prevPageBounds.y, prevPageBounds.width, prevPageBounds.height);
