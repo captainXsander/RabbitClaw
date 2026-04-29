@@ -84,7 +84,7 @@ public class GameScreen implements Screen {
     private BitmapFont statusFont;
     private final GlyphLayout glyphLayout = new GlyphLayout();
     private final Rectangle factBounds = new Rectangle(0.75f, WORLD_HEIGHT - 2.0f, WORLD_WIDTH - 1.5f, 1.05f);
-    private final Rectangle resultBounds = new Rectangle(1.4f, WORLD_HEIGHT * 0.52f, WORLD_WIDTH - 2.8f, 1.2f);
+    private final Rectangle resultBounds = new Rectangle(1.4f, WORLD_HEIGHT * 0.44f, WORLD_WIDTH - 2.8f, 1.2f);
 
     // Пауза доступна из любого режима с возвратом в главное меню.
     private BitmapFont pauseFont;
@@ -207,11 +207,16 @@ public class GameScreen implements Screen {
 
             @Override
             public void onTrayDropAttempt(boolean hadToy) {
-                if (hadToy) {
-                    game.playToyWinnerSound();
+                if (!hadToy) {
+                    game.playFailTraySound();
                     return;
                 }
-                game.playFailTraySound();
+
+                if (gameMode == GameMode.FIND_ANIMAL || gameMode == GameMode.CATCH_CAT) {
+                    return;
+                }
+
+                game.playToyWinnerSound();
             }
         });
         if (gameMode == GameMode.RESCUE) {
@@ -582,6 +587,7 @@ public class GameScreen implements Screen {
         ToyType targetToyType = getCurrentTargetToyType();
         String targetLabel = getCurrentTargetLabelRu();
         if (targetToyType != null && toy.getToyType() == targetToyType) {
+            game.playToyWinnerSound();
             boolean coinAwarded = gameMode == GameMode.FIND_ANIMAL && menagerieProgress.awardCoinFromFindAnimalWin();
             if (coinAwarded) {
                 findAnimalResultText = "Верно! Это " + targetLabel + ". +1 монета";
@@ -589,6 +595,7 @@ public class GameScreen implements Screen {
                 findAnimalResultText = "Молодец, это действительно " + targetLabel;
             }
         } else {
+            game.playFailTraySound();
             findAnimalResultText = "Было близко, но нужно было поймать " + targetLabel;
         }
     }
@@ -857,13 +864,13 @@ public class GameScreen implements Screen {
         pauseFont.getData().setScale(0.0105f);
         String levelText = "Уровень " + level + "/" + levelCount;
         glyphLayout.setText(pauseFont, levelText);
-        pauseFont.draw(batch, glyphLayout, 0.75f, WORLD_HEIGHT - 1.05f);
+        pauseFont.draw(batch, glyphLayout, 0.75f, WORLD_HEIGHT - 1.34f);
 
         pauseFont.getData().setScale(0.0108f);
         String coinsText = coins + "/" + maxCoins;
         glyphLayout.setText(pauseFont, coinsText);
         float coinsTextX = WORLD_WIDTH - 4.8f;
-        float coinsTextY = WORLD_HEIGHT - 1.05f;
+        float coinsTextY = WORLD_HEIGHT - 1.34f;
         pauseFont.draw(batch, glyphLayout, coinsTextX, coinsTextY);
         batch.draw(moneyTexture, coinsTextX + glyphLayout.width + 0.16f, WORLD_HEIGHT - 1.37f, 0.34f, 0.34f);
 
