@@ -99,8 +99,8 @@ public class MenagerieScreen extends ScreenAdapter {
         cardBodyFont = createFont(24, new Color(0.96f, 0.92f, 0.84f, 1f));
         hintFont = createFont(20, new Color(0.90f, 0.86f, 0.78f, 1f));
 
-        // Создаём визуальные карточки для всех игрушек из каталога.
-        for (ToyType toyType : ToyType.values()) {
+        // В зверинце показываем только зверей из режима спасения.
+        for (ToyType toyType : ToyType.ANIMAL_POOL) {
             cards.add(new CardView(toyType));
         }
     }
@@ -220,7 +220,7 @@ public class MenagerieScreen extends ScreenAdapter {
         // Количество страниц считается по размеру каталога игрушек.
         int pageCount = getPageCount();
 
-        Rectangle menagerieHintBounds = new Rectangle(4.1f, 0.84f, 6.6f, 0.70f);
+        Rectangle menagerieHintBounds = new Rectangle(3.85f, 0.84f, 7.0f, 0.72f);
         drawWrappedText(
             hintFont,
             "Зверинец — это коллекция открытых зверей. Новые звери открываются в режиме \"Спасти Зверей\": "
