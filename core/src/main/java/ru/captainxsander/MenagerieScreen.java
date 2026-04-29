@@ -65,8 +65,6 @@ public class MenagerieScreen extends ScreenAdapter {
     // Готовые текстуры интерфейса.
     private final Texture titleTexture = new Texture(Gdx.files.internal("menu_menagerie_title.png"));
     private final Texture backTexture = new Texture(Gdx.files.internal("menu_back.png"));
-    private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/default/rabbit_big.png"));
-    private final Texture rabbitRightTexture = new Texture(Gdx.files.internal("toys/animals/rabbit_large.png"));
     private final Texture pixelTexture = createSolidTexture(1, 1, Color.WHITE);
     private final Texture circleTexture = createCircleTexture(192);
 
@@ -78,9 +76,9 @@ public class MenagerieScreen extends ScreenAdapter {
     private final Texture darkOverlayTexture = createSolidTexture(1, 1, new Color(0f, 0f, 0f, 0.55f));
 
     // Зоны клика для навигации по экрану.
-    private final Rectangle backBounds = new Rectangle(0.85f, 0.58f, 2.9f, 0.86f);
-    private final Rectangle prevPageBounds = new Rectangle(11.0f, 0.65f, 1.2f, 0.75f);
-    private final Rectangle nextPageBounds = new Rectangle(12.5f, 0.65f, 1.2f, 0.75f);
+    private final Rectangle backBounds = new Rectangle(0.85f, 0.82f, 2.9f, 0.86f);
+    private final Rectangle prevPageBounds = new Rectangle(11.0f, 0.82f, 1.2f, 0.75f);
+    private final Rectangle nextPageBounds = new Rectangle(12.5f, 0.82f, 1.2f, 0.75f);
 
     // Визуальные карточки для всех игрушек из каталога.
     private final Array<CardView> cards = new Array<>();
@@ -154,10 +152,6 @@ public class MenagerieScreen extends ScreenAdapter {
         // Узкая светлая линия отделяет шапку экрана от сетки карточек.
         batch.draw(highlightTexture, 0.8f, 6.95f, 14.4f, 0.08f);
 
-        batch.setColor(1f, 1f, 1f, 0.30f);
-        batch.draw(rabbitLeftTexture, 0.68f, 0.74f, 1.25f, 1.25f);
-        batch.draw(rabbitRightTexture, UI_WIDTH - 1.87f, 0.74f, 1.22f, 1.22f);
-        batch.setColor(Color.WHITE);
     }
 
     private void drawStar(float x, float y, float size) {
@@ -239,7 +233,7 @@ public class MenagerieScreen extends ScreenAdapter {
         }
 
         // Индикатор вида "1/3" показывает текущую страницу каталога.
-        Rectangle pageInfoBounds = new Rectangle(13.85f, 0.65f, 1.1f, 0.75f);
+        Rectangle pageInfoBounds = new Rectangle(13.85f, 0.82f, 1.1f, 0.75f);
         drawCenteredText(hintFont, (currentPage + 1) + "/" + pageCount, pageInfoBounds);
     }
 
@@ -398,8 +392,6 @@ public class MenagerieScreen extends ScreenAdapter {
         // Освобождаем текстуры и все сгенерированные шрифты.
         titleTexture.dispose();
         backTexture.dispose();
-        rabbitLeftTexture.dispose();
-        rabbitRightTexture.dispose();
         pixelTexture.dispose();
         circleTexture.dispose();
         panelTexture.dispose();

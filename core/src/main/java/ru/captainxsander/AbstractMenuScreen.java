@@ -165,7 +165,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         // Декоративные зайчики по краям.
         batch.setColor(1f, 1f, 1f, 0.30f);
         batch.draw(rabbitLeftTexture, 0.68f, 0.74f, 1.25f, 1.25f);
-        batch.draw(rabbitRightTexture, UI_WIDTH - 1.87f, 0.74f, 1.22f, 1.22f);
+        batch.draw(rabbitRightTexture, UI_WIDTH - 1.90f, 0.74f, 1.22f, 1.22f);
         batch.setColor(Color.WHITE);
     }
 
