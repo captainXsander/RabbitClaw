@@ -3,10 +3,13 @@ package tools;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.font.GlyphVector;
+import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -68,16 +71,21 @@ public final class MenuButtonGenerator {
 
             // В оригинальных кнопках фон рисуется в коде, а PNG содержит только текст.
             // Поэтому здесь сохраняем прозрачный фон и рисуем только надпись.
-            Font font = new Font("Arial", Font.BOLD, 76);
+            // Более мягкий и "круглый" системный шрифт.
+            Font baseFont = loadBaseFont(58f);
+            Map<TextAttribute, Object> attrs = new HashMap<>();
+            attrs.put(TextAttribute.KERNING, TextAttribute.KERNING_ON);
+            attrs.put(TextAttribute.TRACKING, -0.01f);
+            Font font = baseFont.deriveFont(attrs);
             GlyphVector glyphVector = font.createGlyphVector(g.getFontRenderContext(), text);
             Rectangle bounds = glyphVector.getPixelBounds(g.getFontRenderContext(), 0, 0);
             int textX = (WIDTH - bounds.width) / 2;
-            int textY = (HEIGHT - bounds.height) / 2 - bounds.y + 2;
+            int textY = (HEIGHT - bounds.height) / 2 - bounds.y + 1;
 
             // Тень.
             g.setFont(font);
-            g.setColor(new Color(10, 8, 24, 220));
-            g.drawString(text, textX + 4, textY + 4);
+            g.setColor(new Color(16, 12, 28, 165));
+            g.drawString(text, textX + 2, textY + 2);
 
             // Основной цвет.
             g.setColor(new Color(248, 236, 194, 255));
@@ -94,5 +102,21 @@ public final class MenuButtonGenerator {
         System.out.println("  java tools.MenuButtonGenerator <output_dir> <file=text> [<file=text> ...]");
         System.out.println("Пример:");
         System.out.println("  java tools.MenuButtonGenerator assets menu_play=Играть menu_settings=Настройки");
+    }
+
+    private static Font loadBaseFont(float size) {
+        // Пытаемся использовать тот же шрифт, что подключен в проекте.
+        File fontFile = new File("assets/fonts/arial.ttf");
+        if (!fontFile.exists()) {
+            fontFile = new File("fonts/arial.ttf");
+        }
+        if (fontFile.exists()) {
+            try (InputStream in = java.nio.file.Files.newInputStream(fontFile.toPath())) {
+                return Font.createFont(Font.TRUETYPE_FONT, in).deriveFont(Font.BOLD, size);
+            } catch (Exception ignored) {
+                // Если не получилось прочитать TTF, откатимся на системный.
+            }
+        }
+        return new Font("Arial", Font.BOLD, Math.round(size));
     }
 }

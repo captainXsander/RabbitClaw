@@ -51,3 +51,93 @@ java tools.MenuButtonGenerator assets \
 ```
 
 This generates PNG files with a unified style directly in `assets/`.
+
+## Menu button generator
+
+To keep menu buttons visually consistent, use the generator utility:
+
+```bash
+javac tools/MenuButtonGenerator.java
+java tools.MenuButtonGenerator assets \
+  menu_play=Играть \
+  menu_settings=Настройки \
+  menu_menagerie=Зверинец \
+  menu_exit=Выход
+```
+
+This generates PNG files with a unified style directly in `assets/`.
+
+## Menu button generator
+
+To keep menu buttons visually consistent, use the generator utility:
+
+```bash
+javac tools/MenuButtonGenerator.java
+java tools.MenuButtonGenerator assets \
+  menu_play=Играть \
+  menu_settings=Настройки \
+  menu_menagerie=Зверинец \
+  menu_exit=Выход
+```
+
+This generates PNG files with a unified style directly in `assets/`.
+
+## Menu button generator
+
+To keep menu buttons visually consistent, use the generator utility:
+
+```bash
+javac tools/MenuButtonGenerator.java
+java tools.MenuButtonGenerator assets \
+  menu_play=Играть \
+  menu_settings=Настройки \
+  menu_menagerie=Зверинец \
+  menu_exit=Выход
+```
+
+This generates PNG files with a unified style directly in `assets/`.
+
+## Menu button generator
+
+To keep menu buttons visually consistent, use the generator utility:
+
+```bash
+javac tools/MenuButtonGenerator.java
+java tools.MenuButtonGenerator assets \
+  menu_play=Играть \
+  menu_settings=Настройки \
+  menu_menagerie=Зверинец \
+  menu_exit=Выход
+```
+
+This generates PNG files with a unified style directly in `assets/`.
+
+## Menu button generator
+
+To keep menu buttons visually consistent, use the generator utility:
+
+```bash
+javac tools/MenuButtonGenerator.java
+java tools.MenuButtonGenerator assets \
+  menu_play=Играть \
+  menu_settings=Настройки \
+  menu_menagerie=Зверинец \
+  menu_exit=Выход
+```
+
+This generates PNG files with a unified style directly in `assets/`.
+
+## Menu button generator
+
+To keep menu buttons visually consistent, use the generator utility:
+
+```bash
+javac tools/MenuButtonGenerator.java
+java tools.MenuButtonGenerator assets \
+  menu_play=Играть \
+  menu_settings=Настройки \
+  menu_menagerie=Зверинец \
+  menu_exit=Выход
+```
+
+This generates PNG files with a unified style directly in `assets/`.
