@@ -144,7 +144,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
     }
 
     private void drawButtonLabel(String label, float x, float y, float width, float height) {
-        buttonFont.getData().setScale(0.0115f);
+        buttonFont.getData().setScale(0.0155f);
         buttonLayout.setText(buttonFont, label);
         float textX = x + (width - buttonLayout.width) * 0.5f;
         float textY = y + (height + buttonLayout.height) * 0.5f;
@@ -331,6 +331,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         if (!fontFile.exists()) {
             BitmapFont fallback = new BitmapFont();
             fallback.setColor(color);
+            fallback.setUseIntegerPositions(false);
             return fallback;
         }
 
@@ -343,6 +344,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
             + "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
             + "№«»—…";
         BitmapFont font = generator.generateFont(parameter);
+        font.setUseIntegerPositions(false);
         generator.dispose();
         return font;
     }
