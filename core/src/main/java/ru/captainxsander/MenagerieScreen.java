@@ -96,7 +96,7 @@ public class MenagerieScreen extends ScreenAdapter {
 
         // Создаём кириллические TTF-шрифты для всех текстовых элементов экрана.
         cardTitleFont = createFont(32, new Color(0.98f, 0.92f, 0.82f, 1f));
-        cardBodyFont = createFont(24, new Color(0.96f, 0.92f, 0.84f, 1f));
+        cardBodyFont = createFont(20, new Color(0.96f, 0.92f, 0.84f, 1f));
         hintFont = createFont(20, new Color(0.90f, 0.86f, 0.78f, 1f));
 
         // В зверинце показываем только зверей из режима спасения.
