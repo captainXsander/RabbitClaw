@@ -48,7 +48,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
     private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/default/rabbit_big.png"));
     private final Texture rabbitRightTexture = new Texture(Gdx.files.internal("toys/animals/rabbit_large.png"));
     private final BitmapFont brandFont = createFont(34, new Color(0.98f, 0.92f, 0.80f, 1f));
-    private BitmapFont buttonFont;
+    private final BitmapFont buttonFont = createFont(30, new Color(0.96f, 0.92f, 0.84f, 1f));
     private final GlyphLayout brandLayout = new GlyphLayout();
     private final GlyphLayout buttonLayout = new GlyphLayout();
     // Заголовок меню хранится отдельной текстурой.
@@ -73,7 +73,6 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
     public void show() {
         // Сразу применяем viewport и начинаем слушать клавиатуру/тач.
         viewport.apply(true);
-        rebuildButtonFont();
         Gdx.input.setInputProcessor(new MenuInputAdapter());
     }
 
@@ -145,11 +144,8 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
     }
 
     private void drawButtonLabel(String label, float x, float y, float width, float height) {
-        if (buttonFont == null) {
-            return;
-        }
         // Стиль подписи кнопки делаем таким же, как у заголовков разделов.
-        buttonFont.getData().setScale(1f);
+        buttonFont.getData().setScale(0.0138f);
         buttonLayout.setText(buttonFont, label);
         float textX = x + (width - buttonLayout.width) * 0.5f;
         float textY = y + (height + buttonLayout.height) * 0.5f;
@@ -224,7 +220,6 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
     public void resize(int width, int height) {
         // При изменении окна пересчитываем viewport с центрированием камеры.
         viewport.update(width, height, true);
-        rebuildButtonFont();
     }
 
     @Override
@@ -246,21 +241,8 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         rabbitLeftTexture.dispose();
         rabbitRightTexture.dispose();
         brandFont.dispose();
-        if (buttonFont != null) {
-            buttonFont.dispose();
-        }
+        buttonFont.dispose();
         batch.dispose();
-    }
-
-    private void rebuildButtonFont() {
-        int screenHeight = Math.max(1, viewport.getScreenHeight());
-        float pixelsPerUnit = screenHeight / UI_HEIGHT;
-        int targetSize = Math.round(0.92f * pixelsPerUnit * 0.52f);
-        int clampedSize = Math.max(24, Math.min(targetSize, 84));
-        if (buttonFont != null) {
-            buttonFont.dispose();
-        }
-        buttonFont = createFont(clampedSize, new Color(0.98f, 0.92f, 0.76f, 1f));
     }
 
     protected void moveSelection(int direction) {
