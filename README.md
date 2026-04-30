@@ -36,3 +36,18 @@ For example, `core:clean` removes `build` folder only from the `core` project.
 
 Давай запомним такой список и пойдем делать улучшения по порядку: 
 7) Сделать пальцы физическими телами
+
+## Menu button generator
+
+To keep menu buttons visually consistent, use the generator utility:
+
+```bash
+javac tools/MenuButtonGenerator.java
+java tools.MenuButtonGenerator assets \
+  menu_play=Играть \
+  menu_settings=Настройки \
+  menu_menagerie=Зверинец \
+  menu_exit=Выход
+```
+
+This generates PNG files with a unified style directly in `assets/`.
