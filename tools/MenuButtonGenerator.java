@@ -3,7 +3,6 @@ package tools;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.font.GlyphVector;
-import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -18,7 +17,7 @@ import java.util.Map;
  *   java tools.MenuButtonGenerator assets "menu_play=Играть" "menu_settings=Настройки"
  */
 public final class MenuButtonGenerator {
-    private static final int WIDTH = 1000;
+    private static final int WIDTH = 900;
     private static final int HEIGHT = 140;
 
     private MenuButtonGenerator() {
@@ -67,35 +66,18 @@ public final class MenuButtonGenerator {
             g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
-            // Фон в стиле текущих кнопок.
-            GradientPaint background = new GradientPaint(
-                0, 0, new Color(112, 106, 152, 230),
-                0, HEIGHT, new Color(96, 90, 136, 230)
-            );
-            Shape body = new RoundRectangle2D.Float(2, 2, WIDTH - 4, HEIGHT - 4, 26, 26);
-            g.setPaint(background);
-            g.fill(body);
-
-            // Лёгкая внутренняя подсветка.
-            g.setColor(new Color(255, 255, 255, 26));
-            g.fill(new RoundRectangle2D.Float(8, 8, WIDTH - 16, 28, 16, 16));
-
-            // Тонкая рамка.
-            g.setColor(new Color(255, 255, 255, 30));
-            g.setStroke(new BasicStroke(2f));
-            g.draw(body);
-
-            // Текст.
-            Font font = new Font("Arial", Font.BOLD, 62);
+            // В оригинальных кнопках фон рисуется в коде, а PNG содержит только текст.
+            // Поэтому здесь сохраняем прозрачный фон и рисуем только надпись.
+            Font font = new Font("Arial", Font.BOLD, 76);
             GlyphVector glyphVector = font.createGlyphVector(g.getFontRenderContext(), text);
             Rectangle bounds = glyphVector.getPixelBounds(g.getFontRenderContext(), 0, 0);
             int textX = (WIDTH - bounds.width) / 2;
-            int textY = (HEIGHT - bounds.height) / 2 - bounds.y;
+            int textY = (HEIGHT - bounds.height) / 2 - bounds.y + 2;
 
             // Тень.
             g.setFont(font);
-            g.setColor(new Color(18, 14, 35, 210));
-            g.drawString(text, textX + 3, textY + 3);
+            g.setColor(new Color(10, 8, 24, 220));
+            g.drawString(text, textX + 4, textY + 4);
 
             // Основной цвет.
             g.setColor(new Color(248, 236, 194, 255));
