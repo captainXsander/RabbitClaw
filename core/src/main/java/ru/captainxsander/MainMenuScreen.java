@@ -7,13 +7,13 @@ class MainMenuScreen extends AbstractMenuScreen {
         // Заголовок главного меню и его основные разделы.
         super(game, "menu_main_title.png");
         // Переход в выбор режима игры.
-        addOption("menu_play.png", game::showGameModeMenu);
+        addOption("Играть", game::showGameModeMenu);
         // Переход к настройкам.
-        addOption("menu_settings.png", game::showSettings);
+        addOption("Настройки", game::showSettings);
         // Переход в зверинец.
-        addOption("menu_menagerie.png", game::showMenagerie);
+        addOption("Зверинец", game::showMenagerie);
         // Полное завершение приложения.
-        addOption("menu_exit.png", Gdx.app::exit);
+        addOption("Выход", Gdx.app::exit);
     }
 
     @Override

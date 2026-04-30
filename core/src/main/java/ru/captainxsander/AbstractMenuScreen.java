@@ -48,7 +48,9 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
     private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/default/rabbit_big.png"));
     private final Texture rabbitRightTexture = new Texture(Gdx.files.internal("toys/animals/rabbit_large.png"));
     private final BitmapFont brandFont = createFont(34, new Color(0.98f, 0.92f, 0.80f, 1f));
+    private final BitmapFont buttonFont = createFont(30, new Color(0.96f, 0.92f, 0.84f, 1f));
     private final GlyphLayout brandLayout = new GlyphLayout();
+    private final GlyphLayout buttonLayout = new GlyphLayout();
     // Заголовок меню хранится отдельной текстурой.
     private final Texture titleTexture;
 
@@ -62,9 +64,9 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         this.titleTexture = new Texture(Gdx.files.internal(titleTexturePath));
     }
 
-    protected void addOption(String texturePath, Runnable action) {
-        // Каждый пункт состоит из картинки-кнопки и действия при выборе.
-        options.add(new MenuOption(new Texture(Gdx.files.internal(texturePath)), action));
+    protected void addOption(String label, Runnable action) {
+        // Каждый пункт состоит из подписи-кнопки и действия при выборе.
+        options.add(new MenuOption(label, action));
     }
 
     @Override
@@ -135,10 +137,22 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
                 // Выбранный пункт подсвечивается поверх подложки.
                 batch.draw(highlightTexture, option.bounds.x, option.bounds.y, option.bounds.width, option.bounds.height);
             }
-            // Рисуем саму кнопку-текстуру.
-            batch.draw(option.texture, x, y, buttonWidth, buttonHeight);
+            // Рисуем подпись кнопки.
+            drawButtonLabel(option.label, x, y, buttonWidth, buttonHeight);
         }
         batch.end();
+    }
+
+    private void drawButtonLabel(String label, float x, float y, float width, float height) {
+        buttonFont.getData().setScale(0.0115f);
+        buttonLayout.setText(buttonFont, label);
+        float textX = x + (width - buttonLayout.width) * 0.5f;
+        float textY = y + (height + buttonLayout.height) * 0.5f;
+
+        buttonFont.setColor(0.08f, 0.06f, 0.16f, 0.74f);
+        buttonFont.draw(batch, buttonLayout, textX + 0.02f, textY - 0.02f);
+        buttonFont.setColor(0.96f, 0.92f, 0.84f, 1f);
+        buttonFont.draw(batch, buttonLayout, textX, textY);
     }
 
     protected void drawBackground() {
@@ -226,11 +240,8 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         rabbitLeftTexture.dispose();
         rabbitRightTexture.dispose();
         brandFont.dispose();
+        buttonFont.dispose();
         batch.dispose();
-        for (MenuOption option : options) {
-            // У каждой кнопки своя текстура.
-            option.texture.dispose();
-        }
     }
 
     protected void moveSelection(int direction) {
@@ -354,15 +365,15 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
     }
 
     private static final class MenuOption {
-        // Изображение кнопки.
-        private final Texture texture;
+        // Текст на кнопке.
+        private final String label;
         // Что должно произойти при выборе.
         private final Runnable action;
         // Область, в которую можно нажать.
         private final Rectangle bounds = new Rectangle();
 
-        private MenuOption(Texture texture, Runnable action) {
-            this.texture = texture;
+        private MenuOption(String label, Runnable action) {
+            this.label = label;
             this.action = action;
         }
     }

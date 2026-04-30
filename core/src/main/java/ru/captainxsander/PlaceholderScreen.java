@@ -5,9 +5,9 @@ class PlaceholderScreen extends AbstractMenuScreen {
         // Этот экран временно показывает раздел, который еще не реализован.
         super(game, titleTexturePath);
         // Сообщаем пользователю, что раздел пока в разработке.
-        addOption("menu_in_development.png", game::showPreviousMenu);
+        addOption("В разработке", game::showPreviousMenu);
         // Явная кнопка возврата в предыдущее меню.
-        addOption("menu_back.png", game::showPreviousMenu);
+        addOption("Назад", game::showPreviousMenu);
     }
 
     @Override

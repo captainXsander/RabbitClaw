@@ -5,15 +5,15 @@ class GameModeMenuScreen extends AbstractMenuScreen {
         super(game, "menu_mode_title.png");
         MenagerieProgress progress = new MenagerieProgress();
 
-        addOption("menu_mode_normal.png", game::showNormalModeSetupMenu);
-        addOption("menu_mode_rescue.png", game::showRescueModeSetupMenu);
+        addOption("Обычный режим", game::showNormalModeSetupMenu);
+        addOption("Режим спасения", game::showRescueModeSetupMenu);
 
         if (progress.isFindAnimalModeUnlocked()) {
-            addOption("find_animals.png", game::showFindAnimalModeSetupMenu);
+            addOption("Найди животных", game::showFindAnimalModeSetupMenu);
         }
-        addOption("catch_cat.png", game::showCatchCatModeSetupMenu);
+        addOption("Поймай кота", game::showCatchCatModeSetupMenu);
 
-        addOption("menu_back.png", game::showPreviousMenu);
+        addOption("Назад", game::showPreviousMenu);
     }
 
     @Override
