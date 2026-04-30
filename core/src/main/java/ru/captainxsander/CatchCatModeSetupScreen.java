@@ -14,7 +14,7 @@ class CatchCatModeSetupScreen extends AbstractDetailMenuScreen {
 
     @Override
     protected void drawContent() {
-        drawMenuTitle("Режим: Пойма кота");
+        drawMenuTitle("Режим: Поймать кота");
         drawParagraph(
             "Поймайте кота с нужной эмоцией из движущейся кучи и доставьте его в лоток."
                 + " Коты резвятся по полю, поэтому действовать нужно быстро и точно.",
