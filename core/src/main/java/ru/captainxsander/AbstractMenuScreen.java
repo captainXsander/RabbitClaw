@@ -48,7 +48,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
     private final Texture rabbitLeftTexture = new Texture(Gdx.files.internal("toys/default/rabbit_big.png"));
     private final Texture rabbitRightTexture = new Texture(Gdx.files.internal("toys/animals/rabbit_large.png"));
     private final BitmapFont brandFont = createFont(34, new Color(0.98f, 0.92f, 0.80f, 1f));
-    private final BitmapFont buttonFont = createFont(30, new Color(0.96f, 0.92f, 0.84f, 1f));
+    private final BitmapFont buttonFont = createFont(72, new Color(0.96f, 0.92f, 0.84f, 1f));
     private final GlyphLayout brandLayout = new GlyphLayout();
     private final GlyphLayout buttonLayout = new GlyphLayout();
     // Заголовок меню хранится отдельной текстурой.
@@ -145,10 +145,12 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
 
     private void drawButtonLabel(String label, float x, float y, float width, float height) {
         // Стиль подписи кнопки делаем таким же, как у заголовков разделов.
-        buttonFont.getData().setScale(0.0138f);
+        buttonFont.getData().setScale(0.0072f);
         buttonLayout.setText(buttonFont, label);
         float textX = x + (width - buttonLayout.width) * 0.5f;
         float textY = y + (height + buttonLayout.height) * 0.5f;
+        textX = Math.round(textX * 100f) / 100f;
+        textY = Math.round(textY * 100f) / 100f;
 
         buttonFont.setColor(0.07f, 0.05f, 0.14f, 0.82f);
         buttonFont.draw(batch, buttonLayout, textX + 0.024f, textY - 0.024f);
@@ -332,7 +334,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         if (!fontFile.exists()) {
             BitmapFont fallback = new BitmapFont();
             fallback.setColor(color);
-            fallback.setUseIntegerPositions(false);
+            fallback.setUseIntegerPositions(true);
             return fallback;
         }
 
@@ -345,7 +347,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
             + "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
             + "№«»—…";
         BitmapFont font = generator.generateFont(parameter);
-        font.setUseIntegerPositions(false);
+        font.setUseIntegerPositions(true);
         generator.dispose();
         return font;
     }
