@@ -228,7 +228,7 @@ public class MenagerieScreen extends ScreenAdapter {
         if (currentPage < pageCount - 1) {
             hintRight = Math.min(hintRight, nextPageBounds.x - 0.2f);
         }
-        Rectangle menagerieHintBounds = new Rectangle(hintLeft, 0.76f, hintRight - hintLeft, 0.8f);
+        Rectangle menagerieHintBounds = new Rectangle(hintLeft, 0.95f, hintRight - hintLeft, 0.8f);
         drawWrappedText(
             hintFont,
             "Зверинец — это коллекция карточек, которые открываются в режиме \"Спасти Зверей\": "
