@@ -221,7 +221,13 @@ public class MenagerieScreen extends ScreenAdapter {
         int pageCount = getPageCount();
 
         float hintLeft = backBounds.x + backBounds.width + 0.2f;
-        float hintRight = prevPageBounds.x - 0.2f;
+        float hintRight = pageInfoBounds().x - 0.2f;
+        if (currentPage > 0) {
+            hintRight = Math.min(hintRight, prevPageBounds.x - 0.2f);
+        }
+        if (currentPage < pageCount - 1) {
+            hintRight = Math.min(hintRight, nextPageBounds.x - 0.2f);
+        }
         Rectangle menagerieHintBounds = new Rectangle(hintLeft, 0.66f, hintRight - hintLeft, 0.9f);
         drawWrappedText(
             hintFont,
@@ -244,10 +250,14 @@ public class MenagerieScreen extends ScreenAdapter {
         }
 
         // Индикатор вида "1/3" показывает текущую страницу каталога.
-        Rectangle pageInfoBounds = new Rectangle(13.85f, 0.82f, 1.1f, 0.75f);
+        Rectangle pageInfoBounds = pageInfoBounds();
         drawCenteredText(hintFont, (currentPage + 1) + "/" + pageCount, pageInfoBounds);
     }
 
+
+    private Rectangle pageInfoBounds() {
+        return new Rectangle(13.85f, 0.82f, 1.1f, 0.75f);
+    }
     private void drawOpenedCard(ToyType toyType) {
         // Поверх сетки выводим оверлей с обратной стороной выбранной карточки.
         Rectangle overlayBounds = new Rectangle(3.1f, 1.1f, 9.8f, 6.2f);
