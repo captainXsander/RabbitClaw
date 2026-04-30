@@ -39,7 +39,7 @@ public class MenagerieScreen extends ScreenAdapter {
     // Масштаб шрифтов относительно логических координат viewport.
     private static final float TITLE_FONT_SCALE = 0.018f;
     private static final float BODY_FONT_SCALE = 0.013f;
-    private static final float HINT_FONT_SCALE = 0.011f;
+    private static final float HINT_FONT_SCALE = 0.010f;
 
     // Главный объект игры нужен для возврата в меню.
     private final MainGame game;
@@ -220,7 +220,15 @@ public class MenagerieScreen extends ScreenAdapter {
         // Количество страниц считается по размеру каталога игрушек.
         int pageCount = getPageCount();
 
-        Rectangle menagerieHintBounds = new Rectangle(3.85f, 0.84f, 7.0f, 0.72f);
+        float hintLeft = backBounds.x + backBounds.width + 0.2f;
+        float hintRight = pageInfoBounds().x - 0.2f;
+        if (currentPage > 0) {
+            hintRight = Math.min(hintRight, prevPageBounds.x - 0.2f);
+        }
+        if (currentPage < pageCount - 1) {
+            hintRight = Math.min(hintRight, nextPageBounds.x - 0.2f);
+        }
+        Rectangle menagerieHintBounds = new Rectangle(hintLeft, 0.95f, hintRight - hintLeft, 0.8f);
         drawWrappedText(
             hintFont,
             "Зверинец — это коллекция карточек, которые открываются в режиме \"Спасти Зверей\": "
@@ -242,10 +250,14 @@ public class MenagerieScreen extends ScreenAdapter {
         }
 
         // Индикатор вида "1/3" показывает текущую страницу каталога.
-        Rectangle pageInfoBounds = new Rectangle(13.85f, 0.82f, 1.1f, 0.75f);
+        Rectangle pageInfoBounds = pageInfoBounds();
         drawCenteredText(hintFont, (currentPage + 1) + "/" + pageCount, pageInfoBounds);
     }
 
+
+    private Rectangle pageInfoBounds() {
+        return new Rectangle(13.85f, 0.82f, 1.1f, 0.75f);
+    }
     private void drawOpenedCard(ToyType toyType) {
         // Поверх сетки выводим оверлей с обратной стороной выбранной карточки.
         Rectangle overlayBounds = new Rectangle(3.1f, 1.1f, 9.8f, 6.2f);
@@ -353,7 +365,7 @@ public class MenagerieScreen extends ScreenAdapter {
     private void drawWrappedText(BitmapFont font, String text, Rectangle bounds) {
         // Текст описания переносится по ширине карточки.
         applyFontScale(font);
-        glyphLayout.setText(font, text, font.getColor(), bounds.width, 1, true);
+        glyphLayout.setText(font, text, font.getColor(), bounds.width, com.badlogic.gdx.utils.Align.left, true);
         float x = bounds.x;
         float y = bounds.y + bounds.height;
         font.draw(batch, glyphLayout, x, y);
