@@ -144,14 +144,15 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
     }
 
     private void drawButtonLabel(String label, float x, float y, float width, float height) {
-        buttonFont.getData().setScale(0.0155f);
+        // Стиль подписи кнопки делаем таким же, как у заголовков разделов.
+        buttonFont.getData().setScale(0.0138f);
         buttonLayout.setText(buttonFont, label);
         float textX = x + (width - buttonLayout.width) * 0.5f;
         float textY = y + (height + buttonLayout.height) * 0.5f;
 
-        buttonFont.setColor(0.08f, 0.06f, 0.16f, 0.74f);
-        buttonFont.draw(batch, buttonLayout, textX + 0.02f, textY - 0.02f);
-        buttonFont.setColor(0.96f, 0.92f, 0.84f, 1f);
+        buttonFont.setColor(0.07f, 0.05f, 0.14f, 0.82f);
+        buttonFont.draw(batch, buttonLayout, textX + 0.024f, textY - 0.024f);
+        buttonFont.setColor(0.98f, 0.92f, 0.76f, 1f);
         buttonFont.draw(batch, buttonLayout, textX, textY);
     }
 

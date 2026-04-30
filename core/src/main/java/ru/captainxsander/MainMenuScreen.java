@@ -23,13 +23,4 @@ class MainMenuScreen extends AbstractMenuScreen {
         return true;
     }
 
-    @Override
-    protected String getBrandTitleText() {
-        return "RabbitClaw";
-    }
-
-    @Override
-    protected float getBrandTitleScale() {
-        return 0.020f;
-    }
 }
