@@ -83,6 +83,10 @@ public class MainGame extends Game {
         showMenu(MenuId.MENAGERIE);
     }
 
+    public void showAboutGame() {
+        showMenu(MenuId.ABOUT_GAME);
+    }
+
     public void showPreviousMenu() {
         if (menuHistory.isEmpty()) {
             showMainMenu();
@@ -298,6 +302,8 @@ public class MainGame extends Game {
                 return new SettingsScreen(this);
             case MENAGERIE:
                 return new MenagerieScreen(this);
+            case ABOUT_GAME:
+                return new AboutGameScreen(this);
             default:
                 throw new IllegalStateException("Unsupported menu: " + menuId);
         }
@@ -500,6 +506,7 @@ public class MainGame extends Game {
         FIND_ANIMAL_MODE_SETUP,
         CATCH_CAT_MODE_SETUP,
         SETTINGS,
-        MENAGERIE
+        MENAGERIE,
+        ABOUT_GAME
     }
 }

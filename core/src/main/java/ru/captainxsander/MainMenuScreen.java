@@ -12,6 +12,8 @@ class MainMenuScreen extends AbstractMenuScreen {
         addOption("menu_settings.png", game::showSettings);
         // Переход в зверинец.
         addOption("menu_menagerie.png", game::showMenagerie);
+        // Переход на страницу "Об игре".
+        addOption("menu_about.png", game::showAboutGame);
         // Полное завершение приложения.
         addOption("menu_exit.png", Gdx.app::exit);
     }
@@ -23,13 +25,4 @@ class MainMenuScreen extends AbstractMenuScreen {
         return true;
     }
 
-    @Override
-    protected String getBrandTitleText() {
-        return "RabbitClaw";
-    }
-
-    @Override
-    protected float getBrandTitleScale() {
-        return 0.020f;
-    }
 }

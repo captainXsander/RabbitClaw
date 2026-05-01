@@ -320,6 +320,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
         if (!fontFile.exists()) {
             BitmapFont fallback = new BitmapFont();
             fallback.setColor(color);
+            fallback.setUseIntegerPositions(false);
             return fallback;
         }
 
@@ -332,6 +333,7 @@ abstract class AbstractMenuScreen extends ScreenAdapter {
             + "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
             + "№«»—…";
         BitmapFont font = generator.generateFont(parameter);
+        font.setUseIntegerPositions(false);
         generator.dispose();
         return font;
     }
