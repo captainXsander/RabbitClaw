@@ -2,6 +2,7 @@ catch_cat.png
 find_animal_facts.json
 find_animals.png
 fonts/arial.ttf
+menu_about.png
 menu_back.png
 menu_exit.png
 menu_in_development.png
