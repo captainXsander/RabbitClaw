@@ -40,6 +40,7 @@ public class MenagerieScreen extends ScreenAdapter {
     private static final float TITLE_FONT_SCALE = 0.018f;
     private static final float BODY_FONT_SCALE = 0.013f;
     private static final float HINT_FONT_SCALE = 0.010f;
+    private static final float MENU_TITLE_SCALE = 0.014f;
 
     // Главный объект игры нужен для возврата в меню.
     private final MainGame game;
@@ -63,7 +64,6 @@ public class MenagerieScreen extends ScreenAdapter {
     private final GlyphLayout glyphLayout = new GlyphLayout();
 
     // Готовые текстуры интерфейса.
-    private final Texture titleTexture = new Texture(Gdx.files.internal("menu_menagerie_title.png"));
     private final Texture backTexture = new Texture(Gdx.files.internal("menu_back.png"));
     private final Texture pixelTexture = createSolidTexture(1, 1, Color.WHITE);
     private final Texture circleTexture = createCircleTexture(192);
@@ -160,11 +160,14 @@ public class MenagerieScreen extends ScreenAdapter {
         batch.setColor(Color.WHITE);
     }
 
+    private void drawMenuTitle(String title) {
+        cardTitleFont.getData().setScale(MENU_TITLE_SCALE);
+        glyphLayout.setText(cardTitleFont, title, cardTitleFont.getColor(), 13.4f, com.badlogic.gdx.utils.Align.center, true);
+        cardTitleFont.draw(batch, glyphLayout, 1.3f, 7.35f + (0.7f + glyphLayout.height) * 0.5f);
+    }
+
     private void drawHeader() {
-        // Рисуем текстурный заголовок зверинца.
-        float titleWidth = 6.8f;
-        float titleHeight = titleWidth * titleTexture.getHeight() / titleTexture.getWidth();
-        batch.draw(titleTexture, 4.6f, 7.15f, titleWidth, titleHeight);
+        drawMenuTitle("Зверинец");
 
         // Рисуем кнопку возврата в главное меню.
         batch.draw(panelTexture, backBounds.x, backBounds.y, backBounds.width, backBounds.height);
@@ -411,7 +414,6 @@ public class MenagerieScreen extends ScreenAdapter {
     @Override
     public void dispose() {
         // Освобождаем текстуры и все сгенерированные шрифты.
-        titleTexture.dispose();
         backTexture.dispose();
         pixelTexture.dispose();
         circleTexture.dispose();
