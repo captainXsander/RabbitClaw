@@ -22,6 +22,13 @@ import java.util.Map;
 public final class MenuButtonGenerator {
     private static final int WIDTH = 900;
     private static final int HEIGHT = 140;
+    // Подогнано под визуальный стиль старых title-ассетов.
+    private static final float FONT_SIZE = 54f;
+    private static final float TRACKING = -0.015f;
+    private static final int SHADOW_OFFSET_X = 3;
+    private static final int SHADOW_OFFSET_Y = 3;
+    private static final Color SHADOW_COLOR = new Color(10, 8, 20, 205);
+    private static final Color TEXT_COLOR = new Color(248, 236, 194, 255);
 
     private MenuButtonGenerator() {
     }
@@ -72,10 +79,10 @@ public final class MenuButtonGenerator {
             // В оригинальных кнопках фон рисуется в коде, а PNG содержит только текст.
             // Поэтому здесь сохраняем прозрачный фон и рисуем только надпись.
             // Более мягкий и "круглый" системный шрифт.
-            Font baseFont = loadBaseFont(58f);
+            Font baseFont = loadBaseFont(FONT_SIZE);
             Map<TextAttribute, Object> attrs = new HashMap<>();
             attrs.put(TextAttribute.KERNING, TextAttribute.KERNING_ON);
-            attrs.put(TextAttribute.TRACKING, -0.01f);
+            attrs.put(TextAttribute.TRACKING, TRACKING);
             Font font = baseFont.deriveFont(attrs);
             GlyphVector glyphVector = font.createGlyphVector(g.getFontRenderContext(), text);
             Rectangle bounds = glyphVector.getPixelBounds(g.getFontRenderContext(), 0, 0);
@@ -84,11 +91,11 @@ public final class MenuButtonGenerator {
 
             // Тень.
             g.setFont(font);
-            g.setColor(new Color(16, 12, 28, 165));
-            g.drawString(text, textX + 2, textY + 2);
+            g.setColor(SHADOW_COLOR);
+            g.drawString(text, textX + SHADOW_OFFSET_X, textY + SHADOW_OFFSET_Y);
 
             // Основной цвет.
-            g.setColor(new Color(248, 236, 194, 255));
+            g.setColor(TEXT_COLOR);
             g.drawString(text, textX, textY);
         } finally {
             g.dispose();

@@ -5,7 +5,6 @@ fonts/arial.ttf
 menu_about.png
 menu_back.png
 menu_exit.png
-menu_in_development.png
 menu_main_title.png
 menu_menagerie.png
 menu_menagerie_title.png
