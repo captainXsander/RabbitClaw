@@ -65,6 +65,8 @@ public class Claw {
     private final float clawDropBaseChance;
     private final float clawDropMinChance;
     private final float baseFakeGrabChance;
+    private final float clawGrabXMargin;
+    private final float clawCatchChanceMult;
 
     private final Texture headTexture;
     private final Texture fingerTexture;
@@ -123,6 +125,8 @@ public class Claw {
         clawDropBaseChance = activeSettings.getClawDropBaseChance();
         clawDropMinChance = activeSettings.getClawDropMinChance();
         baseFakeGrabChance = activeSettings.getBaseFakeGrabChance();
+        clawGrabXMargin = activeSettings.getClawGrabXMargin();
+        clawCatchChanceMult = activeSettings.getClawCatchChanceMult();
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
         fingerTexture = createRectTexture(18, 90, Color.WHITE);
         cableTexture = createRectTexture(6, 240, Color.LIGHT_GRAY);
@@ -747,11 +751,12 @@ public class Claw {
         float leftEdge = realX - fingerGap * 0.5f;
         float rightEdge = realX + fingerGap * 0.5f;
 
-        return toyX > leftEdge + CLAW_GRAB_X_MARGIN && toyX < rightEdge - CLAW_GRAB_X_MARGIN;
+        return toyX > leftEdge + clawGrabXMargin && toyX < rightEdge - clawGrabXMargin;
     }
 
     private boolean passesCatchChance(Toy toy) {
-        float chance = 1f - toy.getCatchDifficulty();
+        float chance = (1f - toy.getCatchDifficulty()) * clawCatchChanceMult;
+        chance = clamp(chance, 0f, 1f);
         return Math.random() < chance;
     }
 
