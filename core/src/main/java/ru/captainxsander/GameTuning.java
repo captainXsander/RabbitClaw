@@ -192,8 +192,8 @@ public final class GameTuning {
     public static final float CLAW_WOBBLE_FREQ_Y = 14f;
 
     // Продавливание
-    public static final float SUPPORT_CHECK_DY = 0.5f;
-    public static final float SUPPORT_CHECK_DX = 0.5f;
+    public static final float SUPPORT_CHECK_DY = 0.7f;
+    public static final float SUPPORT_CHECK_DX = 0.7f;
 
     // Множитель вероятности базового захвата (1 - catchDifficulty).
     // < 1 усложняет первичный захват, > 1 упрощает.
@@ -266,8 +266,8 @@ public final class GameTuning {
 
     // Спасти зверей
     public static final double RESCUE_BASE_SLIP_CHANCE = 0.25;
-    public static final float RESCUE_CLAW_DROP_BASE_CHANCE = 0.27f;
-    public static final float RESCUE_CLAW_DROP_MIN_CHANCE = 0.10f;
+    public static final float RESCUE_CLAW_DROP_BASE_CHANCE = 0.29f;
+    public static final float RESCUE_CLAW_DROP_MIN_CHANCE = 0.13f;
     public static final float RESCUE_BASE_FAKE_GRAB_CHANCE = 0.23f;
     public static final float RESCUE_CLAW_GRAB_X_MARGIN = 0.10f;
     public static final float RESCUE_CLAW_CATCH_CHANCE_MULT = 0.95f;
