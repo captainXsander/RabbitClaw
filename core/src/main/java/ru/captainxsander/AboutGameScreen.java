@@ -1,9 +1,12 @@
 package ru.captainxsander;
 
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.Gdx;
 
 class AboutGameScreen extends AbstractDetailMenuScreen {
     private static final String TITLE = "Об игре";
+    private final Texture backTexture = new Texture(Gdx.files.internal("menu_back.png"));
     private static final String BODY = "Правила Игры:\n"
         + "Цель: аккуратно захватывайте игрушки клешнёй и переносите их в лоток.\n"
         + "\nРежимы:\n"
@@ -24,12 +27,18 @@ class AboutGameScreen extends AbstractDetailMenuScreen {
 
         drawMenuTitle(TITLE);
 
-        Rectangle textBounds = new Rectangle(1.55f, 2.45f, 12.9f, 4.2f);
+        Rectangle textBounds = new Rectangle(1.55f, 2.1f, 12.9f, 4.55f);
         drawParagraph(BODY, textBounds);
 
-        Rectangle backBounds = new Rectangle(5.4f, 1.2f, 5.2f, 0.9f);
+        Rectangle backBounds = new Rectangle(0.85f, 0.82f, 2.9f, 0.86f);
         actionBounds.add(backBounds);
-        drawButton(backBounds, "Назад", selectedIndex == 0);
+        batch.draw(panelTexture, backBounds.x, backBounds.y, backBounds.width, backBounds.height);
+        if (selectedIndex == 0) {
+            batch.draw(highlightTexture, backBounds.x + 0.04f, backBounds.y + 0.04f,
+                backBounds.width - 0.08f, backBounds.height - 0.08f);
+        }
+        batch.draw(backTexture, backBounds.x + 0.14f, backBounds.y + 0.18f,
+            backBounds.width - 0.28f, backBounds.height - 0.36f);
     }
 
     @Override
@@ -40,5 +49,11 @@ class AboutGameScreen extends AbstractDetailMenuScreen {
     @Override
     protected void onActionTriggered(int actionIndex) {
         game.showPreviousMenu();
+    }
+
+    @Override
+    public void dispose() {
+        backTexture.dispose();
+        super.dispose();
     }
 }
