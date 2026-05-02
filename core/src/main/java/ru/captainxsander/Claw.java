@@ -102,8 +102,10 @@ public class Claw {
     private boolean slipCheckedThisCycle = false;
     private boolean triedToCatch = false;
     private boolean hasMovedDown = false;
+    private static final float PRESS_CONTACT_GRACE = 0.08f;
     private float pressDepth = 0f;
     private float pressStartY = Float.NaN;
+    private float pressContactGrace = 0f;
     private boolean fakeGrabThisCycle = false;
     private float dropCheckTimer = 0f;
     // Скорость клешни
@@ -178,6 +180,8 @@ public class Claw {
                 hasMovedDown = false;
                 capturedToy = null;
                 pressDepth = 0f;
+                pressStartY = Float.NaN;
+                pressContactGrace = 0f;
                 fakeGrabThisCycle = false;
 
                 state = State.MOVE_DOWN;
@@ -317,6 +321,14 @@ public class Claw {
         boolean blocked = hasMovedDown && isBlockedByToy();
 
         if (touching) {
+            pressContactGrace = PRESS_CONTACT_GRACE;
+        } else if (pressContactGrace > 0f) {
+            pressContactGrace = Math.max(0f, pressContactGrace - delta);
+        }
+
+        boolean inPressContact = touching || pressContactGrace > 0f;
+
+        if (inPressContact) {
             // На Android при контакте с кучей дополнительно гасим маятник,
             // чтобы удар не разгонял амплитуду ещё сильнее.
             if (shouldUseAndroidSwingProfile()) {
@@ -374,6 +386,7 @@ public class Claw {
         } else {
             pressDepth = 0f;
             pressStartY = Float.NaN;
+            pressContactGrace = 0f;
         }
 
         if (y <= DOWN_LIMIT_Y) {
