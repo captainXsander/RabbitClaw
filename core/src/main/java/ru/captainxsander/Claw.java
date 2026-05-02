@@ -103,6 +103,7 @@ public class Claw {
     private boolean triedToCatch = false;
     private boolean hasMovedDown = false;
     private float pressDepth = 0f;
+    private float pressStartY = Float.NaN;
     private boolean fakeGrabThisCycle = false;
     private float dropCheckTimer = 0f;
     // Скорость клешни
@@ -322,8 +323,13 @@ public class Claw {
                 swingVelocity *= 0.90f;
             }
 
+            if (Float.isNaN(pressStartY)) {
+                pressStartY = y;
+            }
+
             if (pressDepth == 0f) {
                 y -= CLAW_INITIAL_PRESS_IMPULSE;
+                pressStartY = Math.min(pressStartY, y);
             }
             // если есть опора — ограничиваем продавливание
             if (blocked) {
@@ -337,6 +343,10 @@ public class Claw {
                 pressureFactor = Math.max(CLAW_MIN_PRESSURE_FACTOR, pressureFactor);
 
                 pressDepth += MOVE_SPEED_Y * delta * pressureFactor * CLAW_PRESS_SPEED_MULT;
+                float allowedY = pressStartY - pressDepth;
+                if (y < allowedY) {
+                    y = allowedY;
+                }
 
                 if (pressDepth >= CLAW_MAX_PRESS_DEPTH) {
                     if (audioListener != null) {
@@ -363,6 +373,7 @@ public class Claw {
 
         } else {
             pressDepth = 0f;
+            pressStartY = Float.NaN;
         }
 
         if (y <= DOWN_LIMIT_Y) {

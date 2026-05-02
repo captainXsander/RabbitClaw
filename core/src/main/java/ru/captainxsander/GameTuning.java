@@ -46,7 +46,7 @@ public final class GameTuning {
     public static final float CLAW_GRAB_X_MARGIN = 0.08f;
 
     // Сила продавливаемости клешни, на сколько может продавить
-    public static final float CLAW_MAX_PRESS_DEPTH = 0.1f;
+    public static final float CLAW_MAX_PRESS_DEPTH = 0.25f;
     // Скорость нарастания продавливания при контакте с опорой (0..1).
     public static final float CLAW_PRESS_SPEED_MULT = 0.45f;
 
