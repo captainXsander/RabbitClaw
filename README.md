@@ -141,3 +141,17 @@ java tools.MenuButtonGenerator assets \
 ```
 
 This generates PNG files with a unified style directly in `assets/`.
+
+## Claw press tuning (продавливание клешней)
+
+Если клешня слишком сильно продавливает кучу, проверь параметры в `core/src/main/java/ru/captainxsander/GameTuning.java`:
+
+- `CLAW_MAX_PRESS_DEPTH` — максимальная глубина продавливания. Главный ограничитель.
+- `CLAW_INITIAL_PRESS_IMPULSE` — начальный рывок вниз при первом контакте.
+- `SUPPORT_CHECK_DX` и `SUPPORT_CHECK_DY` — проверка опоры под игрушкой (влияет на то, когда продавливание ограничивается).
+
+Практика настройки:
+
+1. Уменьшай `CLAW_MAX_PRESS_DEPTH` небольшими шагами (`0.35 -> 0.30 -> 0.27`).
+2. Если всё ещё есть резкий «тычок», снижай `CLAW_INITIAL_PRESS_IMPULSE` (`0.02 -> 0.015`).
+3. После каждого изменения прогоняй `lwjgl3:run` и проверяй сценарий в режиме `RESCUE`.

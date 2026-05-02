@@ -878,7 +878,7 @@ public class GameScreen implements Screen {
             pauseFont.getData().setScale(0.0102f);
             String hint = "Недостаточно монет. Пополнение в следующее ежедневное обновление.";
             glyphLayout.setText(pauseFont, hint);
-            pauseFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, WORLD_HEIGHT - 1.20f);
+            pauseFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, WORLD_HEIGHT - 2.55f);
         }
     }
 
