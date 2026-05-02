@@ -334,9 +334,9 @@ public class Claw {
                 pressureFactor = 1f - (pressDepth / CLAW_MAX_PRESS_DEPTH);
 
                 // немного минимального давления
-                pressureFactor = Math.max(0.2f, pressureFactor);
+                pressureFactor = Math.max(CLAW_MIN_PRESSURE_FACTOR, pressureFactor);
 
-                pressDepth += MOVE_SPEED_Y * delta * pressureFactor;
+                pressDepth += MOVE_SPEED_Y * delta * pressureFactor * CLAW_PRESS_SPEED_MULT;
 
                 if (pressDepth >= CLAW_MAX_PRESS_DEPTH) {
                     if (audioListener != null) {

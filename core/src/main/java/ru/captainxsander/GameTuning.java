@@ -47,6 +47,8 @@ public final class GameTuning {
 
     // Сила продавливаемости клешни, на сколько может продавить
     public static final float CLAW_MAX_PRESS_DEPTH = 0.35f;
+    // Скорость нарастания продавливания при контакте с опорой (0..1).
+    public static final float CLAW_PRESS_SPEED_MULT = 0.45f;
 
     // Выбираем игрушку ближе к центру клешни, чем сложнее, чем хуже ловиться
     public static final float CLAW_SCORE_WEIGHT_X = 0.6f;
@@ -56,6 +58,8 @@ public final class GameTuning {
 
     // Небольшой рывок клешней вниз давление при первом контакте
     public static final float CLAW_INITIAL_PRESS_IMPULSE = 0.02f;
+    // Минимальное остаточное давление, даже если почти достигли max depth.
+    public static final float CLAW_MIN_PRESSURE_FACTOR = 0.08f;
 
     // Выпадание из клешни, ложный захват
     public static final float BASE_FAKE_GRAB_CHANCE = 0.20f;

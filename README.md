@@ -147,7 +147,10 @@ This generates PNG files with a unified style directly in `assets/`.
 Если клешня слишком сильно продавливает кучу, проверь параметры в `core/src/main/java/ru/captainxsander/GameTuning.java`:
 
 - `CLAW_MAX_PRESS_DEPTH` — максимальная глубина продавливания. Главный ограничитель.
+- `CLAW_PRESS_SPEED_MULT` — скорость набора глубины продавливания (меньше = мягче продавливание).
+- `CLAW_MIN_PRESSURE_FACTOR` — минимальный остаточный коэффициент давления в конце продавливания.
 - `CLAW_INITIAL_PRESS_IMPULSE` — начальный рывок вниз при первом контакте.
+- `CLAW_MOVE_SPEED_Y` — вертикальная скорость клешни, тоже влияет на интенсивность продавливания.
 - `SUPPORT_CHECK_DX` и `SUPPORT_CHECK_DY` — проверка опоры под игрушкой (влияет на то, когда продавливание ограничивается).
 
 Практика настройки:
