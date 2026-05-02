@@ -250,7 +250,7 @@ public final class GameTuning {
     public static final float CAT_MOTION_UNSTICK_REJUMP_DELAY_MIN = 0.18f;
     public static final float CAT_MOTION_UNSTICK_REJUMP_DELAY_RANDOM = 0.24f;
 
-    
+
     // =========================
     // Сложность по режимам
     // =========================
@@ -281,12 +281,12 @@ public final class GameTuning {
     public static final float FIND_ANIMAL_CLAW_CATCH_CHANCE_MULT = 1.05f;
 
     // Поймать кота
-    public static final double CATCH_CAT_BASE_SLIP_CHANCE = 0.28;
-    public static final float CATCH_CAT_CLAW_DROP_BASE_CHANCE = 0.30f;
-    public static final float CATCH_CAT_CLAW_DROP_MIN_CHANCE = 0.11f;
-    public static final float CATCH_CAT_BASE_FAKE_GRAB_CHANCE = 0.26f;
-    public static final float CATCH_CAT_CLAW_GRAB_X_MARGIN = 0.12f;
-    public static final float CATCH_CAT_CLAW_CATCH_CHANCE_MULT = 0.92f;
+    public static final double CATCH_CAT_BASE_SLIP_CHANCE = 0.25;
+    public static final float CATCH_CAT_CLAW_DROP_BASE_CHANCE = 0.27f;
+    public static final float CATCH_CAT_CLAW_DROP_MIN_CHANCE = 0.10f;
+    public static final float CATCH_CAT_BASE_FAKE_GRAB_CHANCE = 0.23f;
+    public static final float CATCH_CAT_CLAW_GRAB_X_MARGIN = 0.10f;
+    public static final float CATCH_CAT_CLAW_CATCH_CHANCE_MULT = 0.95f;
 // =========================
     // Экономика
     // =========================
