@@ -30,7 +30,7 @@ class AboutGameScreen extends AbstractDetailMenuScreen {
         Rectangle textBounds = new Rectangle(1.55f, 2.1f, 12.9f, 4.55f);
         drawParagraph(BODY, textBounds);
 
-        Rectangle backBounds = new Rectangle(0.85f, 0.82f, 2.9f, 0.86f);
+        Rectangle backBounds = new Rectangle(2.05f, 0.82f, 2.9f, 0.86f);
         actionBounds.add(backBounds);
         batch.draw(panelTexture, backBounds.x, backBounds.y, backBounds.width, backBounds.height);
         if (selectedIndex == 0) {
