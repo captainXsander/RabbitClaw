@@ -888,19 +888,11 @@ public class GameScreen implements Screen {
         int secondsLeft = Math.max(1, (int) Math.ceil(findAnimalExitTimer));
         String hint = "Возврат в меню через " + secondsLeft + " сек.";
         glyphLayout.setText(factFont, hint);
-        factFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, resultBounds.y - 0.2f);
+        factFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, resultBounds.y + 0.14f);
 
         if (findAnimalRetryChoiceVisible) {
             batch.setColor(0.26f, 0.24f, 0.45f, 0.94f);
             batch.draw(pauseOverlayTexture, retryPanelBounds.x, retryPanelBounds.y, retryPanelBounds.width, retryPanelBounds.height);
-            drawNeonFrame(
-                retryPanelBounds.x,
-                retryPanelBounds.y,
-                retryPanelBounds.width,
-                retryPanelBounds.height,
-                0.04f,
-                new Color(0.95f, 0.90f, 0.74f, 0.90f)
-            );
             batch.setColor(Color.WHITE);
             glyphLayout.setText(factFont, "Попробовать еще раз?", factFont.getColor(), retryQuestionBounds.width, Align.center, true);
             factFont.draw(batch, glyphLayout, retryQuestionBounds.x, retryQuestionBounds.y + retryQuestionBounds.height);
@@ -911,12 +903,10 @@ public class GameScreen implements Screen {
 
     private void drawRetryButton(Rectangle bounds, String label) {
         // Стиль кнопок как в подтверждении сброса: светлая рамка + фиолетовая заливка.
-        batch.setColor(0.95f, 0.90f, 0.74f, 0.96f);
-        batch.draw(pauseOverlayTexture, bounds.x, bounds.y, bounds.width, bounds.height);
         batch.setColor(0.57f, 0.50f, 0.74f, 0.95f);
-        batch.draw(pauseOverlayTexture, bounds.x + 0.04f, bounds.y + 0.04f, bounds.width - 0.08f, bounds.height - 0.08f);
+        batch.draw(pauseOverlayTexture, bounds.x, bounds.y, bounds.width, bounds.height);
         batch.setColor(1f, 1f, 1f, 0.12f);
-        batch.draw(pauseOverlayTexture, bounds.x + 0.04f, bounds.y + bounds.height * 0.52f, bounds.width - 0.08f, bounds.height * 0.44f);
+        batch.draw(pauseOverlayTexture, bounds.x, bounds.y + bounds.height * 0.52f, bounds.width, bounds.height * 0.44f);
         batch.setColor(Color.WHITE);
 
         factFont.getData().setScale(0.0108f);
