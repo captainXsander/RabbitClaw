@@ -576,7 +576,7 @@ public class GameScreen implements Screen {
         if (findAnimalRoundTimer <= 0f) {
             findAnimalRoundResolved = true;
             findAnimalRetryChoiceVisible = true;
-            findAnimalResultText = "К сожалению время вышло";
+            findAnimalResultText = "К сожалению, время вышло";
             findAnimalExitTimer = FIND_ANIMAL_RETRY_CHOICE_TIME;
             game.playFailTraySound();
         }
