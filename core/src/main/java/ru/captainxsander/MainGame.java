@@ -39,10 +39,10 @@ public class MainGame extends Game {
     private static final float CLAW_UP_FADE_DURATION = 0.14f;
     private static final float MOVE_TO_TRAY_FADE_DURATION = 0.18f;
 
-    private double normalBaseSlipChance = GameTuning.BASE_SLIP_CHANCE;
-    private float normalClawDropBaseChance = GameTuning.CLAW_DROP_BASE_CHANCE;
-    private float normalClawDropMinChance = GameTuning.CLAW_DROP_MIN_CHANCE;
-    private float normalBaseFakeGrabChance = GameTuning.BASE_FAKE_GRAB_CHANCE;
+    private double normalBaseSlipChance = GameTuning.NORMAL_BASE_SLIP_CHANCE;
+    private float normalClawDropBaseChance = GameTuning.NORMAL_CLAW_DROP_BASE_CHANCE;
+    private float normalClawDropMinChance = GameTuning.NORMAL_CLAW_DROP_MIN_CHANCE;
+    private float normalBaseFakeGrabChance = GameTuning.NORMAL_BASE_FAKE_GRAB_CHANCE;
     private final Set<ToyType> normalSelectedToyTypes = new LinkedHashSet<>();
 
     @Override
@@ -105,7 +105,7 @@ public class MainGame extends Game {
         }
 
         clearMenuNavigation();
-        switchScreen(new GameScreen(this, GameMode.RESCUE, GameSessionSettings.defaults()));
+        switchScreen(new GameScreen(this, GameMode.RESCUE, buildRescueModeSettings()));
         return true;
     }
 
@@ -119,12 +119,12 @@ public class MainGame extends Game {
 
     public void startFindAnimalGame() {
         clearMenuNavigation();
-        switchScreen(new GameScreen(this, GameMode.FIND_ANIMAL, GameSessionSettings.defaults()));
+        switchScreen(new GameScreen(this, GameMode.FIND_ANIMAL, buildFindAnimalModeSettings()));
     }
 
     public void startCatchCatGame() {
         clearMenuNavigation();
-        switchScreen(new GameScreen(this, GameMode.CATCH_CAT, GameSessionSettings.defaults()));
+        switchScreen(new GameScreen(this, GameMode.CATCH_CAT, buildCatchCatModeSettings()));
     }
 
     public boolean isSoundEnabled() {
@@ -256,7 +256,47 @@ public class MainGame extends Game {
             normalBaseSlipChance,
             normalClawDropBaseChance,
             normalClawDropMinChance,
-            normalBaseFakeGrabChance
+            normalBaseFakeGrabChance,
+            GameTuning.NORMAL_CLAW_GRAB_X_MARGIN,
+            GameTuning.NORMAL_CLAW_CATCH_CHANCE_MULT
+        );
+    }
+
+
+
+    private GameSessionSettings buildRescueModeSettings() {
+        return new GameSessionSettings(
+            null,
+            GameTuning.RESCUE_BASE_SLIP_CHANCE,
+            GameTuning.RESCUE_CLAW_DROP_BASE_CHANCE,
+            GameTuning.RESCUE_CLAW_DROP_MIN_CHANCE,
+            GameTuning.RESCUE_BASE_FAKE_GRAB_CHANCE,
+            GameTuning.RESCUE_CLAW_GRAB_X_MARGIN,
+            GameTuning.RESCUE_CLAW_CATCH_CHANCE_MULT
+        );
+    }
+
+    private GameSessionSettings buildFindAnimalModeSettings() {
+        return new GameSessionSettings(
+            null,
+            GameTuning.FIND_ANIMAL_BASE_SLIP_CHANCE,
+            GameTuning.FIND_ANIMAL_CLAW_DROP_BASE_CHANCE,
+            GameTuning.FIND_ANIMAL_CLAW_DROP_MIN_CHANCE,
+            GameTuning.FIND_ANIMAL_BASE_FAKE_GRAB_CHANCE,
+            GameTuning.FIND_ANIMAL_CLAW_GRAB_X_MARGIN,
+            GameTuning.FIND_ANIMAL_CLAW_CATCH_CHANCE_MULT
+        );
+    }
+
+    private GameSessionSettings buildCatchCatModeSettings() {
+        return new GameSessionSettings(
+            null,
+            GameTuning.CATCH_CAT_BASE_SLIP_CHANCE,
+            GameTuning.CATCH_CAT_CLAW_DROP_BASE_CHANCE,
+            GameTuning.CATCH_CAT_CLAW_DROP_MIN_CHANCE,
+            GameTuning.CATCH_CAT_BASE_FAKE_GRAB_CHANCE,
+            GameTuning.CATCH_CAT_CLAW_GRAB_X_MARGIN,
+            GameTuning.CATCH_CAT_CLAW_CATCH_CHANCE_MULT
         );
     }
 

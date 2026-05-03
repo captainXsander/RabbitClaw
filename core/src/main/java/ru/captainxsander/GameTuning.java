@@ -47,6 +47,8 @@ public final class GameTuning {
 
     // Сила продавливаемости клешни, на сколько может продавить
     public static final float CLAW_MAX_PRESS_DEPTH = 0.35f;
+    // Скорость нарастания продавливания при контакте с опорой (0..1).
+    public static final float CLAW_PRESS_SPEED_MULT = 0.45f;
 
     // Выбираем игрушку ближе к центру клешни, чем сложнее, чем хуже ловиться
     public static final float CLAW_SCORE_WEIGHT_X = 0.6f;
@@ -56,6 +58,8 @@ public final class GameTuning {
 
     // Небольшой рывок клешней вниз давление при первом контакте
     public static final float CLAW_INITIAL_PRESS_IMPULSE = 0.02f;
+    // Минимальное остаточное давление, даже если почти достигли max depth.
+    public static final float CLAW_MIN_PRESSURE_FACTOR = 0.08f;
 
     // Выпадание из клешни, ложный захват
     public static final float BASE_FAKE_GRAB_CHANCE = 0.20f;
@@ -192,8 +196,12 @@ public final class GameTuning {
     public static final float CLAW_WOBBLE_FREQ_Y = 14f;
 
     // Продавливание
-    public static final float SUPPORT_CHECK_DY = 0.5f;
-    public static final float SUPPORT_CHECK_DX = 0.5f;
+    public static final float SUPPORT_CHECK_DY = 0.7f;
+    public static final float SUPPORT_CHECK_DX = 0.7f;
+
+    // Множитель вероятности базового захвата (1 - catchDifficulty).
+    // < 1 усложняет первичный захват, > 1 упрощает.
+    public static final float CLAW_CATCH_CHANCE_MULT = 1.0f;
 
     // Передача скорости игрушки от клешни
     public static final float CLAW_VELOCITY_TRANSFER = 3.0f;
@@ -246,7 +254,44 @@ public final class GameTuning {
     public static final float CAT_MOTION_UNSTICK_REJUMP_DELAY_MIN = 0.18f;
     public static final float CAT_MOTION_UNSTICK_REJUMP_DELAY_RANDOM = 0.24f;
 
+
     // =========================
+    // Сложность по режимам
+    // =========================
+    // Набор параметров: срыв при подъёме, выпадение в пути (база/минимум), ложный захват.
+
+    // Обычная игра
+    public static final double NORMAL_BASE_SLIP_CHANCE = BASE_SLIP_CHANCE;
+    public static final float NORMAL_CLAW_DROP_BASE_CHANCE = CLAW_DROP_BASE_CHANCE;
+    public static final float NORMAL_CLAW_DROP_MIN_CHANCE = CLAW_DROP_MIN_CHANCE;
+    public static final float NORMAL_BASE_FAKE_GRAB_CHANCE = BASE_FAKE_GRAB_CHANCE;
+    public static final float NORMAL_CLAW_GRAB_X_MARGIN = CLAW_GRAB_X_MARGIN;
+    public static final float NORMAL_CLAW_CATCH_CHANCE_MULT = CLAW_CATCH_CHANCE_MULT;
+
+    // Спасти зверей
+    public static final double RESCUE_BASE_SLIP_CHANCE = 0.25;
+    public static final float RESCUE_CLAW_DROP_BASE_CHANCE = 0.29f;
+    public static final float RESCUE_CLAW_DROP_MIN_CHANCE = 0.13f;
+    public static final float RESCUE_BASE_FAKE_GRAB_CHANCE = 0.23f;
+    public static final float RESCUE_CLAW_GRAB_X_MARGIN = 0.10f;
+    public static final float RESCUE_CLAW_CATCH_CHANCE_MULT = 0.95f;
+
+    // Найти зверей
+    public static final double FIND_ANIMAL_BASE_SLIP_CHANCE = 0.20;
+    public static final float FIND_ANIMAL_CLAW_DROP_BASE_CHANCE = 0.22f;
+    public static final float FIND_ANIMAL_CLAW_DROP_MIN_CHANCE = 0.08f;
+    public static final float FIND_ANIMAL_BASE_FAKE_GRAB_CHANCE = 0.18f;
+    public static final float FIND_ANIMAL_CLAW_GRAB_X_MARGIN = 0.07f;
+    public static final float FIND_ANIMAL_CLAW_CATCH_CHANCE_MULT = 1.05f;
+
+    // Поймать кота
+    public static final double CATCH_CAT_BASE_SLIP_CHANCE = 0.25;
+    public static final float CATCH_CAT_CLAW_DROP_BASE_CHANCE = 0.27f;
+    public static final float CATCH_CAT_CLAW_DROP_MIN_CHANCE = 0.10f;
+    public static final float CATCH_CAT_BASE_FAKE_GRAB_CHANCE = 0.23f;
+    public static final float CATCH_CAT_CLAW_GRAB_X_MARGIN = 0.10f;
+    public static final float CATCH_CAT_CLAW_CATCH_CHANCE_MULT = 0.95f;
+// =========================
     // Экономика
     // =========================
     // Ежедневное пополнение монет происходит в локальном времени устройства.

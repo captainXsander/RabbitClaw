@@ -65,6 +65,8 @@ public class Claw {
     private final float clawDropBaseChance;
     private final float clawDropMinChance;
     private final float baseFakeGrabChance;
+    private final float clawGrabXMargin;
+    private final float clawCatchChanceMult;
 
     private final Texture headTexture;
     private final Texture fingerTexture;
@@ -100,7 +102,10 @@ public class Claw {
     private boolean slipCheckedThisCycle = false;
     private boolean triedToCatch = false;
     private boolean hasMovedDown = false;
+    private static final float PRESS_CONTACT_GRACE = 0.08f;
     private float pressDepth = 0f;
+    private float pressStartY = Float.NaN;
+    private float pressContactGrace = 0f;
     private boolean fakeGrabThisCycle = false;
     private float dropCheckTimer = 0f;
     // Скорость клешни
@@ -123,6 +128,8 @@ public class Claw {
         clawDropBaseChance = activeSettings.getClawDropBaseChance();
         clawDropMinChance = activeSettings.getClawDropMinChance();
         baseFakeGrabChance = activeSettings.getBaseFakeGrabChance();
+        clawGrabXMargin = activeSettings.getClawGrabXMargin();
+        clawCatchChanceMult = activeSettings.getClawCatchChanceMult();
         headTexture = createRectTexture(110, 28, new Color(0.35f, 0.70f, 1f, 1f));
         fingerTexture = createRectTexture(18, 90, Color.WHITE);
         cableTexture = createRectTexture(6, 240, Color.LIGHT_GRAY);
@@ -173,6 +180,8 @@ public class Claw {
                 hasMovedDown = false;
                 capturedToy = null;
                 pressDepth = 0f;
+                pressStartY = Float.NaN;
+                pressContactGrace = 0f;
                 fakeGrabThisCycle = false;
 
                 state = State.MOVE_DOWN;
@@ -312,14 +321,27 @@ public class Claw {
         boolean blocked = hasMovedDown && isBlockedByToy();
 
         if (touching) {
+            pressContactGrace = PRESS_CONTACT_GRACE;
+        } else if (pressContactGrace > 0f) {
+            pressContactGrace = Math.max(0f, pressContactGrace - delta);
+        }
+
+        boolean inPressContact = touching || pressContactGrace > 0f;
+
+        if (inPressContact) {
             // На Android при контакте с кучей дополнительно гасим маятник,
             // чтобы удар не разгонял амплитуду ещё сильнее.
             if (shouldUseAndroidSwingProfile()) {
                 swingVelocity *= 0.90f;
             }
 
+            if (Float.isNaN(pressStartY)) {
+                pressStartY = y;
+            }
+
             if (pressDepth == 0f) {
                 y -= CLAW_INITIAL_PRESS_IMPULSE;
+                pressStartY = Math.min(pressStartY, y);
             }
             // если есть опора — ограничиваем продавливание
             if (blocked) {
@@ -330,9 +352,13 @@ public class Claw {
                 pressureFactor = 1f - (pressDepth / CLAW_MAX_PRESS_DEPTH);
 
                 // немного минимального давления
-                pressureFactor = Math.max(0.2f, pressureFactor);
+                pressureFactor = Math.max(CLAW_MIN_PRESSURE_FACTOR, pressureFactor);
 
-                pressDepth += MOVE_SPEED_Y * delta * pressureFactor;
+                pressDepth += MOVE_SPEED_Y * delta * pressureFactor * CLAW_PRESS_SPEED_MULT;
+                float allowedY = pressStartY - pressDepth;
+                if (y < allowedY) {
+                    y = allowedY;
+                }
 
                 if (pressDepth >= CLAW_MAX_PRESS_DEPTH) {
                     if (audioListener != null) {
@@ -359,6 +385,8 @@ public class Claw {
 
         } else {
             pressDepth = 0f;
+            pressStartY = Float.NaN;
+            pressContactGrace = 0f;
         }
 
         if (y <= DOWN_LIMIT_Y) {
@@ -747,11 +775,12 @@ public class Claw {
         float leftEdge = realX - fingerGap * 0.5f;
         float rightEdge = realX + fingerGap * 0.5f;
 
-        return toyX > leftEdge + CLAW_GRAB_X_MARGIN && toyX < rightEdge - CLAW_GRAB_X_MARGIN;
+        return toyX > leftEdge + clawGrabXMargin && toyX < rightEdge - clawGrabXMargin;
     }
 
     private boolean passesCatchChance(Toy toy) {
-        float chance = 1f - toy.getCatchDifficulty();
+        float chance = (1f - toy.getCatchDifficulty()) * clawCatchChanceMult;
+        chance = clamp(chance, 0f, 1f);
         return Math.random() < chance;
     }
 
