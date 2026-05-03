@@ -41,7 +41,9 @@ public class GameScreen implements Screen {
     public static final float WORLD_HEIGHT = GameTuning.WORLD_HEIGHT;
 
     public static final String FONT_PATH = "fonts/arial.ttf";
-    private static final float FIND_ANIMAL_RESULT_SHOW_TIME = 2.5f;
+    private static final float FIND_ANIMAL_ROUND_TIME_LIMIT = 60f;
+    private static final float FIND_ANIMAL_WARNING_TIME_LEFT = 10f;
+    private static final float FIND_ANIMAL_RETRY_CHOICE_TIME = 10f;
     private static final int TOY_COUNT_PER_ROUND = 45;
     // Настройки физики и котов берём из GameTuning,
     // чтобы удобно балансить поведение в одном месте.
@@ -85,6 +87,10 @@ public class GameScreen implements Screen {
     private final GlyphLayout glyphLayout = new GlyphLayout();
     private final Rectangle factBounds = new Rectangle(0.75f, WORLD_HEIGHT - 2.0f, WORLD_WIDTH - 1.5f, 1.05f);
     private final Rectangle resultBounds = new Rectangle(1.4f, WORLD_HEIGHT * 0.44f, WORLD_WIDTH - 2.8f, 1.2f);
+    private final Rectangle retryPanelBounds = new Rectangle(WORLD_WIDTH - 5.2f, WORLD_HEIGHT - 3.45f, 4.4f, 1.75f);
+    private final Rectangle retryQuestionBounds = new Rectangle(WORLD_WIDTH - 5.0f, WORLD_HEIGHT - 2.55f, 4.0f, 0.42f);
+    private final Rectangle retryYesButtonBounds = new Rectangle(WORLD_WIDTH - 5.0f, WORLD_HEIGHT - 3.20f, 1.9f, 0.62f);
+    private final Rectangle retryNoButtonBounds = new Rectangle(WORLD_WIDTH - 2.95f, WORLD_HEIGHT - 3.20f, 1.9f, 0.62f);
 
     // Пауза доступна из любого режима с возвратом в главное меню.
     private BitmapFont pauseFont;
@@ -134,7 +140,9 @@ public class GameScreen implements Screen {
     private boolean findAnimalRoundResolved;
     private String findAnimalResultText;
     private float findAnimalExitTimer;
+    private float findAnimalRoundTimer;
     private boolean findAnimalExitRequested;
+    private boolean findAnimalRetryChoiceVisible;
     private final Map<Toy, CatToyMotionState> catchCatMotionStates = new HashMap<>();
     // Аккумулятор фиксированного шага физики (FPS-independent).
     private float physicsAccumulator = 0f;
@@ -265,7 +273,9 @@ public class GameScreen implements Screen {
         findAnimalRoundResolved = false;
         findAnimalResultText = null;
         findAnimalExitTimer = 0f;
+        findAnimalRoundTimer = FIND_ANIMAL_ROUND_TIME_LIMIT;
         findAnimalExitRequested = false;
+        findAnimalRetryChoiceVisible = false;
 
         // Отдельные шрифты: для текста факта и для статуса победы/поражения.
         factFont = createFont(26, new Color(0.98f, 0.92f, 0.84f, 1f));
@@ -280,7 +290,9 @@ public class GameScreen implements Screen {
         findAnimalRoundResolved = false;
         findAnimalResultText = null;
         findAnimalExitTimer = 0f;
+        findAnimalRoundTimer = FIND_ANIMAL_ROUND_TIME_LIMIT;
         findAnimalExitRequested = false;
+        findAnimalRetryChoiceVisible = false;
 
         factFont = createFont(27, new Color(0.98f, 0.92f, 0.84f, 1f));
         statusFont = createFont(30, new Color(0.98f, 0.84f, 0.25f, 1f));
@@ -439,6 +451,7 @@ public class GameScreen implements Screen {
 
         updateMenagerieUnlocks();
         updateFindAnimalRoundState();
+        updateFindAnimalRoundTimer(delta);
         updateFindAnimalRoundExitTimer(delta);
         if (rescueNoCoinsHintTimer > 0f) {
             rescueNoCoinsHintTimer = Math.max(0f, rescueNoCoinsHintTimer - delta);
@@ -550,6 +563,25 @@ public class GameScreen implements Screen {
         }
     }
 
+    private void updateFindAnimalRoundTimer(float delta) {
+        if (gameMode != GameMode.FIND_ANIMAL && gameMode != GameMode.CATCH_CAT) {
+            return;
+        }
+
+        if (findAnimalRoundResolved || pauseActive) {
+            return;
+        }
+
+        findAnimalRoundTimer = Math.max(0f, findAnimalRoundTimer - delta);
+        if (findAnimalRoundTimer <= 0f) {
+            findAnimalRoundResolved = true;
+            findAnimalRetryChoiceVisible = true;
+            findAnimalResultText = "К сожалению, время вышло";
+            findAnimalExitTimer = FIND_ANIMAL_RETRY_CHOICE_TIME;
+            game.playFailTraySound();
+        }
+    }
+
     private void updateFindAnimalRoundState() {
         // Логика результата нужна только до момента, пока раунд не завершён.
         if ((gameMode != GameMode.FIND_ANIMAL && gameMode != GameMode.CATCH_CAT) || findAnimalRoundResolved) {
@@ -582,7 +614,8 @@ public class GameScreen implements Screen {
 
         reportedWins.add(toy);
         findAnimalRoundResolved = true;
-        findAnimalExitTimer = FIND_ANIMAL_RESULT_SHOW_TIME;
+        findAnimalRetryChoiceVisible = true;
+        findAnimalExitTimer = FIND_ANIMAL_RETRY_CHOICE_TIME;
 
         ToyType targetToyType = getCurrentTargetToyType();
         String targetLabel = getCurrentTargetLabelRu();
@@ -826,6 +859,17 @@ public class GameScreen implements Screen {
         factFont.draw(batch, glyphLayout, factBounds.x, factBounds.y + factBounds.height);
 
         if (!isFindAnimalFinished()) {
+            factFont.getData().setScale(0.012f);
+            int roundSecondsLeft = Math.max(0, (int) Math.ceil(findAnimalRoundTimer));
+            String timerText = "Время: " + roundSecondsLeft + " сек.";
+            if (findAnimalRoundTimer <= FIND_ANIMAL_WARNING_TIME_LEFT) {
+                factFont.setColor(0.92f, 0.22f, 0.22f, 1f);
+            } else {
+                factFont.setColor(0.98f, 0.92f, 0.84f, 1f);
+            }
+            glyphLayout.setText(factFont, timerText);
+            factFont.draw(batch, glyphLayout, WORLD_WIDTH - glyphLayout.width - 0.9f, WORLD_HEIGHT - 1.34f);
+            factFont.setColor(0.98f, 0.92f, 0.84f, 1f);
             return;
         }
 
@@ -844,7 +888,31 @@ public class GameScreen implements Screen {
         int secondsLeft = Math.max(1, (int) Math.ceil(findAnimalExitTimer));
         String hint = "Возврат в меню через " + secondsLeft + " сек.";
         glyphLayout.setText(factFont, hint);
-        factFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, resultBounds.y - 0.2f);
+        factFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, resultBounds.y + 0.14f);
+
+        if (findAnimalRetryChoiceVisible) {
+            batch.setColor(0.26f, 0.24f, 0.45f, 0.94f);
+            batch.draw(pauseOverlayTexture, retryPanelBounds.x, retryPanelBounds.y, retryPanelBounds.width, retryPanelBounds.height);
+            batch.setColor(Color.WHITE);
+            glyphLayout.setText(factFont, "Попробовать еще раз?", factFont.getColor(), retryQuestionBounds.width, Align.center, true);
+            factFont.draw(batch, glyphLayout, retryQuestionBounds.x, retryQuestionBounds.y + retryQuestionBounds.height);
+            drawRetryButton(retryYesButtonBounds, "Да");
+            drawRetryButton(retryNoButtonBounds, "Нет");
+        }
+    }
+
+    private void drawRetryButton(Rectangle bounds, String label) {
+        // Стиль кнопок как в подтверждении сброса: светлая рамка + фиолетовая заливка.
+        batch.setColor(0.57f, 0.50f, 0.74f, 0.95f);
+        batch.draw(pauseOverlayTexture, bounds.x, bounds.y, bounds.width, bounds.height);
+        batch.setColor(1f, 1f, 1f, 0.12f);
+        batch.draw(pauseOverlayTexture, bounds.x, bounds.y + bounds.height * 0.52f, bounds.width, bounds.height * 0.44f);
+        batch.setColor(Color.WHITE);
+
+        factFont.getData().setScale(0.0108f);
+        glyphLayout.setText(factFont, label);
+        factFont.draw(batch, glyphLayout, bounds.x + (bounds.width - glyphLayout.width) * 0.5f,
+            bounds.y + (bounds.height + glyphLayout.height) * 0.5f);
     }
 
     private void drawEconomyHud() {
@@ -1305,6 +1373,17 @@ public class GameScreen implements Screen {
             // Переводим экранные координаты в мировые для hit-test по UI-прямоугольникам.
             Vector2 worldTouch = viewport.unproject(new Vector2(screenX, screenY));
             if (!pauseActive) {
+                if (isFindAnimalFinished() && findAnimalRetryChoiceVisible) {
+                    if (retryYesButtonBounds.contains(worldTouch)) {
+                        restartCurrentTimedMode();
+                        return true;
+                    }
+                    if (retryNoButtonBounds.contains(worldTouch)) {
+                        game.showPreviousMenu();
+                        return true;
+                    }
+                    return true;
+                }
                 return handleTouchGameplayDown(worldTouch, pointer);
             }
 
@@ -1381,6 +1460,16 @@ public class GameScreen implements Screen {
             }
 
             return false;
+        }
+    }
+
+    private void restartCurrentTimedMode() {
+        if (gameMode == GameMode.FIND_ANIMAL) {
+            game.startFindAnimalGame();
+            return;
+        }
+        if (gameMode == GameMode.CATCH_CAT) {
+            game.startCatchCatGame();
         }
     }
 
