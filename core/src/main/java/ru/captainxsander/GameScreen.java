@@ -41,10 +41,9 @@ public class GameScreen implements Screen {
     public static final float WORLD_HEIGHT = GameTuning.WORLD_HEIGHT;
 
     public static final String FONT_PATH = "fonts/arial.ttf";
-    private static final float FIND_ANIMAL_RESULT_SHOW_TIME = 2.5f;
     private static final float FIND_ANIMAL_ROUND_TIME_LIMIT = 60f;
     private static final float FIND_ANIMAL_WARNING_TIME_LEFT = 10f;
-    private static final float FIND_ANIMAL_RETRY_CHOICE_TIME = 5f;
+    private static final float FIND_ANIMAL_RETRY_CHOICE_TIME = 10f;
     private static final int TOY_COUNT_PER_ROUND = 45;
     // Настройки физики и котов берём из GameTuning,
     // чтобы удобно балансить поведение в одном месте.
@@ -88,9 +87,9 @@ public class GameScreen implements Screen {
     private final GlyphLayout glyphLayout = new GlyphLayout();
     private final Rectangle factBounds = new Rectangle(0.75f, WORLD_HEIGHT - 2.0f, WORLD_WIDTH - 1.5f, 1.05f);
     private final Rectangle resultBounds = new Rectangle(1.4f, WORLD_HEIGHT * 0.44f, WORLD_WIDTH - 2.8f, 1.2f);
-    private final Rectangle retryQuestionBounds = new Rectangle(1.4f, WORLD_HEIGHT * 0.34f, WORLD_WIDTH - 2.8f, 0.9f);
-    private final Rectangle retryYesButtonBounds = new Rectangle(WORLD_WIDTH * 0.30f - 1.35f, WORLD_HEIGHT * 0.24f, 2.7f, 0.82f);
-    private final Rectangle retryNoButtonBounds = new Rectangle(WORLD_WIDTH * 0.70f - 1.35f, WORLD_HEIGHT * 0.24f, 2.7f, 0.82f);
+    private final Rectangle retryQuestionBounds = new Rectangle(1.4f, WORLD_HEIGHT * 0.30f, WORLD_WIDTH - 2.8f, 0.9f);
+    private final Rectangle retryYesButtonBounds = new Rectangle(WORLD_WIDTH * 0.34f - 1.35f, WORLD_HEIGHT * 0.18f, 2.7f, 0.82f);
+    private final Rectangle retryNoButtonBounds = new Rectangle(WORLD_WIDTH * 0.66f - 1.35f, WORLD_HEIGHT * 0.18f, 2.7f, 0.82f);
 
     // Пауза доступна из любого режима с возвратом в главное меню.
     private BitmapFont pauseFont;
@@ -899,8 +898,11 @@ public class GameScreen implements Screen {
     }
 
     private void drawRetryButton(Rectangle bounds, String label) {
-        batch.setColor(0.42f, 0.40f, 0.52f, 0.98f);
+        // Кнопки в стиле стандартного меню: тёплая светлая подложка + внутренний контраст.
+        batch.setColor(0.96f, 0.90f, 0.70f, 0.96f);
         batch.draw(pauseOverlayTexture, bounds.x, bounds.y, bounds.width, bounds.height);
+        batch.setColor(0.55f, 0.46f, 0.78f, 0.90f);
+        batch.draw(pauseOverlayTexture, bounds.x + 0.04f, bounds.y + 0.04f, bounds.width - 0.08f, bounds.height - 0.08f);
         batch.setColor(Color.WHITE);
 
         factFont.getData().setScale(0.012f);
