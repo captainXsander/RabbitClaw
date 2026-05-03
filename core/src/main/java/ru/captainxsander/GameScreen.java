@@ -88,7 +88,7 @@ public class GameScreen implements Screen {
     private final Rectangle factBounds = new Rectangle(0.75f, WORLD_HEIGHT - 2.0f, WORLD_WIDTH - 1.5f, 1.05f);
     private final Rectangle resultBounds = new Rectangle(1.4f, WORLD_HEIGHT * 0.44f, WORLD_WIDTH - 2.8f, 1.2f);
     private final Rectangle retryPanelBounds = new Rectangle(WORLD_WIDTH - 5.2f, WORLD_HEIGHT - 3.45f, 4.4f, 1.75f);
-    private final Rectangle retryQuestionBounds = new Rectangle(WORLD_WIDTH - 5.0f, WORLD_HEIGHT - 2.25f, 4.0f, 0.42f);
+    private final Rectangle retryQuestionBounds = new Rectangle(WORLD_WIDTH - 5.0f, WORLD_HEIGHT - 2.55f, 4.0f, 0.42f);
     private final Rectangle retryYesButtonBounds = new Rectangle(WORLD_WIDTH - 5.0f, WORLD_HEIGHT - 3.20f, 1.9f, 0.62f);
     private final Rectangle retryNoButtonBounds = new Rectangle(WORLD_WIDTH - 2.95f, WORLD_HEIGHT - 3.20f, 1.9f, 0.62f);
 
