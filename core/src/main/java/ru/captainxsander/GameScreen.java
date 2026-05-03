@@ -87,9 +87,10 @@ public class GameScreen implements Screen {
     private final GlyphLayout glyphLayout = new GlyphLayout();
     private final Rectangle factBounds = new Rectangle(0.75f, WORLD_HEIGHT - 2.0f, WORLD_WIDTH - 1.5f, 1.05f);
     private final Rectangle resultBounds = new Rectangle(1.4f, WORLD_HEIGHT * 0.44f, WORLD_WIDTH - 2.8f, 1.2f);
-    private final Rectangle retryQuestionBounds = new Rectangle(1.4f, WORLD_HEIGHT * 0.30f, WORLD_WIDTH - 2.8f, 0.9f);
-    private final Rectangle retryYesButtonBounds = new Rectangle(WORLD_WIDTH * 0.34f - 1.35f, WORLD_HEIGHT * 0.18f, 2.7f, 0.82f);
-    private final Rectangle retryNoButtonBounds = new Rectangle(WORLD_WIDTH * 0.66f - 1.35f, WORLD_HEIGHT * 0.18f, 2.7f, 0.82f);
+    private final Rectangle retryPanelBounds = new Rectangle(WORLD_WIDTH - 5.2f, WORLD_HEIGHT - 3.45f, 4.4f, 1.75f);
+    private final Rectangle retryQuestionBounds = new Rectangle(WORLD_WIDTH - 5.0f, WORLD_HEIGHT - 2.25f, 4.0f, 0.42f);
+    private final Rectangle retryYesButtonBounds = new Rectangle(WORLD_WIDTH - 5.0f, WORLD_HEIGHT - 3.20f, 1.9f, 0.62f);
+    private final Rectangle retryNoButtonBounds = new Rectangle(WORLD_WIDTH - 2.95f, WORLD_HEIGHT - 3.20f, 1.9f, 0.62f);
 
     // Пауза доступна из любого режима с возвратом в главное меню.
     private BitmapFont pauseFont;
@@ -575,7 +576,7 @@ public class GameScreen implements Screen {
         if (findAnimalRoundTimer <= 0f) {
             findAnimalRoundResolved = true;
             findAnimalRetryChoiceVisible = true;
-            findAnimalResultText = "Время вышло, попробовать еще раз?";
+            findAnimalResultText = "К сожалению время вышло";
             findAnimalExitTimer = FIND_ANIMAL_RETRY_CHOICE_TIME;
             game.playFailTraySound();
         }
@@ -890,6 +891,17 @@ public class GameScreen implements Screen {
         factFont.draw(batch, glyphLayout, (WORLD_WIDTH - glyphLayout.width) * 0.5f, resultBounds.y - 0.2f);
 
         if (findAnimalRetryChoiceVisible) {
+            batch.setColor(0.26f, 0.24f, 0.45f, 0.94f);
+            batch.draw(pauseOverlayTexture, retryPanelBounds.x, retryPanelBounds.y, retryPanelBounds.width, retryPanelBounds.height);
+            drawNeonFrame(
+                retryPanelBounds.x,
+                retryPanelBounds.y,
+                retryPanelBounds.width,
+                retryPanelBounds.height,
+                0.04f,
+                new Color(0.95f, 0.90f, 0.74f, 0.90f)
+            );
+            batch.setColor(Color.WHITE);
             glyphLayout.setText(factFont, "Попробовать еще раз?", factFont.getColor(), retryQuestionBounds.width, Align.center, true);
             factFont.draw(batch, glyphLayout, retryQuestionBounds.x, retryQuestionBounds.y + retryQuestionBounds.height);
             drawRetryButton(retryYesButtonBounds, "Да");
@@ -898,14 +910,16 @@ public class GameScreen implements Screen {
     }
 
     private void drawRetryButton(Rectangle bounds, String label) {
-        // Кнопки в стиле стандартного меню: тёплая светлая подложка + внутренний контраст.
-        batch.setColor(0.96f, 0.90f, 0.70f, 0.96f);
+        // Стиль кнопок как в подтверждении сброса: светлая рамка + фиолетовая заливка.
+        batch.setColor(0.95f, 0.90f, 0.74f, 0.96f);
         batch.draw(pauseOverlayTexture, bounds.x, bounds.y, bounds.width, bounds.height);
-        batch.setColor(0.55f, 0.46f, 0.78f, 0.90f);
+        batch.setColor(0.57f, 0.50f, 0.74f, 0.95f);
         batch.draw(pauseOverlayTexture, bounds.x + 0.04f, bounds.y + 0.04f, bounds.width - 0.08f, bounds.height - 0.08f);
+        batch.setColor(1f, 1f, 1f, 0.12f);
+        batch.draw(pauseOverlayTexture, bounds.x + 0.04f, bounds.y + bounds.height * 0.52f, bounds.width - 0.08f, bounds.height * 0.44f);
         batch.setColor(Color.WHITE);
 
-        factFont.getData().setScale(0.012f);
+        factFont.getData().setScale(0.0108f);
         glyphLayout.setText(factFont, label);
         factFont.draw(batch, glyphLayout, bounds.x + (bounds.width - glyphLayout.width) * 0.5f,
             bounds.y + (bounds.height + glyphLayout.height) * 0.5f);
